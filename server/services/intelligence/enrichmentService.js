@@ -30,6 +30,7 @@
 const crypto = require('crypto');
 const { buildIndicators } = require('./indicatorNormalizer');
 const { activeProvider: geoProvider } = require('./geolocationProvider');
+const { enrichIndicatorGeolocation } = require('./indicatorGeolocationService');
 const {
   checkVirusTotalDomain,
   checkVirusTotalIP,
@@ -110,20 +111,35 @@ async function setCache(provider, indicatorType, normalizedValue, result) {
 // ---------------------------------------------------------------------------
 
 /**
- * Enrich one indicator with geolocation (IPs only).
- * Private IPs are never sent to the provider.
+ * Enrich one indicator with geographic information using the central geolocation service.
+ * Handles IP, Domain, URL, and Email.
  */
-async function enrichGeo(indicator) {
-  if (indicator.type !== 'ip' || !indicator.isPublicIP) {
-    return { status: 'skipped', reason: indicator.isPublicIP === false ? 'private_ip' : 'not_an_ip' };
-  }
-
+async function enrichGeo(indicator, investigation) {
   // Cache check
-  const cached = await getCached('geolocation', 'ip', indicator.normalizedValue);
+  const cached = await getCached('geolocation', indicator.type, indicator.normalizedValue);
   if (cached) return { ...cached, fromCache: true };
 
-  const result = await geoProvider.geolocateIP(indicator.normalizedValue);
-  await setCache('geolocation', 'ip', indicator.normalizedValue, result);
+  const geolocations = await enrichIndicatorGeolocation(indicator, investigation);
+  
+  if (!geolocations || geolocations.length === 0) {
+    const result = { status: 'skipped', reason: 'no_geographic_enrichment', geolocations: [] };
+    if (indicator.type === 'ip' && indicator.isPublicIP === false) {
+      result.reason = 'private_ip';
+    }
+    return result;
+  }
+
+  // Find the first successful location for backward compatibility
+  const primaryGeo = geolocations[0];
+  
+  // Provide backward compatibility structure
+  const result = {
+    ...primaryGeo,
+    status: 'success',
+    geolocations
+  };
+  
+  await setCache('geolocation', indicator.type, indicator.normalizedValue, result);
   return result;
 }
 
@@ -196,10 +212,11 @@ async function enrichVirusTotal(indicator) {
  * One provider failing for one indicator does not affect others.
  *
  * @param {Array} indicators - from buildIndicators()
+ * @param {Object} investigation - Context for enrichment
  * @param {Object} options
  * @returns {Promise<Array>} Enriched indicator records
  */
-async function enrichIndicators(indicators, options = {}) {
+async function enrichIndicators(indicators, investigation, options = {}) {
   const maxIndicators = parseInt(env.MAX_INTELLIGENCE_INDICATORS_PER_SCAN, 10) || DEFAULT_MAX_INDICATORS;
   const limited = indicators.slice(0, maxIndicators);
 
@@ -207,7 +224,7 @@ async function enrichIndicators(indicators, options = {}) {
   const enriched = await Promise.all(
     limited.map(async (indicator) => {
       const [geoResult, vtResult] = await Promise.all([
-        enrichGeo(indicator).catch(err => ({
+        enrichGeo(indicator, investigation).catch(err => ({
           status: 'error',
           errorDetail: err.message,
           source: geoProvider.name,
@@ -229,7 +246,7 @@ async function enrichIndicators(indicators, options = {}) {
 
       return {
         ...indicator,
-        geolocation: indicator.type === 'ip' ? geoResult : null,
+        geolocation: geoResult || null,
         virusTotal: vtResult,
         // Three-state model:
         //   'extracted' = IOC found but no intelligence yet
@@ -261,7 +278,14 @@ async function persistIndicators(enrichedIndicators, investigationId, userId) {
   for (const ind of enrichedIndicators) {
     try {
       const intelligence = new Map();
-      if (ind.virusTotal) intelligence.set('virustotal', ind.virusTotal);
+      let threatStatus = 'unknown';
+      let severity = 'none';
+
+      if (ind.virusTotal) {
+        intelligence.set('virustotal', ind.virusTotal);
+        if (ind.virusTotal.threat) threatStatus = ind.virusTotal.threat;
+        if (ind.virusTotal.severity) severity = ind.virusTotal.severity;
+      }
 
       const doc = await Model.findOneAndUpdate(
         { user: userId, normalizedValue: ind.normalizedValue },
@@ -273,7 +297,10 @@ async function persistIndicators(enrichedIndicators, investigationId, userId) {
             value: ind.value,
             normalizedValue: ind.normalizedValue,
             geolocation: ind.geolocation || null,
+            geolocations: ind.geolocation?.geolocations || [],
             intelligence,
+            threatStatus,
+            severity,
             lastSeen: new Date(),
           },
           $setOnInsert: { firstSeen: new Date() },
@@ -312,7 +339,7 @@ async function enrichInvestigation(investigation) {
   }
 
   // 2. Enrich each indicator (parallel, per-indicator resilient)
-  const enriched = await enrichIndicators(indicators);
+  const enriched = await enrichIndicators(indicators, investigation);
 
   // 3. Persist to DB
   const savedDocs = await persistIndicators(enriched, investigation._id, investigation.user);

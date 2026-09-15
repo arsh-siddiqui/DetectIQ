@@ -56,7 +56,7 @@ describe('Investigation API Tests', () => {
       type: 'ip',
       value: '1.2.3.4',
       normalizedValue: '1.2.3.4',
-      threatStatus: 'flagged'
+      threatStatus: 'malicious'
     });
 
     invA = await EmailInvestigation.create({

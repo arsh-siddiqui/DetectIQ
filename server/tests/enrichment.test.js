@@ -24,7 +24,21 @@ const assert = require('assert');
 const { enrichIndicators, buildIndicators, cacheKey } = require('../services/intelligence/enrichmentService');
 const { normalizeIndicator } = require('../services/intelligence/indicatorNormalizer');
 
+// Mock Mongoose model to avoid hangs
+jest.mock('../models/ThreatIntelCache', () => {
+  return {
+    findOne: jest.fn().mockResolvedValue(null),
+    findOneAndUpdate: jest.fn().mockResolvedValue(null)
+  };
+});
 
+// Mock DNS for E6
+jest.mock('dns', () => ({
+  promises: {
+    resolve4: jest.fn().mockResolvedValue([]),
+    resolve6: jest.fn().mockResolvedValue([])
+  }
+}));
 
 describe('Suite', () => {
   console.log('\n=== ENRICHMENT TESTS ===\n');
@@ -88,7 +102,7 @@ describe('Suite', () => {
     );
   });
 
-  it('E6 — Non-IP indicator geolocation returns skipped', async () => {
+  it('E6 — Non-IP indicator geolocation now proceeds without skipped', async () => {
     const { enrichGeo } = require('../services/intelligence/enrichmentService');
     const domainInd = {
       type: 'domain',
@@ -96,9 +110,10 @@ describe('Suite', () => {
       isPublicIP: null,
       value: 'example.com',
     };
-    const result = await enrichGeo(domainInd);
+    const result = await enrichGeo(domainInd, null);
+    // Because DNS mock returns empty, it will be skipped due to no geo
     assert.strictEqual(result.status, 'skipped');
-    assert.strictEqual(result.reason, 'not_an_ip');
+    assert.strictEqual(result.reason, 'no_geographic_enrichment');
   });
 
   // --- Three-state model ---

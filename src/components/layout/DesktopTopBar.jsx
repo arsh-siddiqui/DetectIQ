@@ -9,10 +9,8 @@ const searchTargets = [
   { label: "Scan URL", to: "/detection/url", keywords: ["scan", "url", "link"] },
   { label: "Scan History", to: "/detection/history", keywords: ["history", "past"] },
   { label: "My Email Patterns", to: "/detection/email-context", keywords: ["email", "patterns", "rag"] },
-  { label: "Security Profile", to: "/security/profile", keywords: ["profile", "security"] },
   { label: "Vulnerabilities", to: "/vulnerabilities", keywords: ["vulnerability", "learn"] },
   { label: "My Progress", to: "/learning/progress", keywords: ["progress", "stats"] },
-  { label: "AI Assistant", to: "/assistant", keywords: ["assistant", "ai", "chat"] },
   { label: "Profile", to: "/profile", keywords: ["profile", "settings"] },
 ];
 

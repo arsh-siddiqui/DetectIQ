@@ -43,7 +43,7 @@ describe('Indicator API Tests', () => {
       type: 'domain',
       value: 'evil.com',
       normalizedValue: 'evil.com',
-      threatStatus: 'flagged'
+      threatStatus: 'malicious'
     });
     
     indA2 = await Indicator.create({
@@ -100,7 +100,7 @@ describe('Indicator API Tests', () => {
     expect(resType.body.indicators[0].normalizedValue).toBe('1.2.3.4');
     
     // Threat Filter
-    const resThreat = await request(app).get('/api/security/indicators?threat=flagged').set('Authorization', authA);
+    const resThreat = await request(app).get('/api/security/indicators?threat=malicious').set('Authorization', authA);
     expect(resThreat.body.total).toBe(1);
     expect(resThreat.body.indicators[0].normalizedValue).toBe('evil.com');
   });

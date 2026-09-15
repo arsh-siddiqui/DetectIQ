@@ -1,5 +1,5 @@
-import { Globe, AlertTriangle } from "lucide-react";
-import IntelligenceMap from "./IntelligenceMap";
+import { Globe, AlertTriangle, MapPin } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
 import ThreatIntelSummary from "./ThreatIntelSummary";
 
 const STATE_LABELS = {
@@ -90,6 +90,9 @@ function IndicatorRow({ indicator }) {
  * Reusable: Uses IntelligenceMap, which is designed for Phase 3 reuse.
  */
 export default function ForensicIntelligencePanel({ geoPoints = [], indicators = [], enrichmentStatus }) {
+  const navigate = useNavigate();
+  const { id } = useParams();
+
   if (!indicators || indicators.length === 0) return null;
 
   const publicIPs = indicators.filter(i => i.type === "ip" && i.isPublicIP);
@@ -130,11 +133,21 @@ export default function ForensicIntelligencePanel({ geoPoints = [], indicators =
 
       {/* Map */}
       {publicIPs.length > 0 && (
-        <div className="mb-8">
-          <h4 className="text-sm font-bold text-primary uppercase tracking-wider mb-3">
-            Approximate IP Location{publicIPs.length > 1 ? "s" : ""}
-          </h4>
-          <IntelligenceMap geoPoints={geoPoints} />
+        <div className="mb-8 border border-border rounded-xl p-4 bg-background flex flex-col md:flex-row items-center justify-between gap-4">
+          <div>
+            <h4 className="text-sm font-bold text-primary uppercase tracking-wider mb-1">
+              Geographic Intelligence
+            </h4>
+            <p className="text-xs text-secondary">
+              {publicIPs.length} indicator{publicIPs.length > 1 ? "s" : ""} have public geolocation data available.
+            </p>
+          </div>
+          <button 
+            onClick={() => navigate(`/security/threat-intelligence?investigation=${id}`)}
+            className="flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-4 py-2 rounded-lg transition-colors font-semibold shadow-sm text-sm whitespace-nowrap"
+          >
+            <MapPin size={16} /> View on Global Threat Map &rarr;
+          </button>
         </div>
       )}
 

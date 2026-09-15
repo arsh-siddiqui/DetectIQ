@@ -6,7 +6,7 @@ const columns = [
     title: "Product",
     links: [
       { label: "Scan Email", to: "/detection/email" },
-      { label: "Security Profile", to: "/security/profile" },
+      { label: "My Progress", to: "/learning/progress" },
       { label: "Vulnerabilities", to: "/vulnerabilities" },
     ],
   },

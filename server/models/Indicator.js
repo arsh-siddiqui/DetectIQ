@@ -36,7 +36,7 @@ const indicatorSchema = new mongoose.Schema(
     },
     threatStatus: {
       type: String,
-      enum: ['clean', 'suspicious', 'flagged', 'unknown'],
+      enum: ['clean', 'suspicious', 'malicious', 'unknown'],
       default: 'unknown'
     },
     severity: {
@@ -53,6 +53,18 @@ const indicatorSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.Mixed,
       default: null,
     },
+    geolocations: [{
+      sourceType: { type: String, enum: ['direct_ip', 'resolved_ip', 'received_header_ip'] },
+      sourceValue: String,
+      country: String,
+      region: String,
+      city: String,
+      latitude: Number,
+      longitude: Number,
+      asn: String,
+      isp: String,
+      checkedAt: Date
+    }],
     tags: [String],
   },
   { timestamps: true }

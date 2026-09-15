@@ -105,9 +105,9 @@ export default function Dashboard() {
 
         {/* Security Overview â€” 2/3 width */}
         <div className="lg:col-span-2 bg-card rounded-xl border border-border p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-primary">Security Overview</h2>
-            <Link to="/security/profile" className="text-xs font-semibold text-accent-blue hover:underline">View Profile</Link>
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-lg font-bold text-primary">Security Posture</h2>
+            <Link to="/learning/progress" className="text-xs font-semibold text-accent-blue hover:underline">View Profile</Link>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">

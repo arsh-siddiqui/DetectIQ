@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LayoutDashboard, ScanLine, ShieldAlert, History, Shield, FileSearch, TrendingUp, BookOpen, User, ShieldCheck, Settings2, LogOut, Bot, Target } from "lucide-react";
+import { LayoutDashboard, ScanLine, ShieldAlert, History, Shield, FileSearch, TrendingUp, BookOpen, User, ShieldCheck, Settings2, LogOut, Bot, Target, Globe } from "lucide-react";
 import { useAppData } from "../../context/AppDataContext";
 
 const navSections = [
@@ -21,9 +21,9 @@ const navSections = [
   {
     title: "Security Intelligence",
     items: [
+      { label: "Threat Intelligence", to: "/security/threat-intelligence", icon: Globe },
       { label: "Investigations", to: "/security/investigations", icon: ShieldAlert },
       { label: "Indicators", to: "/security/indicators", icon: Shield },
-      { label: "Security Profile", to: "/security/profile", icon: TrendingUp },
     ]
   },
   {
@@ -36,7 +36,6 @@ const navSections = [
   {
     title: "",
     items: [
-      { label: "AI Assistant", to: "/assistant", icon: Bot },
       { label: "Profile", to: "/profile", icon: User },
     ]
   }

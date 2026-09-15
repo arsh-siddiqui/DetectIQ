@@ -15,7 +15,7 @@
     "framer-motion": "^13.0.0",
     "jsqr": "^1.4.0",
     "lucide-react": "^1.30.0",
-    "maplibre-gl": "^6.8.0",
+    "maplibre-gl": "^4.7.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-force-graph-2d": "^1.29.1",

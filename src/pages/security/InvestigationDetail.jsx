@@ -9,7 +9,6 @@ import {
 import * as securityService from '../../services/securityService';
 import InvestigationGraph from '../../components/security/InvestigationGraph';
 import InvestigationTimeline from '../../components/security/InvestigationTimeline';
-import IntelligenceMap from '../../components/intelligence/IntelligenceMap';
 import InvestigationCopilot from '../../components/security/InvestigationCopilot';
 import ForensicReportView from '../../components/security/ForensicReportView';
 import ForensicIntelligencePanel from '../../components/intelligence/ForensicIntelligencePanel';

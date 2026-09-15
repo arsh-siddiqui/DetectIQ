@@ -170,7 +170,7 @@ export default function Dashboard() {
           
           <div className="flex items-center justify-between mb-8 relative z-10">
             <h2 className="text-lg font-heading font-extrabold text-primary">Security Posture</h2>
-            <Link to="/security/profile" className="text-xs font-bold text-accent-blue hover:underline">View Details</Link>
+            <Link to="/learning/progress" className="text-xs font-bold text-accent-blue hover:underline">View Details</Link>
           </div>
 
           <div className="flex-1 flex flex-col items-center justify-center relative z-10 mb-8">

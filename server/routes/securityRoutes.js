@@ -15,6 +15,10 @@ const {
   getIndicatorById
 } = require("../controllers/indicatorController");
 
+const {
+  getThreatIntelligenceOverview
+} = require("../controllers/threatIntelligenceController");
+
 // Require authentication for all security routes
 router.use(protect);
 
@@ -29,5 +33,8 @@ router.route("/investigations/:id/report")
 // Indicators
 router.route("/indicators").get(getIndicators);
 router.route("/indicators/:id").get(getIndicatorById);
+
+// Threat Intelligence
+router.route("/threat-intelligence/overview").get(getThreatIntelligenceOverview);
 
 module.exports = router;
