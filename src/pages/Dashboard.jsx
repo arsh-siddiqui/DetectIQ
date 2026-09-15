@@ -276,27 +276,6 @@ export default function Dashboard() {
               )}
             </div>
           </div>
-          
-          {/* Quick Actions */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-            {[
-              { label: "Email", icon: Mail, to: "/detection/email" },
-              { label: "URL", icon: LinkIcon, to: "/detection/url" },
-              { label: "Message", icon: MessageSquare, to: "/detection/message" },
-              { label: "QR Code", icon: QrCode, to: "/detection/qr" },
-            ].map((a) => (
-              <Link
-                key={a.to}
-                to={a.to}
-                className="bg-card rounded-2xl p-4 flex flex-col items-center justify-center gap-3 border border-border hover:bg-secondary/50 transition-colors group text-center shadow-sm"
-              >
-                <div className="w-10 h-10 rounded-xl bg-accent-blue/5 flex items-center justify-center group-hover:bg-accent-blue group-hover:text-white transition-colors text-accent-blue">
-                  <a.icon className="w-5 h-5" />
-                </div>
-                <span className="text-sm font-bold text-primary">{a.label}</span>
-              </Link>
-            ))}
-          </div>
         </div>
       </div>
 

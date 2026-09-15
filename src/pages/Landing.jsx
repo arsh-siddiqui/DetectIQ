@@ -20,7 +20,7 @@ const features = [
   { title: "Interactive Threat Graph", icon: Activity, description: "Trace the connections between domains, emails, and threats visually in 2D space." },
   { title: "Multi-Source Enrichment", icon: Search, description: "Automatically cross-reference indicators with global databases like VirusTotal." },
   { title: "Email Detection", icon: Mail, description: "Analyze senders, links, and intent using AI and personalized baselines." },
-  { title: "Personalized Patterns", icon: ShieldCheck, description: "ML learns your safe contacts to reduce false positives over time." },
+  { title: "Personalized Patterns", icon: ShieldCheck, description: "Compare new emails against patterns from your trusted email history." },
   { title: "Vulnerability Learning", icon: GraduationCap, description: "Master security concepts with interactive, bite-sized lessons based on your profile." },
 ];
 
@@ -197,14 +197,14 @@ export default function Landing() {
           <div className="lg:w-1/2">
             <h2 className="text-3xl md:text-4xl font-heading font-black text-primary mb-6">Learn to spot what AI spots.</h2>
             <p className="text-lg text-secondary leading-relaxed mb-8">
-              Detection is only half the battle. DetectIQ includes an interactive vulnerability learning platform. Understand the anatomy of phishing attacks, practice identifying red flags, and test your knowledge.
+              Detection is only half the battle. DetectIQ helps you understand common security vulnerabilities, recognize warning signs, assess your knowledge, and build better security awareness.
             </p>
             <ul className="space-y-4 mb-10">
               {[
-                "Interactive code & text examples",
-                "Real-world phishing scenarios",
+                "Real-world threat scenarios",
+                "Easy-to-understand vulnerability lessons",
                 "Personalized progress tracking",
-                "Targeted assessments"
+                "Quick security assessments"
               ].map((item, i) => (
                 <li key={i} className="flex items-center gap-3 text-primary font-medium">
                   <CheckCircle2 className="w-5 h-5 text-accent-blue" />
@@ -222,31 +222,39 @@ export default function Landing() {
           </div>
           
           <div className="lg:w-1/2 w-full">
-            <div className="bg-card border border-border p-8 rounded-3xl shadow-elevated relative">
-              <div className="absolute top-4 left-4 flex gap-2">
-                <div className="w-3 h-3 rounded-full bg-danger" />
-                <div className="w-3 h-3 rounded-full bg-amber-400" />
-                <div className="w-3 h-3 rounded-full bg-success" />
+            <div className="bg-card border border-border p-8 rounded-3xl shadow-elevated">
+              <div className="mb-6">
+                <div className="text-xs font-bold text-muted uppercase tracking-wider mb-2">Vulnerability</div>
+                <div className="text-2xl font-heading font-bold text-primary">Phishing</div>
               </div>
-              <div className="mt-8 space-y-6">
+              
+              <div className="space-y-6">
                 <div>
-                  <div className="text-xs font-bold text-muted uppercase tracking-wider mb-2">Vulnerable Example</div>
-                  <div className="p-4 bg-background rounded-xl border border-border font-mono text-sm text-secondary">
-                    {'<a href="http://secure-login-update.com">'}
-                    <br/>
-                    &nbsp;&nbsp;Update Account Settings
-                    <br/>
-                    {'</a>'}
+                  <div className="text-xs font-bold text-muted uppercase tracking-wider mb-2">What is it?</div>
+                  <div className="p-4 bg-background rounded-xl border border-border text-sm text-secondary">
+                    A deceptive attempt to obtain sensitive information.
                   </div>
                 </div>
+                
                 <div>
-                  <div className="text-xs font-bold text-muted uppercase tracking-wider mb-2">Secure Fix</div>
-                  <div className="p-4 bg-accent-blue/10 rounded-xl border border-accent-blue/20 font-mono text-sm text-primary">
-                    {'<a href="https://yourbank.com/settings">'}
-                    <br/>
-                    &nbsp;&nbsp;Update Account Settings
-                    <br/>
-                    {'</a>'}
+                  <div className="text-xs font-bold text-muted uppercase tracking-wider mb-2">How to recognize</div>
+                  <div className="p-4 bg-accent-blue/10 rounded-xl border border-accent-blue/20 text-sm text-primary">
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Urgent requests</li>
+                      <li>Suspicious links</li>
+                      <li>Sender mismatch</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-xs font-bold text-muted uppercase tracking-wider mb-2">Prevention</div>
+                  <div className="p-4 bg-success/10 rounded-xl border border-success/20 text-sm text-success font-medium">
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Verify the sender</li>
+                      <li>Use official websites</li>
+                      <li>Avoid unexpected links</li>
+                    </ul>
                   </div>
                 </div>
               </div>

@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Sun, Moon } from "lucide-react";
+import { Search, Sun, Moon, User, LogOut } from "lucide-react";
 import { useAppData } from "../../context/AppDataContext";
 
 const searchTargets = [
@@ -17,8 +17,20 @@ const searchTargets = [
 export default function DesktopTopBar() {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef(null);
   const navigate = useNavigate();
-  const { user, theme, toggleTheme } = useAppData();
+  const { user, theme, toggleTheme, logout } = useAppData();
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setProfileOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const availableTargets = user?.isAdmin
     ? [...searchTargets, { label: "Admin", to: "/admin", keywords: ["admin"] }]
@@ -35,6 +47,11 @@ export default function DesktopTopBar() {
     setQuery("");
     setOpen(false);
     navigate(to);
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    window.location.href = "/";
   };
 
   return (
@@ -67,7 +84,7 @@ export default function DesktopTopBar() {
       </div>
 
       {/* Right controls */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <button
           onClick={toggleTheme}
           className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-primary hover:bg-secondary border border-border transition-colors"
@@ -75,8 +92,37 @@ export default function DesktopTopBar() {
         >
           {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
-        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-accent-blue to-accent-violet text-white flex items-center justify-center text-xs font-bold">
-          {user?.avatar || user?.name?.[0] || "U"}
+        <div className="relative" ref={profileRef}>
+          <button 
+            onClick={() => setProfileOpen(!profileOpen)}
+            className="w-8 h-8 rounded-full bg-gradient-to-br from-accent-blue to-accent-violet text-white flex items-center justify-center text-xs font-bold focus:outline-none focus:ring-2 focus:ring-accent-blue focus:ring-offset-1 focus:ring-offset-card transition-all shadow-sm"
+          >
+            {user?.avatar || user?.name?.[0] || "U"}
+          </button>
+          
+          {profileOpen && (
+            <div className="absolute top-full right-0 mt-2 w-56 bg-elevated rounded-xl shadow-elevated border border-border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+              <div className="px-4 py-3 border-b border-border">
+                <div className="text-sm font-semibold text-primary truncate">{user?.name}</div>
+                <div className="text-xs text-muted truncate">{user?.email || user?.role}</div>
+              </div>
+              <div className="py-1">
+                <button
+                  onClick={() => { setProfileOpen(false); navigate('/profile'); }}
+                  className="w-full text-left px-4 py-2.5 text-sm text-primary hover:bg-secondary flex items-center gap-3 transition-colors"
+                >
+                  <User className="w-[18px] h-[18px] text-muted" /> Profile
+                </button>
+                <div className="my-1 border-t border-border"></div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-2.5 text-sm text-danger hover:bg-danger/10 flex items-center gap-3 transition-colors"
+                >
+                  <LogOut className="w-[18px] h-[18px] text-danger" /> Log Out
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>

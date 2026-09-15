@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Mail, Globe, MessageSquare, QrCode, Image as ImageLucide, ShieldAlert, Loader2, ScanSearch, UploadCloud, CheckCircle, ShieldCheck, Lock, FileText, Upload } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Mail, Globe, MessageSquare, QrCode, Image as ImageLucide, ShieldAlert, Loader2, ScanSearch, UploadCloud, ShieldCheck, Lock, FileText, Upload } from "lucide-react";
 import Button from "../../components/ui/Button";
 import { submitScan, submitEml } from "../../services/detectionService";
 import jsQR from "jsqr";
@@ -25,8 +25,6 @@ export default function Scan() {
   const [emailSender, setEmailSender] = useState("");
   const [emailRecipient, setEmailRecipient] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
-  const [emailCc, setEmailCc] = useState("");
-  const [emailReplyTo, setEmailReplyTo] = useState("");
 
   
   const [isScanning, setIsScanning] = useState(false);
@@ -79,8 +77,6 @@ export default function Scan() {
           sourceType: 'pasted_email',
           sender: emailSender,
           recipient: emailRecipient,
-          cc: emailCc,
-          replyTo: emailReplyTo,
           subject: emailSubject,
           body: content
         };

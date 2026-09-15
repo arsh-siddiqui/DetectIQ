@@ -1,4 +1,5 @@
 const { askCopilot } = require('../services/ai/copilotService');
+const env = require('../config/env');
 const axios = require('axios');
 const mongoose = require('mongoose');
 
@@ -7,7 +8,7 @@ jest.mock('axios');
 describe('copilotService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.GROQ_API_KEY = 'test_key';
+    env.GROQ_API_KEY = 'test_key';
   });
 
   it('should reject oversized questions', async () => {

@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
 
 
-import { Shield, Info, Map as MapIcon, RotateCcw, AlertTriangle, Maximize2, Minimize2, Copy, ExternalLink, Check } from "lucide-react";
+import { Shield, Info, Map as MapIcon, RotateCcw, AlertTriangle, Maximize2, Minimize2 } from "lucide-react";
 
 import { indicatorToGeoPoints, buildMapGeoJSON } from "../../utils/intelligenceMapping";
 
@@ -32,6 +32,18 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
 
   const geoJsonData = useMemo(() => buildMapGeoJSON(geoPoints), [geoPoints]);
   const validPointsCount = geoJsonData.features.length;
+
+  // Track latest data in refs to avoid stale closures in map load event
+  const geoJsonRef = useRef(geoJsonData);
+  const selectedIndicatorIdRef = useRef(selectedIndicatorId);
+
+  useEffect(() => {
+    geoJsonRef.current = geoJsonData;
+  }, [geoJsonData]);
+
+  useEffect(() => {
+    selectedIndicatorIdRef.current = selectedIndicatorId;
+  }, [selectedIndicatorId]);
 
   useEffect(() => {
     if (mapError) return;
@@ -72,7 +84,7 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
 
         map.addSource('locations', {
           type: 'geojson',
-          data: geoJsonData,
+          data: geoJsonRef.current,
           cluster: true,
           clusterMaxZoom: 14,
           clusterRadius: 50,
@@ -195,7 +207,7 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
         map.on('mouseenter', 'unclustered-point', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'unclustered-point', () => { map.getCanvas().style.cursor = ''; });
 
-        if (validPointsCount > 0) {
+        if (geoJsonRef.current.features.length > 0) {
           fitLocations(true); // pass true for initial fit
         }
       });
@@ -300,6 +312,31 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
               ${props.asn ? `<div class="text-gray-500">${props.asn}</div>` : ''}
             </div>
           ` : ''}
+          ${props.abuseIpDbStatus === 'available' && props.abuseReports > 0 ? `
+            <div class="mt-2 flex flex-col gap-0.5 bg-red-50 p-2 rounded border border-red-100">
+              <div class="text-[10px] font-bold text-red-800 uppercase tracking-wider">AbuseIPDB</div>
+              <div class="flex justify-between items-center text-red-700 font-medium">
+                <span>Confidence: ${props.abuseConfidenceScore}%</span>
+                <span>Reports: ${props.abuseReports}</span>
+              </div>
+            </div>
+          ` : ''}
+          ${props.urlhausStatus && props.urlhausStatus !== 'skipped' ? `
+            <div class="mt-2 flex flex-col gap-0.5 ${props.urlhausThreat === 'malicious' ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'} p-2 rounded border">
+              <div class="text-[10px] font-bold ${props.urlhausThreat === 'malicious' ? 'text-red-800' : 'text-gray-600'} uppercase tracking-wider">URLhaus</div>
+              <div class="flex justify-between items-center ${props.urlhausThreat === 'malicious' ? 'text-red-700' : 'text-gray-600'} font-medium">
+                <span>${props.urlhausStatus === 'available' ? (props.urlhausThreat === 'malicious' ? 'Malicious URL' : 'Available') : (props.urlhausStatus === 'not_observed' ? 'Not observed' : 'Unavailable')}</span>
+              </div>
+            </div>
+          ` : ''}
+          ${props.otxStatus && props.otxStatus !== 'skipped' ? `
+            <div class="mt-2 flex flex-col gap-0.5 ${props.otxPulseCount > 0 ? 'bg-orange-50 border-orange-100' : 'bg-gray-50 border-gray-100'} p-2 rounded border">
+              <div class="text-[10px] font-bold ${props.otxPulseCount > 0 ? 'text-orange-800' : 'text-gray-600'} uppercase tracking-wider">AlienVault OTX</div>
+              <div class="flex justify-between items-center ${props.otxPulseCount > 0 ? 'text-orange-700' : 'text-gray-600'} font-medium">
+                <span>${props.otxStatus === 'available' ? (props.otxPulseCount > 0 ? `Observed in ${props.otxPulseCount} pulse${props.otxPulseCount > 1 ? 's' : ''}` : 'Available (No Pulses)') : (props.otxStatus === 'not_observed' ? 'Not observed' : 'Unavailable')}</span>
+              </div>
+            </div>
+          ` : ''}
         </div>
         
         <div class="mt-auto pt-2 border-t border-gray-200 flex items-center gap-2">
@@ -328,7 +365,7 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
     setTimeout(() => {
       const copyBtn = document.getElementById(`copy-indicator-btn-${props.id}`);
       if (copyBtn) {
-        copyBtn.addEventListener('click', (e) => {
+        copyBtn.addEventListener('click', () => {
           navigator.clipboard.writeText(props.ip);
           const originalHtml = copyBtn.innerHTML;
           copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><polyline points="20 6 9 17 4 12"></polyline></svg> <span class="text-green-700">Copied</span>`;
@@ -347,14 +384,18 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
   };
 
   const fitLocations = (initial = false) => {
-    if (!mapRef.current || validPointsCount === 0) return;
+    const currentGeoJson = geoJsonRef.current;
+    const currentValidPointsCount = currentGeoJson.features.length;
+    const currentSelectedId = selectedIndicatorIdRef.current;
+
+    if (!mapRef.current || currentValidPointsCount === 0) return;
     
     // If selectedIndicatorId exists, we shouldn't fit to all locations,
     // the other useEffect will fly to the specific indicator
-    if (selectedIndicatorId && initial) return;
+    if (currentSelectedId && initial) return;
 
-    if (validPointsCount === 1) {
-      const p = geoJsonData.features[0].geometry.coordinates;
+    if (currentValidPointsCount === 1) {
+      const p = currentGeoJson.features[0].geometry.coordinates;
       mapRef.current.flyTo({
         center: p,
         zoom: 8,
@@ -364,7 +405,7 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
     }
 
     const bounds = new window.maplibregl.LngLatBounds();
-    geoJsonData.features.forEach(f => {
+    currentGeoJson.features.forEach(f => {
       bounds.extend(f.geometry.coordinates);
     });
     

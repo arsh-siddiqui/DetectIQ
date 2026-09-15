@@ -42,7 +42,7 @@ function parseReceivedHeaders(headers) {
       // Improved regex to avoid greedy matches on folded headers
       const fromMatch = line.match(/from\s+((?:(?!by|with|id|for).)+)/i);
       const byMatch = line.match(/by\s+((?:(?!with|id|for).)+)/i);
-      const withMatch = line.match(/with\s+([a-zA-Z0-9_\-]+)/i);
+      const withMatch = line.match(/with\s+([a-zA-Z0-9_-]+)/i);
       const idMatch = line.match(/id\s+([^\s;]+)/i);
       const forMatch = line.match(/for\s+<([^>]+)>/i);
       

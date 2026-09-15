@@ -38,7 +38,10 @@ function buildResult(signals, riskLevel) {
   } else if (riskLevel === 'medium') {
     summary = 'This message has some warning signs but isn\'t a clear-cut scam. Treat it with caution before acting.';
   } else {
-    summary = 'This message looks mostly legitimate, with only minor points worth a second glance.';
+    // Low risk with signals: neutral, deterministic language — no implied AI judgment
+    summary = signals.length > 0
+      ? 'This content has minor indicators that warrant a closer look, but no confirmed threats were detected.'
+      : 'No suspicious indicators were found. This content appears safe based on deterministic analysis.';
   }
 
   // 3. Map Reasons
@@ -69,9 +72,19 @@ function buildResult(signals, riskLevel) {
     if (hasSignal('payment_request') || hasSignal('job_scam') || hasSignal('investment_scam')) {
       recommendations.push('Do NOT send any money or pay an upfront fee.');
     }
-    if (hasSignal('brand_impersonation') || hasSignal('typosquatting') || hasSignal('credential_path') || hasSignal('url_shortener')) {
+    // Confirmed deceptive domain: strong "do not click" language
+    if (hasSignal('brand_impersonation') || hasSignal('typosquatting')) {
       recommendations.push('Do not click the link or download any attachment.');
       recommendations.push('Navigate to the organization\'s official website manually.');
+    }
+    // Credential-oriented path without confirmed deceptive domain: softer verification language
+    if (hasSignal('credential_path') && !hasSignal('brand_impersonation') && !hasSignal('typosquatting')) {
+      recommendations.push('Verify the request through the organization\'s official website.');
+      recommendations.push('Avoid entering credentials until the request is independently verified.');
+    }
+    // URL shortener without confirmed deceptive domain: moderate caution
+    if (hasSignal('url_shortener') && !hasSignal('brand_impersonation') && !hasSignal('typosquatting')) {
+      recommendations.push('Avoid clicking shortened links from unknown or unverified senders.');
     }
     if (hasSignal('urgency') || hasSignal('threat') || hasSignal('fake_authority')) {
       recommendations.push('Verify the request through an official, trusted channel (like calling the bank directly).');

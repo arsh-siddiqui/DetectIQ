@@ -9,6 +9,7 @@
 const ForensicReport = require('../../models/ForensicReport');
 const { buildEvidencePackage } = require('../ai/investigationEvidenceBuilder');
 const { askCopilot } = require('../ai/copilotService');
+const { buildEmailIntelligenceSummary } = require('../intelligence/emailIntelligenceService');
 
 /**
  * Derives limitations based on the available evidence.
@@ -49,6 +50,9 @@ function deriveLimitations(investigation, scan, indicators) {
  */
 async function generateReport(user, investigation, scan, indicators, timeline, graph) {
   // 1. Snapshot Evidence
+  if (investigation.sourceType === 'eml_upload' || investigation.sourceType === 'pasted_email') {
+    investigation.emailIntelligence = buildEmailIntelligenceSummary(investigation);
+  }
   const { package: evidenceSnapshot } = buildEvidencePackage(investigation, scan, indicators, timeline, graph);
 
   // 2. Deterministic Sections

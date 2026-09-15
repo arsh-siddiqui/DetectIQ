@@ -2,6 +2,7 @@ const express = require("express");
 const {
   getProfile,
   updateProfile,
+  changePassword,
   getDashboardData,
   getScanHistory,
   getScanById,
@@ -17,6 +18,7 @@ router.use(requireDb, protect);
 
 router.get("/profile", getProfile);
 router.put("/profile", updateProfile);
+router.put("/password", changePassword);
 router.get("/dashboard", getDashboardData);
 router.get("/scans", getScanHistory);
 router.get("/scans/:id", getScanById);

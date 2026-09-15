@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, AlertCircle, Search, HelpCircle, Loader2 } from 'lucide-react';
+import { Send, Bot, AlertCircle, Search, HelpCircle, Loader2, FileText } from 'lucide-react';
 import * as copilotService from '../../services/copilotService';
 
 const SUGGESTED_QUESTIONS = [
@@ -10,7 +10,7 @@ const SUGGESTED_QUESTIONS = [
   "Summarize this investigation."
 ];
 
-export default function InvestigationCopilot({ investigationId, onCitationClick }) {
+export default function InvestigationCopilot({ investigationId, investigation, onCitationClick }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -49,17 +49,87 @@ export default function InvestigationCopilot({ investigationId, onCitationClick 
     }
   };
 
+  const formatEvidenceLabel = (id) => {
+    if (!id) return '';
+    if (id === 'E_VERDICT') return 'Evidence · Detection Verdict';
+    if (id === 'E_AUTH') return 'Evidence · Authentication';
+    if (id === 'E_ROUTE') return 'Evidence · Routing';
+    if (id === 'E_EMAIL_ID') return 'Evidence · Email Identity';
+    if (id.startsWith('E_IND_')) {
+      const num = id.split('_')[2];
+      return `Evidence · Indicator ${num}`;
+    }
+    if (id.startsWith('E_ATT_')) {
+      const num = id.split('_')[2];
+      return `Evidence · Attachment ${num}`;
+    }
+    return `Evidence · ${id.replace(/^E_/, '')}`;
+  };
+
+  const replaceEvidenceIdsInText = (text) => {
+    if (!text || typeof text !== 'string') return text;
+    return text
+      .replace(/\[E_VERDICT\]/g, 'Evidence · Detection Verdict')
+      .replace(/\[E_AUTH\]/g, 'Evidence · Authentication')
+      .replace(/\[E_ROUTE\]/g, 'Evidence · Routing')
+      .replace(/\[E_EMAIL_ID\]/g, 'Evidence · Email Identity')
+      .replace(/\[E_IND_(\d+)\]/g, 'Evidence · Indicator $1')
+      .replace(/\[E_ATT_(\d+)\]/g, 'Evidence · Attachment $1');
+  };
+
+  const getProviderState = () => {
+    const coverage = investigation?.emailIntelligenceSummary?.providerCoverage;
+    if (coverage && typeof coverage === 'object') {
+      const vals = Object.values(coverage);
+      if (vals.some(v => v === 'unavailable')) return 'unavailable';
+      if (vals.length > 0 && vals.every(v => v === 'not_configured')) return 'not_configured';
+      if (vals.some(v => v === 'not_observed')) return 'not_observed';
+    }
+
+    const indicators = investigation?.indicators || [];
+    if (indicators.length > 0) {
+      const statuses = indicators.map(ind => ind.threatStatus || ind.intelligence?.status).filter(Boolean);
+      if (statuses.some(s => s === 'unavailable')) return 'unavailable';
+      if (statuses.length > 0 && statuses.every(s => s === 'not_configured')) return 'not_configured';
+      if (statuses.some(s => s === 'not_observed' || s === 'benign' || s === 'clear')) return 'not_observed';
+    }
+
+    const enrichment = investigation?.analystSummary?.enrichmentStatus || investigation?.enrichmentStatus;
+    if (enrichment === 'not_configured') return 'not_configured';
+    if (enrichment === 'failed') return 'unavailable';
+
+    return 'not_observed';
+  };
+
+  const formatUncertainty = (text) => {
+    if (!text || typeof text !== 'string') return text;
+    const tiRegex = /no threat intelligence (?:is )?available/i;
+    if (tiRegex.test(text)) {
+      const state = getProviderState();
+      if (state === 'unavailable') {
+        return "Threat intelligence could not be determined because the provider was unavailable.";
+      }
+      if (state === 'not_configured') {
+        return "Threat intelligence could not be determined because the provider was not configured.";
+      }
+      return "No confirmed malicious observation was found for the relevant URLs or domains.";
+    }
+    return replaceEvidenceIdsInText(text);
+  };
+
   const renderEvidenceCitations = (ids) => {
     if (!ids || ids.length === 0) return null;
     return (
-      <div className="flex flex-wrap gap-1 mt-2">
+      <div className="flex flex-wrap gap-1.5 mt-2.5">
         {ids.map(id => (
           <button
             key={id}
+            type="button"
             onClick={() => onCitationClick && onCitationClick(id)}
-            className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30 hover:bg-purple-500/40 transition-colors"
+            className="text-[11px] font-medium text-accent-violet bg-accent-violet/10 hover:bg-accent-violet/20 px-2 py-0.5 rounded border border-accent-violet/20 transition-colors flex items-center gap-1 cursor-pointer"
           >
-            [{id}]
+            <FileText size={11} />
+            {formatEvidenceLabel(id)}
           </button>
         ))}
       </div>
@@ -68,16 +138,24 @@ export default function InvestigationCopilot({ investigationId, onCitationClick 
 
   const renderAssistantMessage = (data) => {
     return (
-      <div className="space-y-4 text-sm text-slate-300">
-        {data.summary && <p className="leading-relaxed">{data.summary}</p>}
-        {data.overallAssessment && <p className="leading-relaxed">{data.overallAssessment}</p>}
+      <div className="space-y-4 text-sm text-slate-900 dark:text-slate-100 font-normal">
+        {data.summary && (
+          <p className="leading-relaxed text-slate-900 dark:text-slate-100 font-medium">
+            {replaceEvidenceIdsInText(data.summary)}
+          </p>
+        )}
+        {data.overallAssessment && (
+          <p className="leading-relaxed text-slate-800 dark:text-slate-200">
+            {replaceEvidenceIdsInText(data.overallAssessment)}
+          </p>
+        )}
 
         {data.keyFindings?.length > 0 && (
-          <div className="bg-secondary/50 p-3 rounded-lg border border-border/50">
-            <h4 className="font-semibold text-primary mb-2">Key Findings</h4>
-            <ul className="space-y-3">
+          <div className="bg-card p-4 rounded-lg border border-border/80 shadow-xs">
+            <h4 className="font-bold text-slate-900 dark:text-white mb-3 text-[15px]">Key Findings</h4>
+            <ul className="space-y-3.5">
               {data.keyFindings.map((kf, i) => (
-                <li key={i}>
+                <li key={i} className="border-b border-border/40 pb-3 last:border-b-0 last:pb-0">
                   <div className="flex items-center gap-2">
                     <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${
                       kf.severity === 'critical' ? 'bg-danger/20 text-danger' :
@@ -87,9 +165,11 @@ export default function InvestigationCopilot({ investigationId, onCitationClick 
                     }`}>
                       {kf.severity}
                     </span>
-                    <span className="font-medium text-primary">{kf.title}</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{replaceEvidenceIdsInText(kf.title)}</span>
                   </div>
-                  <p className="text-muted mt-1">{kf.description}</p>
+                  <p className="text-slate-800 dark:text-slate-200 mt-1.5 text-sm leading-relaxed">
+                    {replaceEvidenceIdsInText(kf.description)}
+                  </p>
                   {renderEvidenceCitations(kf.evidenceIds)}
                 </li>
               ))}
@@ -98,26 +178,30 @@ export default function InvestigationCopilot({ investigationId, onCitationClick 
         )}
 
         {data.uncertainties?.length > 0 && (
-          <div className="bg-warning/5 p-3 rounded-lg border border-warning/20">
-            <h4 className="font-semibold text-warning mb-2 flex items-center gap-1">
-              <HelpCircle size={14} /> Missing Evidence
+          <div className="bg-amber-500/10 p-4 rounded-lg border border-amber-500/20">
+            <h4 className="font-bold text-amber-950 dark:text-amber-300 mb-2 flex items-center gap-1.5 text-sm">
+              <HelpCircle size={15} /> Missing Evidence
             </h4>
-            <ul className="list-disc list-inside space-y-1">
+            <ul className="list-disc list-inside space-y-1.5">
               {data.uncertainties.map((u, i) => (
-                <li key={i} className="text-warning">{u}</li>
+                <li key={i} className="text-slate-900 dark:text-slate-100 text-sm leading-relaxed font-medium">
+                  {formatUncertainty(u)}
+                </li>
               ))}
             </ul>
           </div>
         )}
 
         {data.recommendedActions?.length > 0 && (
-          <div className="bg-accent-blue/5 p-3 rounded-lg border border-accent-blue/20">
-            <h4 className="font-semibold text-accent-blue mb-2">Recommended Actions</h4>
+          <div className="bg-accent-blue/5 p-4 rounded-lg border border-accent-blue/20">
+            <h4 className="font-bold text-blue-900 dark:text-accent-blue mb-2.5 text-sm">Recommended Actions</h4>
             <ul className="space-y-3">
               {data.recommendedActions.map((ra, i) => (
                 <li key={i}>
-                  <p className="font-medium text-primary">{ra.action}</p>
-                  <p className="text-muted text-xs mt-0.5">{ra.reason}</p>
+                  <p className="font-semibold text-slate-900 dark:text-white">{replaceEvidenceIdsInText(ra.action)}</p>
+                  <p className="text-slate-700 dark:text-slate-300 text-xs mt-0.5 leading-relaxed">
+                    {replaceEvidenceIdsInText(ra.reason)}
+                  </p>
                   {renderEvidenceCitations(ra.evidenceIds)}
                 </li>
               ))}
@@ -177,7 +261,7 @@ export default function InvestigationCopilot({ investigationId, onCitationClick 
                   ? 'bg-accent-violet text-white rounded-tr-sm' 
                   : msg.role === 'error'
                   ? 'bg-danger/10 border border-danger/20 text-danger rounded-tl-sm'
-                  : 'bg-secondary border border-border text-primary rounded-tl-sm shadow-sm'
+                  : 'bg-secondary/70 border border-border text-slate-900 dark:text-slate-100 rounded-tl-sm shadow-sm'
               }`}>
                 {msg.role === 'user' ? msg.content : msg.role === 'error' ? (
                   <div className="flex items-center gap-2">

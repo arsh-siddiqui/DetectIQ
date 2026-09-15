@@ -28,9 +28,10 @@ export default function ScanResult() {
   useEffect(() => {
     async function load() {
       try {
+        setLoading(true);
         const data = await getScanResult(id);
         setScan(data);
-      } catch (err) {
+      } catch {
         setError("Failed to load scan result.");
       } finally {
         setLoading(false);
@@ -62,13 +63,12 @@ export default function ScanResult() {
     );
   }
 
-  const isSafe = scan.riskLevel === 'safe' || scan.riskLevel === 'low';
-  const isMedium = scan.riskLevel === 'medium';
+  const isNeedsReview = scan.classification === 'needs_review';
+  const isSafe = (scan.riskLevel === 'safe' || scan.riskLevel === 'low') && !isNeedsReview;
+  const isMedium = scan.riskLevel === 'medium' || isNeedsReview;
   const isDanger = scan.riskLevel === 'high' || scan.riskLevel === 'critical';
 
   const riskColor = isDanger ? 'text-danger' : isMedium ? 'text-warning' : 'text-success';
-  const riskBg = isDanger ? 'bg-danger' : isMedium ? 'bg-warning' : 'bg-success';
-  const riskLightBg = isDanger ? 'bg-danger/10' : isMedium ? 'bg-warning/10' : 'bg-success/10';
   const RiskIcon = isDanger ? ShieldAlert : isMedium ? AlertTriangle : ShieldCheck;
 
   // Evidence — items have { source, title, detail, severity }
@@ -78,6 +78,16 @@ export default function ScanResult() {
   const threatIntel = evidenceList.filter(e => e.source === 'PhishDestroy' || e.source === 'Threat_Intelligence' || e.source === 'VirusTotal');
   const personalization = evidenceList.filter(e => e.source === 'Personalization_RAG');
   
+  // Human-readable classification labels
+  const CLASSIFICATION_LABEL = {
+    phishing: 'Phishing',
+    suspicious: 'Suspicious',
+    needs_review: 'Needs Review',
+    legitimate: 'Legitimate',
+  };
+
+  const displayClassification = CLASSIFICATION_LABEL[scan.classification] || scan.classification;
+
   const displayTarget = scan.target || scan.heuristicResult?.category || 'Scanned Content';
   const analysisType = scan.scanType || 'unknown';
   const inputType = scan.inputType || analysisType;
@@ -85,7 +95,6 @@ export default function ScanResult() {
   // Derive booleans based on analysisType (what pipeline processed it)
   const isUrlAnalysis = analysisType === 'url';
   const isEmailAnalysis = analysisType === 'email';
-  const isMessageAnalysis = analysisType === 'message';
 
   // Specific booleans for display
   const isQrInput = inputType === 'qr';
@@ -165,7 +174,7 @@ export default function ScanResult() {
             </div>
             
             <h1 className={`text-4xl md:text-5xl font-heading font-black mb-4 capitalize tracking-tight ${riskColor}`}>
-              {scan.classification}
+              {displayClassification}
             </h1>
             
             <p className="text-secondary font-medium text-base md:text-lg break-all max-w-2xl leading-relaxed">
@@ -179,7 +188,9 @@ export default function ScanResult() {
               <div className={`text-4xl font-heading font-black tracking-tight ${riskColor}`}>{scan.riskScore}<span className="text-xl text-muted font-bold">/100</span></div>
             </div>
             <div className="flex-1 md:flex-none bg-card/80 backdrop-blur-md p-6 rounded-2xl border border-border shadow-sm flex flex-col items-center justify-center min-w-[160px]">
-              <div className="text-xs font-bold text-muted uppercase tracking-wider mb-1">AI Confidence</div>
+              <div className="text-xs font-bold text-muted uppercase tracking-wider mb-1">
+                {scan.ml?.status === 'available' ? 'AI Confidence' : 'Detection Confidence'}
+              </div>
               <div className="text-4xl font-heading font-black tracking-tight text-primary">{confidenceDisplay}<span className="text-xl text-muted font-bold">%</span></div>
             </div>
           </div>

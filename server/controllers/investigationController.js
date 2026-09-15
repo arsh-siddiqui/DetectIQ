@@ -6,6 +6,7 @@ const { generateInvestigationTimeline } = require("../services/intelligence/inve
 const { askCopilot } = require("../services/ai/copilotService");
 const { generateReport } = require("../services/reports/forensicReportService");
 const ForensicReport = require("../models/ForensicReport");
+const { buildEmailIntelligenceSummary } = require("../services/intelligence/emailIntelligenceService");
 
 /**
  * @route   GET /api/security/investigations
@@ -108,6 +109,9 @@ exports.getInvestigationById = asyncHandler(async (req, res) => {
   // Construct derived data
   const graphData = generateInvestigationGraph(investigation, investigation.indicators || []);
   const timelineData = generateInvestigationTimeline(investigation);
+  const emailIntelligence = investigation.sourceType === 'eml_upload' || investigation.sourceType === 'pasted_email' 
+    ? buildEmailIntelligenceSummary(investigation) 
+    : null;
 
   // Strip huge/unnecessary raw payload data (e.g. raw plainText, normalizedText) to keep API responsive
   if (investigation.body) {
@@ -143,7 +147,8 @@ exports.getInvestigationById = asyncHandler(async (req, res) => {
     indicators: investigation.indicators || [],
     analystSummary: summary,
     timeline: timelineData,
-    graph: graphData
+    graph: graphData,
+    emailIntelligence
   });
 });
 

@@ -21,7 +21,7 @@ function extractUrls(text) {
  * @param {string} type - "url", "email", "sms", "whatsapp", or "qr"
  * @returns {Array} - Combined, deduplicated list of signals.
  */
-function detectSignals(content, type) {
+function detectSignals(content, type, options = {}) {
   let signals = [];
   const text = String(content || '').trim();
 
@@ -34,10 +34,10 @@ function detectSignals(content, type) {
     // If it's literally just a URL string, extractUrls should grab it.
     const urls = extractUrls(text);
     if (urls.length > 0) {
-      signals.push(...analyzeUrl(urls[0])); // analyze primary URL
+      signals.push(...analyzeUrl(urls[0], options)); // analyze primary URL
     } else {
       // If it looks like text but was submitted as URL/QR
-      signals.push(...analyzeUrl(text));
+      signals.push(...analyzeUrl(text, options));
     }
   } else {
     // For messages: Email, SMS, WhatsApp
@@ -46,7 +46,7 @@ function detectSignals(content, type) {
     // Additionally extract any embedded URLs and analyze them
     const urls = extractUrls(text);
     urls.forEach(urlStr => {
-      signals.push(...analyzeUrl(urlStr));
+      signals.push(...analyzeUrl(urlStr, options));
     });
   }
 

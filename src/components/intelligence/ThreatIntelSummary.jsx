@@ -4,9 +4,7 @@ import { format } from 'date-fns';
 import { normalizeVTState } from '../../utils/intelligenceMapping';
 
 export default function ThreatIntelSummary({ intelligence }) {
-  const vt = intelligence?.virusTotal || intelligence?.virustotal;
-
-  if (!intelligence || !vt) {
+  if (!intelligence || Object.keys(intelligence).length === 0) {
     return (
       <div className="bg-card/40 rounded-xl p-5 border border-border flex items-center justify-center text-secondary text-sm">
         No threat intelligence available.
@@ -14,6 +12,27 @@ export default function ThreatIntelSummary({ intelligence }) {
     );
   }
 
+  const vt = intelligence.virustotal || intelligence.virusTotal;
+  const abuseIpDb = intelligence.abuseipdb || intelligence.abuseIpDb;
+  const urlhaus = intelligence.urlhaus;
+  const otx = intelligence.otx;
+
+  const cards = [];
+  if (vt) cards.push(<VirusTotalCard key="vt" vt={vt} />);
+  if (abuseIpDb) cards.push(<AbuseIpDbCard key="abuse" data={abuseIpDb} />);
+  if (urlhaus) cards.push(<UrlhausCard key="urlhaus" data={urlhaus} />);
+  if (otx) cards.push(<OtxCard key="otx" data={otx} />);
+
+  const gridClass = cards.length === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2";
+
+  return (
+    <div className={`grid ${gridClass} gap-4`}>
+      {cards}
+    </div>
+  );
+}
+
+function VirusTotalCard({ vt }) {
   const stateInfo = normalizeVTState(vt);
 
   // Icon mapping
@@ -98,6 +117,191 @@ export default function ThreatIntelSummary({ intelligence }) {
           <div className="mt-auto flex items-center gap-1.5 text-xs text-muted pt-3 border-t border-border/50">
             <Clock className="w-3.5 h-3.5" />
             <span>Last checked: {format(new Date(vt.checkedAt), 'MMM d, yyyy HH:mm')}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AbuseIpDbCard({ data }) {
+  let Icon = HelpCircle;
+  let colorClass = 'text-secondary';
+  let bgClass = 'bg-secondary/10';
+  let borderClass = 'border-border';
+  let label = 'No abuse reports';
+
+  if (data.status === 'skipped' || data.status === 'rate_limited' || data.status === 'error') {
+    Icon = AlertTriangle;
+    label = data.status === 'skipped' ? 'Not configured' : 'Unavailable';
+  } else if (data.totalReports > 0) {
+    Icon = ShieldAlert;
+    colorClass = 'text-danger';
+    bgClass = 'bg-danger/10';
+    borderClass = 'border-danger/30';
+    label = 'Abuse reported';
+  } else if (data.status === 'available' && data.totalReports === 0) {
+    Icon = ShieldCheck;
+  }
+
+  return (
+    <div className={`rounded-xl border ${borderClass} bg-card overflow-hidden flex flex-col h-full`}>
+      <div className="p-4 border-b border-border bg-background/50 flex items-center justify-between">
+        <h4 className="font-semibold text-primary">AbuseIPDB</h4>
+        <div className={`px-2.5 py-1 rounded flex items-center gap-1.5 ${bgClass} ${colorClass} border ${borderClass}`}>
+          <Icon className="w-4 h-4" />
+          <span className="text-xs font-bold uppercase tracking-wider">{label}</span>
+        </div>
+      </div>
+      
+      <div className="p-5 flex-1 flex flex-col justify-center">
+        <p className="text-sm font-medium text-primary mb-4 leading-relaxed">
+          {data.summary || 'No data available.'}
+        </p>
+
+        {data.status === 'available' && data.totalReports > 0 && (
+          <div className="grid grid-cols-2 gap-4 mb-5">
+            <div>
+              <div className="text-xs text-secondary uppercase tracking-wider mb-1">Total Reports</div>
+              <div className="text-3xl font-bold font-mono text-primary">{data.totalReports}</div>
+            </div>
+            <div>
+              <div className="text-xs text-secondary uppercase tracking-wider mb-1">Confidence Score</div>
+              <div className="text-3xl font-bold font-mono text-danger">{data.abuseConfidenceScore}%</div>
+            </div>
+          </div>
+        )}
+
+        {data.checkedAt && (
+          <div className="mt-auto flex items-center gap-1.5 text-xs text-muted pt-3 border-t border-border/50">
+            <Clock className="w-3.5 h-3.5" />
+            <span>Last checked: {format(new Date(data.checkedAt), 'MMM d, yyyy HH:mm')}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function UrlhausCard({ data }) {
+  let Icon = HelpCircle;
+  let colorClass = 'text-secondary';
+  let bgClass = 'bg-secondary/10';
+  let borderClass = 'border-border';
+  let label = 'Not observed';
+
+  if (data.status === 'skipped' || data.status === 'rate_limited' || data.status === 'error') {
+    Icon = AlertTriangle;
+    label = data.status === 'skipped' ? 'Not configured' : 'Unavailable';
+  } else if (data.status === 'available' && data.threat === 'malicious') {
+    Icon = ShieldAlert;
+    colorClass = 'text-danger';
+    bgClass = 'bg-danger/10';
+    borderClass = 'border-danger/30';
+    label = 'Malicious URL';
+  }
+
+  return (
+    <div className={`rounded-xl border ${borderClass} bg-card overflow-hidden flex flex-col h-full`}>
+      <div className="p-4 border-b border-border bg-background/50 flex items-center justify-between">
+        <h4 className="font-semibold text-primary">URLhaus</h4>
+        <div className={`px-2.5 py-1 rounded flex items-center gap-1.5 ${bgClass} ${colorClass} border ${borderClass}`}>
+          <Icon className="w-4 h-4" />
+          <span className="text-xs font-bold uppercase tracking-wider">{label}</span>
+        </div>
+      </div>
+      
+      <div className="p-5 flex-1 flex flex-col justify-center">
+        <p className="text-sm font-medium text-primary mb-4 leading-relaxed">
+          {data.summary || 'No data available.'}
+        </p>
+
+        {data.status === 'available' && data.tags && data.tags.length > 0 && (
+          <div className="mb-4">
+             <div className="text-xs text-secondary uppercase tracking-wider mb-2">Tags</div>
+             <div className="flex flex-wrap gap-1.5">
+               {data.tags.map(tag => (
+                 <span key={tag} className="px-2 py-0.5 bg-secondary text-xs rounded border border-border text-primary">{tag}</span>
+               ))}
+             </div>
+          </div>
+        )}
+
+        {data.firstSeen && (
+          <div className="mt-auto flex items-center gap-1.5 text-xs text-muted pt-3 border-t border-border/50">
+            <Clock className="w-3.5 h-3.5" />
+            <span>Added: {format(new Date(data.firstSeen), 'MMM d, yyyy HH:mm')}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function OtxCard({ data }) {
+  let Icon = HelpCircle;
+  let colorClass = 'text-secondary';
+  let bgClass = 'bg-secondary/10';
+  let borderClass = 'border-border';
+  let label = 'Not observed';
+
+  if (data.status === 'skipped' || data.status === 'rate_limited' || data.status === 'error') {
+    Icon = AlertTriangle;
+    label = data.status === 'skipped' ? 'Not configured' : 'Unavailable';
+  } else if (data.pulseCount > 0) {
+    Icon = ShieldAlert;
+    colorClass = 'text-warning';
+    bgClass = 'bg-warning/10';
+    borderClass = 'border-warning/30';
+    label = 'Pulses Found';
+  } else if (data.status === 'available' && data.pulseCount === 0) {
+    Icon = ShieldCheck;
+  }
+
+  return (
+    <div className={`rounded-xl border ${borderClass} bg-card overflow-hidden flex flex-col h-full`}>
+      <div className="p-4 border-b border-border bg-background/50 flex items-center justify-between">
+        <h4 className="font-semibold text-primary">AlienVault OTX</h4>
+        <div className={`px-2.5 py-1 rounded flex items-center gap-1.5 ${bgClass} ${colorClass} border ${borderClass}`}>
+          <Icon className="w-4 h-4" />
+          <span className="text-xs font-bold uppercase tracking-wider">{label}</span>
+        </div>
+      </div>
+      
+      <div className="p-5 flex-1 flex flex-col justify-center">
+        <p className="text-sm font-medium text-primary mb-4 leading-relaxed">
+          {data.summary || 'No data available.'}
+        </p>
+
+        {data.status === 'available' && data.pulseCount > 0 && (
+          <div className="mb-4 space-y-3">
+            {data.malwareFamilies && data.malwareFamilies.length > 0 && (
+              <div>
+                <div className="text-xs text-secondary uppercase tracking-wider mb-1.5">Malware Families</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {data.malwareFamilies.map(malware => (
+                    <span key={malware} className="px-2 py-0.5 bg-danger/10 text-danger text-xs font-medium rounded border border-danger/20">{malware}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {data.tags && data.tags.length > 0 && (
+              <div>
+                <div className="text-xs text-secondary uppercase tracking-wider mb-1.5">Tags</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {data.tags.map(tag => (
+                    <span key={tag} className="px-2 py-0.5 bg-secondary/20 text-xs rounded border border-border text-primary">{tag}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {data.firstSeen && (
+          <div className="mt-auto flex items-center gap-1.5 text-xs text-muted pt-3 border-t border-border/50">
+            <Clock className="w-3.5 h-3.5" />
+            <span>First seen: {format(new Date(data.firstSeen), 'MMM d, yyyy')}</span>
           </div>
         )}
       </div>

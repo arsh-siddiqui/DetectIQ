@@ -1,19 +1,3 @@
-// Country centroids for fallback when lat/lng is missing
-const COUNTRY_CENTROIDS = {
-  US: [38.89, -77.03], GB: [51.50, -0.12], DE: [52.52, 13.40], FR: [48.85, 2.35],
-  CN: [39.90, 116.40], RU: [55.75, 37.61], IN: [28.61, 77.21], BR: [15.77, -47.86],
-  CA: [45.42, -75.69], AU: [-35.28, 149.13], JP: [35.68, 139.69], KR: [37.56, 126.97],
-  NL: [52.37, 4.90], SE: [59.33, 18.06], NO: [59.91, 10.75], CH: [46.94, 7.44],
-  IT: [41.90, 12.49], ES: [40.41, -3.70], PL: [52.22, 21.01], UA: [50.45, 30.52],
-  SG: [1.35, 103.81], HK: [22.32, 114.16], TW: [25.04, 121.56], ID: [-6.21, 106.82],
-  TH: [13.75, 100.51], MY: [3.14, 101.68], VN: [21.02, 105.83], PH: [14.59, 120.97],
-  RO: [44.43, 26.10], BG: [42.69, 23.32], CZ: [50.08, 14.43], HU: [47.49, 19.04],
-  MX: [19.42, -99.13], AR: [-34.60, -58.38], CO: [4.71, -74.07], CL: [-33.45, -70.67],
-  ZA: [-25.74, 28.18], NG: [9.07, 7.39], KE: [-1.29, 36.82], EG: [30.06, 31.24],
-  TR: [39.92, 32.85], SA: [24.68, 46.72], AE: [24.47, 54.37], IL: [31.77, 35.23],
-  PK: [33.72, 73.04], BD: [23.72, 90.41], LK: [6.93, 79.84], IR: [35.69, 51.42],
-};
-
 export function indicatorToGeoPoints(indicator) {
   if (!indicator) return [];
 
@@ -32,17 +16,9 @@ export function indicatorToGeoPoints(indicator) {
     let latitude = typeof rawLat === 'string' ? parseFloat(rawLat) : rawLat;
     let longitude = typeof rawLon === 'string' ? parseFloat(rawLon) : rawLon;
 
-    // If no coordinates but we have a country code, use centroid as fallback
-    if ((!Number.isFinite(latitude) || !Number.isFinite(longitude))) {
-      // Try countryCode field first, then country field (old records store code in "country")
-      const countryCode = geo.countryCode || geo.country_code || 
-        (geo.country && geo.country.length === 2 ? geo.country : null);
-      if (countryCode && COUNTRY_CENTROIDS[countryCode]) {
-        [latitude, longitude] = COUNTRY_CENTROIDS[countryCode];
-      } else {
-        // No coordinates and no usable country code — skip
-        return null;
-      }
+    // Must have finite coordinates
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      return null;
     }
 
     // Must be within valid map ranges
@@ -53,6 +29,26 @@ export function indicatorToGeoPoints(indicator) {
     // Do not show on public map if it's explicitly marked private
     if (indicator.type === 'ip' && indicator.isPublicIP === false) {
       return null;
+    }
+
+    // Protect against previously cached invalid public IPs (like 6to4)
+    const ipToCheck = geo.sourceValue || indicator.value;
+    if (ipToCheck) {
+      const lowerIp = ipToCheck.toLowerCase();
+      const isIpv6 = lowerIp.includes(':');
+      if (isIpv6) {
+        if (lowerIp === '::' || lowerIp === '::1' || lowerIp.startsWith('2002:') || lowerIp.startsWith('2001:db8:') || lowerIp.startsWith('2001:0db8:') || lowerIp.startsWith('fe8') || lowerIp.startsWith('fe9') || lowerIp.startsWith('fea') || lowerIp.startsWith('feb') || lowerIp.startsWith('fc') || lowerIp.startsWith('fd') || lowerIp.startsWith('ff')) {
+          return null; // Reject special-use IPv6
+        }
+      } else {
+        const parts = lowerIp.split('.').map(Number);
+        if (parts.length === 4) {
+          const p0 = parts[0], p1 = parts[1];
+          if (p0 === 0 || p0 === 10 || p0 === 127 || (p0 === 169 && p1 === 254) || (p0 === 172 && p1 >= 16 && p1 <= 31) || (p0 === 192 && p1 === 168) || (p0 >= 224 && p0 <= 255)) {
+            return null; // Reject special-use IPv4
+          }
+        }
+      }
     }
 
     // Resolve threat: use threatStatus field directly (already denormalized by backend)

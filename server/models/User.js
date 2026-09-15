@@ -38,6 +38,7 @@ const userSchema = new mongoose.Schema(
     xp: { type: Number, default: 0, min: 0 },
     streakDays: { type: Number, default: 0, min: 0 },
     lastActiveDate: { type: Date },
+    lastPasswordChange: { type: Date },
     status: {
       type: String,
       enum: ["Active", "Suspended"],
@@ -46,6 +47,8 @@ const userSchema = new mongoose.Schema(
     preferences: {
       theme: { type: String, enum: ['light', 'dark', 'system'], default: 'system' },
       notifications: { type: Boolean, default: true },
+      emailAlerts: { type: Boolean, default: true },
+      weeklySummary: { type: Boolean, default: false },
     },
     securityProfile: {
       riskScore: { type: Number, default: 0 },

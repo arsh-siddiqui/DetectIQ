@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ShieldAlert, Search, Filter, AlertTriangle, Cpu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Cpu, ChevronLeft, ChevronRight } from 'lucide-react';
 import * as securityService from '../../services/securityService';
 
 const InvestigationList = () => {
@@ -51,6 +51,7 @@ const InvestigationList = () => {
       case 'high': return 'text-orange-400 bg-orange-400/10 border-orange-400/20';
       case 'medium': return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
       case 'low': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
+      case 'safe': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
       default: return 'text-slate-400 bg-slate-800 border-slate-700';
     }
   };

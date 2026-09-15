@@ -32,7 +32,7 @@ describe('Test Suite', () => {
     assert.strictEqual(isPrivateIPv4('198.51.100.2'), false);
     assert.strictEqual(isPrivateIPv6('::1'), true);
     assert.strictEqual(isPrivateIPv6('fe80::1'), true);
-    assert.strictEqual(isPrivateIPv6('2001:db8::1'), false);
+    assert.strictEqual(isPrivateIPv6('2001:db8::1'), true); // Documentation address is special-use
   });
 
   console.log('\n=== SECTION B: Email Parser ===');

@@ -10,6 +10,11 @@ export async function updateProfileRemote(patch) {
   return data.data.user;
 }
 
+export async function changePasswordRemote(payload) {
+  const { data } = await apiClient.put("/users/password", payload);
+  return data;
+}
+
 export async function fetchDashboard() {
   const { data } = await apiClient.get("/users/dashboard");
   return data.data;

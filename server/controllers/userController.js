@@ -19,12 +19,61 @@ const updateProfile = asyncHandler(async (req, res) => {
     if (req.body[field] !== undefined) updates[field] = req.body[field];
   });
 
+  // Handle preferences
+  if (req.body.preferences) {
+    const currentPrefs = req.user.preferences || {};
+    updates.preferences = { ...currentPrefs };
+    
+    if (req.body.preferences.emailAlerts !== undefined) {
+      updates.preferences.emailAlerts = req.body.preferences.emailAlerts;
+    }
+    if (req.body.preferences.weeklySummary !== undefined) {
+      updates.preferences.weeklySummary = req.body.preferences.weeklySummary;
+    }
+    if (req.body.preferences.notifications !== undefined) {
+      updates.preferences.notifications = req.body.preferences.notifications;
+    }
+    if (req.body.preferences.theme !== undefined) {
+      updates.preferences.theme = req.body.preferences.theme;
+    }
+  }
+
   const user = await User.findByIdAndUpdate(req.user._id, updates, {
     new: true,
     runValidators: true,
   });
 
   return sendSuccess(res, { message: "Profile updated.", data: { user: toPublicUser(user) } });
+});
+
+// @route  PUT /api/users/password
+// @access Private
+const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    res.status(400);
+    throw new Error("Current password and new password are required.");
+  }
+
+  if (newPassword.length < 8) {
+    res.status(400);
+    throw new Error("New password must be at least 8 characters.");
+  }
+
+  // Get user with password
+  const user = await User.findById(req.user._id).select("+password");
+  
+  if (!(await user.comparePassword(currentPassword))) {
+    res.status(401);
+    throw new Error("Incorrect current password.");
+  }
+
+  user.password = newPassword;
+  user.lastPasswordChange = new Date();
+  await user.save(); // This will trigger the pre-save hook to hash the new password
+
+  return sendSuccess(res, { message: "Password updated successfully." });
 });
 
 // @route  GET /api/users/dashboard
@@ -151,6 +200,7 @@ const personalizeScan = asyncHandler(async (req, res) => {
 module.exports = {
   getProfile,
   updateProfile,
+  changePassword,
   getDashboardData,
   getScanHistory,
   getScanById,

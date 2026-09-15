@@ -1,11 +1,11 @@
 import { NavLink } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LayoutDashboard, ScanLine, ShieldAlert, History, Shield, FileSearch, TrendingUp, BookOpen, User, ShieldCheck, Settings2, LogOut, Bot, Target, Globe } from "lucide-react";
+import { ScanLine, ShieldAlert, History, Shield, FileSearch, BookOpen, User, ShieldCheck, Settings2, LogOut, Target, Globe, LayoutDashboard } from "lucide-react";
 import { useAppData } from "../../context/AppDataContext";
 
 const navSections = [
   {
-    title: "",
+    title: "Overview",
     items: [
       { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
     ]
@@ -31,12 +31,6 @@ const navSections = [
     items: [
       { label: "Vulnerabilities", to: "/vulnerabilities", icon: BookOpen },
       { label: "My Progress", to: "/learning/progress", icon: Target },
-    ]
-  },
-  {
-    title: "",
-    items: [
-      { label: "Profile", to: "/profile", icon: User },
     ]
   }
 ];

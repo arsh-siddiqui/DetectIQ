@@ -1,19 +1,32 @@
 import { useState, useEffect } from "react";
-import { User, LogOut, Loader2, Save, Shield, Key, Smartphone, Bell, Activity, CheckCircle2 } from "lucide-react";
+import { User, LogOut, Loader2, Save, Shield, Key, Smartphone, Bell, Activity, CheckCircle2, AlertCircle } from "lucide-react";
 import { useAppData } from "../context/AppDataContext";
-import { updateProfileRemote } from "../services/userService";
+import { updateProfileRemote, changePasswordRemote } from "../services/userService";
 import { getScanHistory } from "../services/detectionService";
 import Button from "../components/ui/Button";
 
 export default function Profile() {
   const { user, updateUser, xp, logout } = useAppData();
+  
+  // Profile Edit State
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ name: user?.name || "", email: user?.email || "" });
   const [isSaving, setIsSaving] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [editSuccess, setEditSuccess] = useState(false);
   
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [emailAlerts, setEmailAlerts] = useState(true);
-  const [securitySummaries, setSecuritySummaries] = useState(false);
+  // Password Change State
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  
+  // Notification State
+  const [emailAlerts, setEmailAlerts] = useState(user?.preferences?.emailAlerts ?? true);
+  const [securitySummaries, setSecuritySummaries] = useState(user?.preferences?.weeklySummary ?? false);
+  const [prefsLoading, setPrefsLoading] = useState(false);
+
   const [recentScans, setRecentScans] = useState([]);
 
   useEffect(() => {
@@ -32,17 +45,102 @@ export default function Profile() {
   };
 
   const handleSave = async () => {
+    setEditError("");
+    setEditSuccess(false);
+    
+    if (!formData.name.trim()) {
+      setEditError("Name cannot be empty.");
+      return;
+    }
+    if (!formData.email.trim()) {
+      setEditError("Email cannot be empty.");
+      return;
+    }
+    
     setIsSaving(true);
     try {
       const updatedUser = await updateProfileRemote(formData);
       updateUser(updatedUser);
       setIsEditing(false);
+      setEditSuccess(true);
+      setTimeout(() => setEditSuccess(false), 3000);
     } catch (error) {
-      console.error("Failed to update profile", error);
-      // In a real app we'd show a toast here
+      setEditError(error.response?.data?.message || "Failed to update profile");
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess(false);
+    
+    if (!passwordData.currentPassword || !passwordData.newPassword) {
+      setPasswordError("Current and new passwords are required.");
+      return;
+    }
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError("New passwords do not match.");
+      return;
+    }
+    if (passwordData.newPassword.length < 8) {
+      setPasswordError("New password must be at least 8 characters.");
+      return;
+    }
+    
+    setPasswordLoading(true);
+    try {
+      await changePasswordRemote({ 
+        currentPassword: passwordData.currentPassword, 
+        newPassword: passwordData.newPassword 
+      });
+      setPasswordSuccess(true);
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setIsChangingPassword(false);
+      // Update local user state for timestamp if needed
+      updateUser({ ...user, lastPasswordChange: new Date().toISOString() });
+    } catch (error) {
+      setPasswordError(error.response?.data?.message || "Failed to change password");
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const togglePreference = async (type) => {
+    if (prefsLoading) return;
+    setPrefsLoading(true);
+    
+    try {
+      const newEmailAlerts = type === 'emailAlerts' ? !emailAlerts : emailAlerts;
+      const newWeeklySummary = type === 'weeklySummary' ? !securitySummaries : securitySummaries;
+      
+      const updatedUser = await updateProfileRemote({
+        preferences: {
+          emailAlerts: newEmailAlerts,
+          weeklySummary: newWeeklySummary
+        }
+      });
+      
+      updateUser(updatedUser);
+      if (type === 'emailAlerts') setEmailAlerts(newEmailAlerts);
+      if (type === 'weeklySummary') setSecuritySummaries(newWeeklySummary);
+      
+    } catch (error) {
+      console.error("Failed to update preferences", error);
+    } finally {
+      setPrefsLoading(false);
+    }
+  };
+
+  const calculateDaysAgo = (dateString) => {
+    if (!dateString) return null;
+    const days = Math.floor((new Date() - new Date(dateString)) / (1000 * 60 * 60 * 24));
+    if (days === 0) return "today";
+    if (days === 1) return "yesterday";
+    if (days < 30) return `${days} days ago`;
+    const months = Math.floor(days / 30);
+    return `${months} month${months > 1 ? 's' : ''} ago`;
   };
 
   if (!user) return null;
@@ -179,20 +277,32 @@ export default function Profile() {
             </div>
 
             {isEditing && (
-              <div className="flex justify-end gap-4 mt-10 pt-8 border-t border-border relative z-10">
-                <button 
-                  className="bg-background border border-border text-primary px-8 py-3.5 rounded-xl font-bold hover:bg-secondary transition-colors text-sm shadow-sm"
-                  onClick={() => { setIsEditing(false); setFormData({ name: user.name, email: user.email }); }}
-                >
-                  Cancel
-                </button>
-                <button 
-                  className="bg-gradient-to-r from-accent-blue to-accent-violet text-white px-8 py-3.5 rounded-xl font-bold shadow-soft hover:opacity-95 hover:-translate-y-0.5 transition-all text-sm inline-flex items-center gap-2 disabled:opacity-50"
-                  onClick={handleSave} 
-                  disabled={isSaving}
-                >
-                  {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />} Save Changes
-                </button>
+              <div className="flex flex-col gap-4 mt-10 pt-8 border-t border-border relative z-10">
+                {editError && (
+                  <div className="bg-danger/10 border border-danger/20 text-danger px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" /> {editError}
+                  </div>
+                )}
+                {editSuccess && (
+                  <div className="bg-success/10 border border-success/20 text-success px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" /> Profile updated successfully
+                  </div>
+                )}
+                <div className="flex justify-end gap-4">
+                  <button 
+                    className="bg-background border border-border text-primary px-8 py-3.5 rounded-xl font-bold hover:bg-secondary transition-colors text-sm shadow-sm"
+                    onClick={() => { setIsEditing(false); setFormData({ name: user.name, email: user.email }); setEditError(""); }}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    className="bg-gradient-to-r from-accent-blue to-accent-violet text-white px-8 py-3.5 rounded-xl font-bold shadow-soft hover:opacity-95 hover:-translate-y-0.5 transition-all text-sm inline-flex items-center gap-2 disabled:opacity-50"
+                    onClick={handleSave} 
+                    disabled={isSaving}
+                  >
+                    {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />} Save Changes
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -208,39 +318,114 @@ export default function Profile() {
             </h3>
             
             <div className="space-y-4 relative z-10">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 p-6 bg-background rounded-2xl border border-border hover:border-border/80 transition-colors shadow-sm">
-                <div>
-                  <div className="font-bold text-primary mb-1.5 flex items-center gap-2 text-base">
-                    <Key className="w-4 h-4 text-secondary" /> Password
+              <div className="flex flex-col gap-6 p-6 bg-background rounded-2xl border border-border shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                  <div>
+                    <div className="font-bold text-primary mb-1.5 flex items-center gap-2 text-base">
+                      <Key className="w-4 h-4 text-secondary" /> Password
+                    </div>
+                    <div className="text-sm text-secondary font-medium">
+                      {user.lastPasswordChange ? `Last changed ${calculateDaysAgo(user.lastPasswordChange)}` : "Password change history unavailable"}
+                    </div>
                   </div>
-                  <div className="text-sm text-secondary font-medium">Last changed 3 months ago</div>
+                  {!isChangingPassword && (
+                    <button 
+                      onClick={() => setIsChangingPassword(true)}
+                      className="bg-card border border-border text-primary px-6 py-3 rounded-xl font-bold hover:bg-secondary transition-colors text-sm shadow-sm"
+                    >
+                      Change Password
+                    </button>
+                  )}
                 </div>
-                <button className="bg-card border border-border text-primary px-6 py-3 rounded-xl font-bold hover:bg-secondary transition-colors text-sm shadow-sm">
-                  Change Password
-                </button>
+
+                {isChangingPassword && (
+                  <form onSubmit={handlePasswordChange} className="mt-4 pt-6 border-t border-border space-y-4">
+                    {passwordError && (
+                      <div className="bg-danger/10 border border-danger/20 text-danger px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4" /> {passwordError}
+                      </div>
+                    )}
+                    {passwordSuccess && (
+                      <div className="bg-success/10 border border-success/20 text-success px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4" /> Password updated successfully
+                      </div>
+                    )}
+                    
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-2">Current Password</label>
+                        <input
+                          type="password"
+                          required
+                          value={passwordData.currentPassword}
+                          onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                          className="w-full bg-background border border-border rounded-xl px-5 py-3 text-sm font-bold text-primary focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue/50 transition-all shadow-inner"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-2">New Password</label>
+                        <input
+                          type="password"
+                          required
+                          value={passwordData.newPassword}
+                          onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                          className="w-full bg-background border border-border rounded-xl px-5 py-3 text-sm font-bold text-primary focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue/50 transition-all shadow-inner"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-2">Confirm New Password</label>
+                        <input
+                          type="password"
+                          required
+                          value={passwordData.confirmPassword}
+                          onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                          className="w-full bg-background border border-border rounded-xl px-5 py-3 text-sm font-bold text-primary focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue/50 transition-all shadow-inner"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-end gap-3 mt-4">
+                      <button 
+                        type="button"
+                        className="bg-background border border-border text-primary px-6 py-2.5 rounded-xl font-bold hover:bg-secondary transition-colors text-sm shadow-sm"
+                        onClick={() => { setIsChangingPassword(false); setPasswordError(""); setPasswordSuccess(false); }}
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        type="submit"
+                        disabled={passwordLoading}
+                        className="bg-accent-blue text-white px-6 py-2.5 rounded-xl font-bold shadow-soft hover:-translate-y-0.5 transition-all text-sm inline-flex items-center gap-2 disabled:opacity-50"
+                      >
+                        {passwordLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Update Password
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 p-6 bg-background rounded-2xl border border-border hover:border-border/80 transition-colors shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 p-6 bg-background rounded-2xl border border-border shadow-sm opacity-60">
                 <div>
                   <div className="font-bold text-primary mb-1.5 flex items-center gap-2 text-base">
                     <Smartphone className="w-4 h-4 text-secondary" /> Two-Factor Authentication
+                    <span className="text-[10px] uppercase font-bold bg-secondary/20 text-secondary px-2 py-0.5 rounded-md ml-2">Unavailable</span>
                   </div>
-                  <div className="text-sm text-secondary font-medium">Add an extra layer of security to your account.</div>
+                  <div className="text-sm text-secondary font-medium">Two-factor authentication is not currently available.</div>
                 </div>
-                <button 
-                  onClick={() => setTwoFactorEnabled(!twoFactorEnabled)}
-                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none shadow-inner ${twoFactorEnabled ? 'bg-success' : 'bg-secondary'}`}
-                >
-                  <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow-sm ${twoFactorEnabled ? 'translate-x-6' : 'translate-x-1.5'}`} />
-                </button>
+                <div className="relative inline-flex h-7 w-12 items-center rounded-full bg-border cursor-not-allowed shadow-inner">
+                  <span className="inline-block h-5 w-5 transform rounded-full bg-secondary/50 translate-x-1.5" />
+                </div>
               </div>
               
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 p-6 bg-background rounded-2xl border border-border hover:border-border/80 transition-colors shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 p-6 bg-background rounded-2xl border border-border shadow-sm opacity-60">
                 <div>
-                  <div className="font-bold text-primary mb-1.5 text-base">Connected Accounts</div>
-                  <div className="text-sm text-secondary font-medium">Sign in using Google or Github.</div>
+                  <div className="font-bold text-primary mb-1.5 text-base flex items-center">
+                    Connected Accounts
+                    <span className="text-[10px] uppercase font-bold bg-secondary/20 text-secondary px-2 py-0.5 rounded-md ml-3">Unavailable</span>
+                  </div>
+                  <div className="text-sm text-secondary font-medium">External account connections are not currently available.</div>
                 </div>
-                <button className="bg-card border border-border text-primary px-6 py-3 rounded-xl font-bold hover:bg-secondary transition-colors text-sm shadow-sm">
+                <button disabled className="bg-card border border-border text-secondary px-6 py-3 rounded-xl font-bold text-sm shadow-sm cursor-not-allowed">
                   Manage Connections
                 </button>
               </div>
@@ -264,8 +449,9 @@ export default function Profile() {
                   <div className="text-sm text-secondary font-medium">Get notified immediately about high-risk scans.</div>
                 </div>
                 <button 
-                  onClick={() => setEmailAlerts(!emailAlerts)}
-                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none shadow-inner ${emailAlerts ? 'bg-success' : 'bg-secondary'}`}
+                  onClick={() => togglePreference('emailAlerts')}
+                  disabled={prefsLoading}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none shadow-inner ${emailAlerts ? 'bg-success' : 'bg-secondary'} ${prefsLoading ? 'opacity-50 cursor-wait' : ''}`}
                 >
                   <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow-sm ${emailAlerts ? 'translate-x-6' : 'translate-x-1.5'}`} />
                 </button>
@@ -277,8 +463,9 @@ export default function Profile() {
                   <div className="text-sm text-secondary font-medium">Receive a weekly digest of your learning progress.</div>
                 </div>
                 <button 
-                  onClick={() => setSecuritySummaries(!securitySummaries)}
-                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none shadow-inner ${securitySummaries ? 'bg-success' : 'bg-secondary'}`}
+                  onClick={() => togglePreference('weeklySummary')}
+                  disabled={prefsLoading}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none shadow-inner ${securitySummaries ? 'bg-success' : 'bg-secondary'} ${prefsLoading ? 'opacity-50 cursor-wait' : ''}`}
                 >
                   <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow-sm ${securitySummaries ? 'translate-x-6' : 'translate-x-1.5'}`} />
                 </button>

@@ -79,6 +79,40 @@ const IndicatorList = () => {
     }
   };
 
+  const getGeolocationPresentation = (ind) => {
+    let validGeo = null;
+    if (ind.geolocations && ind.geolocations.length > 0) {
+      validGeo = ind.geolocations.find(g => g.country);
+    }
+    if (!validGeo && ind.geolocation?.country) {
+      validGeo = ind.geolocation;
+    }
+
+    if (validGeo) {
+      let sourceLabel = 'Direct IP';
+      if (validGeo.sourceType === 'resolved_ip') sourceLabel = 'DNS-resolved IP';
+      if (validGeo.sourceType === 'received_header_ip') sourceLabel = 'Received-header IP';
+
+      return (
+        <div className="flex flex-col text-sm">
+          <span className="text-[10px] text-muted mb-1 uppercase tracking-wider font-bold">Location</span>
+          <div className="flex items-center gap-1.5 text-primary font-medium">
+            <MapPin size={14} className="text-secondary" />
+            <span>{validGeo.country}</span>
+          </div>
+          <span className="text-xs text-secondary mt-0.5">{sourceLabel}</span>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="flex flex-col text-sm">
+        <span className="text-[10px] text-muted mb-1 uppercase tracking-wider font-bold">Location</span>
+        <span className="text-secondary">Not available</span>
+      </div>
+    );
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
       <div className="flex-1 overflow-auto p-6">
@@ -190,20 +224,16 @@ const IndicatorList = () => {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              {getThreatPresentation(ind).icon}
-                              <span className="capitalize">{getThreatPresentation(ind).label}</span>
+                            <div className="flex flex-col text-sm">
+                              <span className="text-[10px] text-muted mb-1 uppercase tracking-wider font-bold">Threat Intel</span>
+                              <div className="flex items-center gap-1.5 text-primary font-medium">
+                                {getThreatPresentation(ind).icon}
+                                <span className="capitalize">{getThreatPresentation(ind).label}</span>
+                              </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            {ind.geolocation?.country ? (
-                              <div className="flex items-center gap-1.5 text-secondary">
-                                <MapPin size={14} />
-                                <span>{ind.geolocation.country}</span>
-                              </div>
-                            ) : (
-                              <span className="text-muted">-</span>
-                            )}
+                            {getGeolocationPresentation(ind)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-secondary">
                             {format(new Date(ind.firstSeen), 'MMM d, yyyy HH:mm')}

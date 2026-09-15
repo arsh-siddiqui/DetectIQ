@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ForceGraph2D from 'react-force-graph-2d';
-import { Maximize2, Minimize2, AlertTriangle, X, Copy, ExternalLink, Globe, ShieldAlert, Network } from 'lucide-react';
+import { Maximize2, Minimize2, X, Copy, ExternalLink } from 'lucide-react';
 
 const NODE_COLORS = {
   investigation: '#3b82f6', // blue
@@ -30,6 +31,7 @@ const TYPE_LABELS = {
 };
 
 const InvestigationGraph = ({ data }) => {
+  const navigate = useNavigate();
   const fgRef = useRef();
   const containerRef = useRef();
   const [dimensions, setDimensions] = useState({ width: 600, height: 400 });
@@ -262,29 +264,35 @@ const InvestigationGraph = ({ data }) => {
               <div className="text-sm font-medium text-primary break-all">{selectedNode.label || selectedNode.id}</div>
             </div>
 
-            {selectedNode.domain && selectedNode.type !== 'domain' && (
+            {selectedNode.metadata?.domain && selectedNode.type !== 'domain' && (
                <div className="space-y-1">
                  <div className="text-[10px] uppercase tracking-wider font-bold text-muted">Domain</div>
-                 <div className="text-sm font-medium text-primary">{selectedNode.domain}</div>
+                 <div className="text-sm font-medium text-primary">{selectedNode.metadata.domain}</div>
                </div>
             )}
 
-            <div className="space-y-1">
-               <div className="text-[10px] uppercase tracking-wider font-bold text-muted">Threat Intelligence</div>
-               <div className="text-sm font-medium text-primary">{selectedNode.threatIntel || (selectedNode.type === 'ip' ? 'Clean' : 'Not observed by provider')}</div>
-            </div>
+            {['ip', 'domain', 'url', 'hash'].includes(selectedNode.type) && (
+              <div className="space-y-1">
+                <div className="text-[10px] uppercase tracking-wider font-bold text-muted">Threat Intelligence</div>
+                <div className="text-sm font-medium text-primary capitalize">
+                  {selectedNode.metadata?.threat
+                    ? selectedNode.metadata.threat.replace(/_/g, ' ')
+                    : 'Not observed by provider'}
+                </div>
+              </div>
+            )}
 
-            {selectedNode.location && (
+            {selectedNode.metadata?.city && (
                <div className="space-y-1">
                  <div className="text-[10px] uppercase tracking-wider font-bold text-muted">Location</div>
-                 <div className="text-sm font-medium text-primary">{selectedNode.location}</div>
+                 <div className="text-sm font-medium text-primary">{selectedNode.metadata.city}</div>
                </div>
             )}
 
-            {selectedNode.organization && (
+            {selectedNode.metadata?.org && (
                <div className="space-y-1">
                  <div className="text-[10px] uppercase tracking-wider font-bold text-muted">Organization</div>
-                 <div className="text-sm font-medium text-primary">{selectedNode.organization}</div>
+                 <div className="text-sm font-medium text-primary">{selectedNode.metadata.org}</div>
                </div>
             )}
 
@@ -307,13 +315,39 @@ const InvestigationGraph = ({ data }) => {
 
             {/* Actions */}
             <div className="space-y-2 pt-4 border-t border-border">
-               <button className="w-full flex items-center gap-2 p-2 bg-secondary/50 hover:bg-secondary text-primary rounded-md transition-colors text-sm font-medium border border-border">
+               <button
+                 onClick={() => {
+                   const lines = [
+                     `Type: ${TYPE_LABELS[selectedNode.type] || selectedNode.type}`,
+                     `Value: ${selectedNode.label || selectedNode.id}`,
+                     ...(selectedNode.metadata?.threat ? [`Threat: ${selectedNode.metadata.threat}`] : []),
+                     ...(selectedNode.metadata?.severity ? [`Severity: ${selectedNode.metadata.severity}`] : []),
+                     ...(selectedNode.metadata?.provider ? [`Provider: ${selectedNode.metadata.provider}`] : []),
+                   ];
+                   navigator.clipboard.writeText(lines.join('\n')).catch(() => {});
+                 }}
+                 className="w-full flex items-center gap-2 p-2 bg-secondary/50 hover:bg-secondary text-primary rounded-md transition-colors text-sm font-medium border border-border"
+               >
                  <Copy size={14} className="text-muted" /> Copy Info
                </button>
-               <button className="w-full flex items-center justify-between p-2 bg-accent-blue/10 hover:bg-accent-blue/20 text-accent-blue rounded-md transition-colors text-sm font-medium">
-                 <span className="flex items-center gap-2"><ExternalLink size={14} /> View Indicator</span>
-                 <span className="text-xs font-bold">→</span>
-               </button>
+               {selectedNode.metadata?.indicatorDbId ? (
+                 <button
+                   onClick={() => navigate(`/security/indicators/${selectedNode.metadata.indicatorDbId}`)}
+                   className="w-full flex items-center justify-between p-2 bg-accent-blue/10 hover:bg-accent-blue/20 text-accent-blue rounded-md transition-colors text-sm font-medium"
+                 >
+                   <span className="flex items-center gap-2"><ExternalLink size={14} /> View Indicator</span>
+                   <span className="text-xs font-bold">→</span>
+                 </button>
+               ) : (
+                 <button
+                   disabled
+                   className="w-full flex items-center justify-between p-2 bg-secondary/30 text-muted rounded-md text-sm font-medium cursor-not-allowed opacity-50"
+                   title="No indicator record for this node"
+                 >
+                   <span className="flex items-center gap-2"><ExternalLink size={14} /> View Indicator</span>
+                   <span className="text-xs">N/A</span>
+                 </button>
+               )}
             </div>
           </div>
         </div>

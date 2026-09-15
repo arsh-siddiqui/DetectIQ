@@ -1,12 +1,12 @@
-import { useState, Fragment } from "react";
-import { NavLink } from "react-router-dom";
+import { useState, Fragment, useRef, useEffect } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { LayoutDashboard, ScanLine, ShieldAlert, History, Shield, FileSearch, TrendingUp, BookOpen, User, ShieldCheck, Menu, X, Settings2, Bot, Target } from "lucide-react";
+import { ScanLine, ShieldAlert, History, Shield, FileSearch, BookOpen, ShieldCheck, Menu, X, Settings2, Target, Globe, User, LogOut, LayoutDashboard } from "lucide-react";
 import { useAppData } from "../../context/AppDataContext";
 
 const navSections = [
   {
-    title: "",
+    title: "Overview",
     items: [
       { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
     ]
@@ -22,7 +22,7 @@ const navSections = [
   {
     title: "Security Intelligence",
     items: [
-      { label: "Threat Intelligence", to: "/security/threat-intelligence", icon: ShieldAlert },
+      { label: "Threat Intelligence", to: "/security/threat-intelligence", icon: Globe },
       { label: "Investigations", to: "/security/investigations", icon: ShieldAlert },
       { label: "Indicators", to: "/security/indicators", icon: Shield },
     ]
@@ -33,18 +33,31 @@ const navSections = [
       { label: "Vulnerabilities", to: "/vulnerabilities", icon: BookOpen },
       { label: "My Progress", to: "/learning/progress", icon: Target },
     ]
-  },
-  {
-    title: "",
-    items: [
-      { label: "Profile", to: "/profile", icon: User },
-    ]
   }
 ];
 
 export default function MobileTopBar() {
   const [open, setOpen] = useState(false);
-  const { user } = useAppData();
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef(null);
+  const navigate = useNavigate();
+  const { user, logout } = useAppData();
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setProfileOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    window.location.href = "/";
+  };
+
   return (
     <div className="lg:hidden sticky top-0 z-40 bg-background/90 backdrop-blur-lg border-b border-border shadow-sm">
       <div className="flex items-center justify-between px-4 h-16">
@@ -52,11 +65,48 @@ export default function MobileTopBar() {
           <ShieldCheck className="w-6 h-6 text-accent-blue" />
           DetectIQ
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-accent-blue text-white flex items-center justify-center text-xs font-bold shadow-soft">
-            {user.avatar}
+        <div className="flex items-center gap-3">
+          <div className="relative" ref={profileRef}>
+            <button 
+              onClick={() => setProfileOpen(!profileOpen)}
+              className="w-8 h-8 rounded-full bg-gradient-to-br from-accent-blue to-accent-violet text-white flex items-center justify-center text-xs font-bold shadow-soft focus:outline-none focus:ring-2 focus:ring-accent-blue focus:ring-offset-1 focus:ring-offset-card transition-all"
+            >
+              {user?.avatar || user?.name?.[0] || "U"}
+            </button>
+            
+            <AnimatePresence>
+              {profileOpen && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute top-full right-0 mt-2 w-56 bg-elevated rounded-xl shadow-elevated border border-border overflow-hidden z-50 origin-top-right"
+                >
+                  <div className="px-4 py-3 border-b border-border">
+                    <div className="text-sm font-semibold text-primary truncate">{user?.name}</div>
+                    <div className="text-xs text-muted truncate">{user?.email || user?.role}</div>
+                  </div>
+                  <div className="py-1">
+                    <button
+                      onClick={() => { setProfileOpen(false); navigate('/profile'); }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-primary hover:bg-secondary flex items-center gap-3 transition-colors"
+                    >
+                      <User className="w-[18px] h-[18px] text-muted" /> Profile
+                    </button>
+                    <div className="my-1 border-t border-border"></div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2.5 text-sm text-danger hover:bg-danger/10 flex items-center gap-3 transition-colors"
+                    >
+                      <LogOut className="w-[18px] h-[18px] text-danger" /> Log Out
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-          <button onClick={() => setOpen(!open)} className="p-2 text-primary hover:bg-secondary rounded-lg transition-colors">
+          <button onClick={() => { setOpen(!open); setProfileOpen(false); }} className="p-2 text-primary hover:bg-secondary rounded-lg transition-colors">
             {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
@@ -67,6 +117,7 @@ export default function MobileTopBar() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
           >
             <div className="flex flex-col p-3 gap-1 bg-background border-t border-border shadow-soft">
               {navSections.map((section, idx) => (

@@ -39,6 +39,24 @@ const env = {
   /** Timeout for VirusTotal API calls (ms) */
   VIRUSTOTAL_TIMEOUT_MS: process.env.VIRUSTOTAL_TIMEOUT_MS || '4000',
 
+  /** AbuseIPDB API Key */
+  ABUSEIPDB_API_KEY: process.env.ABUSEIPDB_API_KEY || '',
+
+  /** Timeout for AbuseIPDB API calls (ms) */
+  ABUSEIPDB_TIMEOUT_MS: process.env.ABUSEIPDB_TIMEOUT_MS || '4000',
+
+  /** URLhaus API Key */
+  URLHAUS_API_KEY: process.env.URLHAUS_API_KEY || '',
+
+  /** Timeout for URLhaus API calls (ms) */
+  URLHAUS_TIMEOUT_MS: process.env.URLHAUS_TIMEOUT_MS || '4000',
+
+  /** AlienVault OTX API Key */
+  OTX_API_KEY: process.env.OTX_API_KEY || '',
+
+  /** Timeout for OTX API calls (ms) */
+  OTX_TIMEOUT_MS: process.env.OTX_TIMEOUT_MS || '5000',
+
   // ---------------------------------------------------------------------------
   // ML Inference Service
   // ---------------------------------------------------------------------------

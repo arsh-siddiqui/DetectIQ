@@ -16,17 +16,25 @@ const IPV6_REGEX = /\b(?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}\b/gi;
  */
 function isPrivateIPv4(ip) {
   const parts = ip.split('.').map(Number);
+  if (parts.length !== 4) return false;
+  const p0 = parts[0], p1 = parts[1];
   
-  // 10.0.0.0/8
-  if (parts[0] === 10) return true;
-  // 172.16.0.0/12
-  if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
-  // 192.168.0.0/16
-  if (parts[0] === 192 && parts[1] === 168) return true;
-  // 127.0.0.0/8 (loopback)
-  if (parts[0] === 127) return true;
-  // 169.254.0.0/16 (link-local)
-  if (parts[0] === 169 && parts[1] === 254) return true;
+  // 0.0.0.0/8 (Current network)
+  if (p0 === 0) return true;
+  // 10.0.0.0/8 (Private)
+  if (p0 === 10) return true;
+  // 127.0.0.0/8 (Loopback)
+  if (p0 === 127) return true;
+  // 169.254.0.0/16 (Link-local)
+  if (p0 === 169 && p1 === 254) return true;
+  // 172.16.0.0/12 (Private)
+  if (p0 === 172 && p1 >= 16 && p1 <= 31) return true;
+  // 192.168.0.0/16 (Private)
+  if (p0 === 192 && p1 === 168) return true;
+  // 224.0.0.0/4 (Multicast)
+  if (p0 >= 224 && p0 <= 239) return true;
+  // 240.0.0.0/4 (Reserved/Broadcast)
+  if (p0 >= 240 && p0 <= 255) return true;
   
   return false;
 }
@@ -36,12 +44,23 @@ function isPrivateIPv4(ip) {
  */
 function isPrivateIPv6(ip) {
   const lower = ip.toLowerCase();
-  // loopback
+  
+  // unspecified (::/128)
+  if (lower === '::') return true;
+  // loopback (::1/128)
   if (lower === '::1') return true;
+  // 6to4 (2002::/16)
+  if (lower.startsWith('2002:')) return true;
+  // Teredo (2001:0000::/32)
+  if (lower.startsWith('2001:0000:') || lower.startsWith('2001:0:')) return true;
+  // Documentation (2001:db8::/32)
+  if (lower.startsWith('2001:db8:') || lower.startsWith('2001:0db8:')) return true;
   // link-local (fe80::/10)
   if (lower.startsWith('fe8') || lower.startsWith('fe9') || lower.startsWith('fea') || lower.startsWith('feb')) return true;
   // unique local (fc00::/7)
   if (lower.startsWith('fc') || lower.startsWith('fd')) return true;
+  // multicast (ff00::/8)
+  if (lower.startsWith('ff')) return true;
   
   return false;
 }

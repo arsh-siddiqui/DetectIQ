@@ -212,41 +212,62 @@ const IndicatorDetail = () => {
 
             <div className="space-y-6">
               <Section title="Geolocation" icon={MapPin}>
-                {ind.geolocation && ind.geolocation.status === 'success' && ind.geolocation.country ? (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <div className="text-xs text-muted mb-1 uppercase tracking-wider">Country</div>
-                        <div className="text-lg text-primary font-bold">{ind.geolocation.country}</div>
+                {(() => {
+                  let validGeo = null;
+                  if (ind.geolocations && ind.geolocations.length > 0) {
+                    validGeo = ind.geolocations.find(g => g.country);
+                  }
+                  if (!validGeo && ind.geolocation?.country) {
+                    validGeo = ind.geolocation;
+                  }
+
+                  if (validGeo) {
+                    let sourceLabel = 'Direct IP';
+                    if (validGeo.sourceType === 'resolved_ip') sourceLabel = 'DNS-resolved IP';
+                    if (validGeo.sourceType === 'received_header_ip') sourceLabel = 'Received-header IP';
+
+                    return (
+                      <div className="space-y-4">
+                        <div className="text-sm font-medium text-primary bg-secondary/30 px-3 py-2 rounded border border-border inline-flex items-center gap-2">
+                          <span className="text-muted">Source:</span> {sourceLabel}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <div className="text-xs text-muted mb-1 uppercase tracking-wider">Country</div>
+                            <div className="text-lg text-primary font-bold">{validGeo.country}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted mb-1 uppercase tracking-wider">City</div>
+                            <div className="text-lg text-primary font-bold">{validGeo.city || 'Unknown'}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted mb-1 uppercase tracking-wider">ISP</div>
+                            <div className="text-base text-primary font-bold truncate" title={validGeo.isp}>{validGeo.isp || 'Unknown'}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted mb-1 uppercase tracking-wider">ASN</div>
+                            <div className="text-base text-primary font-bold">{validGeo.asn || 'Unknown'}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-6 pt-4 border-t border-border flex justify-end">
+                          <button 
+                            onClick={() => navigate(`/security/threat-intelligence?indicator=${ind.id || ind._id}`)}
+                            className="flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-4 py-2.5 rounded-lg transition-colors font-semibold shadow-sm"
+                          >
+                            <MapPin size={16} /> View on Global Threat Map &rarr;
+                          </button>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-xs text-muted mb-1 uppercase tracking-wider">City</div>
-                        <div className="text-lg text-primary font-bold">{ind.geolocation.city || 'Unknown'}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted mb-1 uppercase tracking-wider">ISP</div>
-                        <div className="text-base text-primary font-bold truncate" title={ind.geolocation.isp}>{ind.geolocation.isp || 'Unknown'}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted mb-1 uppercase tracking-wider">ASN</div>
-                        <div className="text-base text-primary font-bold">{ind.geolocation.asn || 'Unknown'}</div>
-                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="text-muted text-sm py-4">
+                      Location unavailable
                     </div>
-                    
-                    <div className="mt-6 pt-4 border-t border-border flex justify-end">
-                      <button 
-                        onClick={() => navigate(`/security/threat-intelligence?indicator=${ind.id || ind._id}`)}
-                        className="flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-4 py-2.5 rounded-lg transition-colors font-semibold shadow-sm"
-                      >
-                        <MapPin size={16} /> View on Global Threat Map &rarr;
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-muted text-sm py-4">
-                    {ind.type === 'ip' ? 'Location data unavailable or private IP.' : 'Geolocation is only applicable to IP addresses.'}
-                  </div>
-                )}
+                  );
+                })()}
               </Section>
             </div>
 

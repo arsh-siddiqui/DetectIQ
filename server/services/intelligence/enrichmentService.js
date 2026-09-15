@@ -37,6 +37,9 @@ const {
   checkVirusTotalURL,
   checkVirusTotalHash,
 } = require('../threatIntel/virusTotalService');
+const { checkAbuseIpDbIP } = require('../threatIntel/abuseIpDbService');
+const { checkUrlhausURL } = require('../threatIntel/urlhausService');
+const { checkOtxIndicator } = require('../threatIntel/otxService');
 const env = require('../../config/env');
 
 const DEFAULT_MAX_INDICATORS = 20;
@@ -203,6 +206,79 @@ async function enrichVirusTotal(indicator) {
   return result;
 }
 
+/**
+ * Enrich one indicator with AbuseIPDB intelligence.
+ */
+async function enrichAbuseIpDb(indicator) {
+  if (indicator.type !== 'ip') return null;
+  // Reuse existing IP classification logic (indicator.isPublicIP is already calculated using forensics/iocExtractor)
+  if (indicator.isPublicIP === false) {
+    return {
+      provider: 'abuseipdb',
+      indicatorType: 'ip',
+      status: 'skipped',
+      abuseConfidenceScore: 0,
+      totalReports: 0,
+      summary: 'Private or special-use IP skipped.',
+      checkedAt: new Date().toISOString(),
+    };
+  }
+
+  // Cache check
+  const cached = await getCached('abuseipdb', indicator.type, indicator.normalizedValue);
+  if (cached) return { ...cached, fromCache: true };
+
+  const result = await checkAbuseIpDbIP(indicator.normalizedValue);
+  await setCache('abuseipdb', indicator.type, indicator.normalizedValue, result);
+  return result;
+}
+
+/**
+ * Enrich one indicator with URLhaus intelligence.
+ */
+async function enrichUrlhaus(indicator) {
+  if (indicator.type !== 'url') return null;
+
+  // Cache check
+  const cached = await getCached('urlhaus', indicator.type, indicator.normalizedValue);
+  if (cached) return { ...cached, fromCache: true };
+
+  const result = await checkUrlhausURL(indicator.normalizedValue);
+  await setCache('urlhaus', indicator.type, indicator.normalizedValue, result);
+  return result;
+}
+
+/**
+ * Enrich one indicator with OTX intelligence.
+ */
+async function enrichOtx(indicator) {
+  // Support IP, Domain, URL, Hash
+  if (!['ip', 'domain', 'url', 'hash'].includes(indicator.type)) return null;
+  
+  if (indicator.type === 'ip' && indicator.isPublicIP === false) {
+    return {
+      provider: 'otx',
+      indicatorType: 'ip',
+      status: 'skipped',
+      pulseCount: 0,
+      tags: [],
+      malwareFamilies: [],
+      firstSeen: null,
+      lastSeen: null,
+      summary: 'Private or special-use IP skipped.',
+      checkedAt: new Date().toISOString(),
+    };
+  }
+
+  // Cache check
+  const cached = await getCached('otx', indicator.type, indicator.normalizedValue);
+  if (cached) return { ...cached, fromCache: true };
+
+  const result = await checkOtxIndicator(indicator.type, indicator.normalizedValue);
+  await setCache('otx', indicator.type, indicator.normalizedValue, result);
+  return result;
+}
+
 // ---------------------------------------------------------------------------
 // Concurrent enrichment with per-indicator resilience
 // ---------------------------------------------------------------------------
@@ -223,7 +299,7 @@ async function enrichIndicators(indicators, investigation, options = {}) {
   // Enrich all indicators in parallel (per-indicator resilience)
   const enriched = await Promise.all(
     limited.map(async (indicator) => {
-      const [geoResult, vtResult] = await Promise.all([
+      const [geoResult, vtResult, abuseIpDbResult, urlhausResult, otxResult] = await Promise.all([
         enrichGeo(indicator, investigation).catch(err => ({
           status: 'error',
           errorDetail: err.message,
@@ -242,12 +318,48 @@ async function enrichIndicators(indicators, investigation, options = {}) {
           summary: `Error: ${err.message}`,
           checkedAt: new Date().toISOString(),
         })),
+        enrichAbuseIpDb(indicator).catch(err => ({
+          provider: 'abuseipdb',
+          indicatorType: 'ip',
+          status: 'error',
+          abuseConfidenceScore: 0,
+          totalReports: 0,
+          summary: `Error: ${err.message}`,
+          checkedAt: new Date().toISOString(),
+        })),
+        enrichUrlhaus(indicator).catch(err => ({
+          provider: 'urlhaus',
+          indicatorType: 'url',
+          status: 'error',
+          threat: 'unknown',
+          urlStatus: null,
+          firstSeen: null,
+          lastSeen: null,
+          tags: [],
+          summary: `Error: ${err.message}`,
+          checkedAt: new Date().toISOString(),
+        })),
+        enrichOtx(indicator).catch(err => ({
+          provider: 'otx',
+          indicatorType: indicator.type,
+          status: 'error',
+          pulseCount: 0,
+          tags: [],
+          malwareFamilies: [],
+          firstSeen: null,
+          lastSeen: null,
+          summary: `Error: ${err.message}`,
+          checkedAt: new Date().toISOString(),
+        })),
       ]);
 
       return {
         ...indicator,
         geolocation: geoResult || null,
         virusTotal: vtResult,
+        abuseIpDb: abuseIpDbResult || null,
+        urlhaus: urlhausResult || null,
+        otx: otxResult || null,
         // Three-state model:
         //   'extracted' = IOC found but no intelligence yet
         //   'available' = intelligence retrieved
@@ -283,8 +395,20 @@ async function persistIndicators(enrichedIndicators, investigationId, userId) {
 
       if (ind.virusTotal) {
         intelligence.set('virustotal', ind.virusTotal);
-        if (ind.virusTotal.threat) threatStatus = ind.virusTotal.threat;
-        if (ind.virusTotal.severity) severity = ind.virusTotal.severity;
+        if (ind.virusTotal.threat && ind.virusTotal.threat !== 'unknown') threatStatus = ind.virusTotal.threat;
+        if (ind.virusTotal.severity && ind.virusTotal.severity !== 'unknown') severity = ind.virusTotal.severity;
+      }
+
+      if (ind.abuseIpDb) {
+        intelligence.set('abuseipdb', ind.abuseIpDb);
+      }
+
+      if (ind.urlhaus) {
+        intelligence.set('urlhaus', ind.urlhaus);
+      }
+
+      if (ind.otx) {
+        intelligence.set('otx', ind.otx);
       }
 
       const doc = await Model.findOneAndUpdate(
@@ -368,6 +492,16 @@ async function enrichInvestigation(investigation) {
       threat: ind.virusTotal?.threat || 'unknown',
       severity: ind.virusTotal?.severity || 'unknown',
       vtStatus: ind.virusTotal?.status || 'skipped',
+      // AbuseIPDB integration
+      abuseIpDbStatus: ind.abuseIpDb?.status || 'skipped',
+      abuseConfidenceScore: ind.abuseIpDb?.abuseConfidenceScore || 0,
+      abuseReports: ind.abuseIpDb?.totalReports || 0,
+      // URLhaus integration
+      urlhausStatus: ind.urlhaus?.status || 'skipped',
+      urlhausThreat: ind.urlhaus?.threat || 'unknown',
+      // OTX integration
+      otxStatus: ind.otx?.status || 'skipped',
+      otxPulseCount: ind.otx?.pulseCount || 0,
     }));
 
   return {

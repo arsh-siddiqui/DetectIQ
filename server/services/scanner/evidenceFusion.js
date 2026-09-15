@@ -230,6 +230,7 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
   let finalClassification = 'legitimate';
   if (finalRiskLevel === 'high' || finalRiskLevel === 'critical') finalClassification = 'phishing';
   else if (finalRiskLevel === 'medium') finalClassification = 'suspicious';
+  else if (finalRiskLevel === 'low' && (heuristicResult.detectedSignals || []).length > 0) finalClassification = 'needs_review';
 
   const intelligence = {};
   if (threatIntel?.threatintel && threatIntel.threatintel.status !== 'skipped') {

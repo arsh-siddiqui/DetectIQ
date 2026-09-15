@@ -19,6 +19,13 @@ function toPublicUser(user) {
     status: user.status,
     isAdmin: user.role === "admin",
     memberSince: user.createdAt,
+    lastPasswordChange: user.lastPasswordChange || null,
+    preferences: {
+      emailAlerts: user.preferences?.emailAlerts ?? true,
+      weeklySummary: user.preferences?.weeklySummary ?? false,
+      notifications: user.preferences?.notifications ?? true,
+      theme: user.preferences?.theme ?? 'system',
+    },
     learningProfile: {
       strengths: user.learningProfile?.strengths || [],
       weaknesses: user.learningProfile?.weaknesses || [],

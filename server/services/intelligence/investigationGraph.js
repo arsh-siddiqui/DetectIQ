@@ -94,11 +94,12 @@ exports.generateInvestigationGraph = (investigation, indicators = []) => {
     let label = indVal;
     if (ind.type === 'hash') label = `${indVal.substring(0, 8)}...`;
     
-    // Node
+    // Node — include DB _id so the frontend can link to the Indicator detail page
     addNode(nodeId, ind.type, label, { 
       threat: ind.threatStatus, 
       severity: ind.severity,
-      provider: ind.sourceProviders?.[0]
+      provider: ind.sourceProviders?.[0],
+      indicatorDbId: ind._id ? ind._id.toString() : undefined
     });
     
     // Relation to Email

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Routes, Route, NavLink, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, Routes, Route, NavLink } from 'react-router-dom';
 import { format } from 'date-fns';
 import { 
-  ArrowLeft, ShieldAlert, Cpu, Activity, Clock, Server, 
-  MapPin, FileText, ChevronDown, ChevronRight, Hash, Network,
+  ArrowLeft, ShieldAlert, Activity, Clock, 
+  FileText, ChevronDown, ChevronRight, Hash, Network,
   Globe, Brain, LayoutDashboard, Search, FileBox
 } from 'lucide-react';
 import * as securityService from '../../services/securityService';
@@ -12,6 +12,7 @@ import InvestigationTimeline from '../../components/security/InvestigationTimeli
 import InvestigationCopilot from '../../components/security/InvestigationCopilot';
 import ForensicReportView from '../../components/security/ForensicReportView';
 import ForensicIntelligencePanel from '../../components/intelligence/ForensicIntelligencePanel';
+import EmailIntelligencePanel from '../../components/intelligence/EmailIntelligencePanel';
 import * as copilotService from '../../services/copilotService';
 
 const Section = ({ title, icon: Icon, children, defaultOpen = true }) => {
@@ -33,9 +34,9 @@ const Section = ({ title, icon: Icon, children, defaultOpen = true }) => {
   );
 };
 
-const OverviewTab = ({ inv, navigate }) => {
+const OverviewTab = ({ inv }) => {
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="w-full space-y-6">
       {inv.scan && (
         <Section title="Detection Verdict" icon={ShieldAlert}>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -131,7 +132,7 @@ const OverviewTab = ({ inv, navigate }) => {
 
 const EvidenceTab = ({ inv }) => {
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="w-full space-y-6">
       <Section title="Email Headers" icon={FileText}>
          <div className="space-y-4 text-sm">
             <div>
@@ -213,8 +214,16 @@ const EvidenceTab = ({ inv }) => {
 };
 
 const IntelligenceTab = ({ inv }) => {
+  if (inv.emailIntelligence) {
+    return (
+      <div className="w-full">
+        <EmailIntelligencePanel intelligence={inv.emailIntelligence} />
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-5xl">
+    <div className="w-full">
       <ForensicIntelligencePanel 
         geoPoints={inv.geoPoints || []} 
         indicators={inv.indicators || []}
@@ -227,14 +236,14 @@ const IntelligenceTab = ({ inv }) => {
 const TimelineTab = ({ inv }) => {
   if (!inv.timeline || inv.timeline.length === 0) {
     return (
-      <div className="max-w-3xl text-center py-16 bg-card border border-border shadow-soft rounded-xl">
+      <div className="w-full text-center py-16 bg-card border border-border shadow-soft rounded-xl">
         <Clock size={40} className="mx-auto text-muted mb-4" />
         <p className="text-secondary">No timeline events available.</p>
       </div>
     );
   }
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <div className="bg-card border border-border shadow-soft rounded-xl p-6">
         <InvestigationTimeline timeline={inv.timeline} />
       </div>
@@ -245,7 +254,7 @@ const TimelineTab = ({ inv }) => {
 const GraphTab = ({ inv }) => {
   if (!inv.graph || !inv.graph.nodes || inv.graph.nodes.length === 0) {
     return (
-      <div className="text-center py-20 bg-card border border-border shadow-soft rounded-xl max-w-4xl">
+      <div className="text-center py-20 bg-card border border-border shadow-soft rounded-xl w-full">
         <Network size={48} className="mx-auto text-muted mb-4" />
         <p className="text-secondary">No investigation graph data available.</p>
       </div>
@@ -270,10 +279,10 @@ const GraphTab = ({ inv }) => {
   );
 };
 
-const CopilotTab = ({ invId }) => {
+const CopilotTab = ({ invId, inv }) => {
   return (
     <div className="h-[calc(100vh-280px)] min-h-[600px]">
-      <InvestigationCopilot investigationId={invId} />
+      <InvestigationCopilot investigationId={invId} investigation={inv} />
     </div>
   );
 };
@@ -290,7 +299,7 @@ const ReportTab = ({ invId }) => {
         setLoading(true);
         const data = await copilotService.getInvestigationReport(invId);
         setReport(data);
-      } catch (err) {
+      } catch {
         // Report might not exist
       } finally {
         setLoading(false);
@@ -318,7 +327,7 @@ const ReportTab = ({ invId }) => {
   }
 
   return (
-    <div className="max-w-5xl">
+    <div className="w-full">
       <div className="flex justify-end mb-6">
         <button 
           onClick={handleGenerate}
@@ -416,7 +425,7 @@ const InvestigationDetail = () => {
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
       <div className="flex-1 overflow-auto p-6 flex flex-col">
-        <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col">
+        <div className="w-full flex-1 flex flex-col">
           
           {/* Header */}
           <div className="flex items-center gap-4 pb-6">
@@ -467,12 +476,12 @@ const InvestigationDetail = () => {
           {/* Content Area */}
           <div className="flex-1">
             <Routes>
-              <Route index element={<OverviewTab inv={inv} navigate={navigate} />} />
+              <Route index element={<OverviewTab inv={inv} />} />
               <Route path="evidence" element={<EvidenceTab inv={inv} />} />
               <Route path="intelligence" element={<IntelligenceTab inv={inv} />} />
               <Route path="timeline" element={<TimelineTab inv={inv} />} />
               <Route path="graph" element={<GraphTab inv={inv} />} />
-              <Route path="copilot" element={<CopilotTab invId={id} />} />
+              <Route path="copilot" element={<CopilotTab invId={id} inv={inv} />} />
               <Route path="report" element={<ReportTab invId={id} />} />
             </Routes>
           </div>

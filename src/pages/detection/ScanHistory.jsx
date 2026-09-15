@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ShieldAlert, Loader2, ArrowRight, ScanLine, Mail, Globe, MessageSquare, QrCode, Image, Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import { ShieldAlert, Loader2, ArrowRight, ScanLine, Mail, Globe, MessageSquare, QrCode, Image, ChevronLeft, ChevronRight } from "lucide-react";
 import { getScanHistory } from "../../services/detectionService";
 import { motion } from "framer-motion";
 
@@ -126,7 +126,6 @@ export default function ScanHistory() {
           {/* Rows */}
           <div className="divide-y divide-border/20">
             {currentScans.map((scan) => {
-              const isSafe = scan.riskLevel === 'safe' || scan.riskLevel === 'low';
               const isMedium = scan.riskLevel === 'medium';
               const isDanger = scan.riskLevel === 'high' || scan.riskLevel === 'critical';
               const TypeIcon = TYPE_ICONS[scan.scanType || scan.inputType] || ScanLine;

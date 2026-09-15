@@ -1,5 +1,3 @@
-const url = require('url');
-
 // Simple brand list for heuristic detection
 const BRANDS = ['google', 'microsoft', 'amazon', 'apple', 'paypal', 'whatsapp', 'instagram', 'facebook', 'netflix'];
 
@@ -12,11 +10,35 @@ const SHORTENERS = ['bit.ly', 'tinyurl.com', 't.co', 'ow.ly', 'is.gd', 'buff.ly'
 const CREDENTIAL_PATHS = ['login', 'signin', 'sign-in', 'verify', 'auth', 'confirm', 'kyc', 'otp', 'password-reset', 'reset-password'];
 
 /**
+ * Builds the explanation for a suspicious credential-oriented URL pattern based on threat intelligence status.
+ * @param {string|Object} [threatIntel] - Threat intelligence state or status string.
+ * @returns {string} - Human-readable explanation.
+ */
+function getSuspiciousUrlExplanation(threatIntel) {
+  let status = 'not_observed';
+  if (typeof threatIntel === 'string') {
+    status = threatIntel;
+  } else if (threatIntel && typeof threatIntel === 'object') {
+    status = threatIntel.threatIntelStatus || threatIntel.threatStatus || threatIntel.status || 'not_observed';
+  }
+
+  const prefix = 'The email contains a credential-oriented verification URL. ';
+  if (status === 'unavailable') {
+    return `${prefix}Reputation could not be determined because the provider was unavailable.`;
+  }
+  if (status === 'not_configured') {
+    return `${prefix}Provider reputation was not available because the provider was not configured.`;
+  }
+  return `${prefix}No malicious observation was found.`;
+}
+
+/**
  * Analyzes a URL string for heuristic signals.
  * @param {string} urlString - The URL to analyze.
+ * @param {Object|string} [options] - Options or threat intelligence state.
  * @returns {Array} - An array of signal objects.
  */
-function analyzeUrl(urlString) {
+function analyzeUrl(urlString, options = {}) {
   const signals = [];
   let parsedUrl;
 
@@ -88,8 +110,8 @@ function analyzeUrl(urlString) {
     signals.push({
       type: 'credential_path',
       severity: 'medium',
-      title: 'Credential Request Path',
-      explanation: 'The link points to a login, verification, or security page, which is a common phishing tactic.',
+      title: 'Suspicious URL Pattern',
+      explanation: getSuspiciousUrlExplanation(options),
       evidence: urlString.slice(0, 50),
     });
   }
@@ -167,4 +189,4 @@ function analyzeUrl(urlString) {
   return signals;
 }
 
-module.exports = { analyzeUrl };
+module.exports = { analyzeUrl, getSuspiciousUrlExplanation };

@@ -282,6 +282,81 @@ it('B15 — Result shape contains all required frontend fields', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Results
+// Section C — URL Verdict Consistency (resultBuilder layer)
 // ---------------------------------------------------------------------------
 
+console.log('\n=== SECTION C: URL Verdict Consistency ===');
+
+it('C1 — credential_path alone: recommendations do NOT contain "Do not click"', () => {
+  // https://secure-login.account-verification.test/verify — the reported example
+  const r = analyzeContent('https://secure-login.account-verification.test/verify?session=8472', 'url');
+  const recLower = r.recommendations.map(rec => rec.toLowerCase()).join(' ');
+  assert.ok(
+    !recLower.includes('do not click'),
+    `credential_path alone should not produce "Do not click". Got: ${r.recommendations.join('; ')}`
+  );
+});
+
+it('C2 — credential_path alone: recommendations DO contain "verify" or "official"', () => {
+  const r = analyzeContent('https://secure-login.account-verification.test/verify?session=8472', 'url');
+  const recLower = r.recommendations.map(rec => rec.toLowerCase()).join(' ');
+  assert.ok(
+    recLower.includes('verify') || recLower.includes('official'),
+    `credential_path alone should produce soft verification recommendation. Got: ${r.recommendations.join('; ')}`
+  );
+});
+
+it('C3 — brand_impersonation + credential_path: "Do not click" IS present', () => {
+  // Both deceptive domain AND credential path → strong language warranted
+  const r = analyzeContent('https://paypal-verify.example.com/login', 'url');
+  const recLower = r.recommendations.map(rec => rec.toLowerCase()).join(' ');
+  assert.ok(
+    recLower.includes('do not click') || recLower.includes('navigate to'),
+    `Brand impersonation should still trigger strong recommendation. Got: ${r.recommendations.join('; ')}`
+  );
+});
+
+it('C4 — credential_path alone: summary is neutral, no "mostly legitimate" language', () => {
+  const r = analyzeContent('https://secure-login.account-verification.test/verify', 'url');
+  assert.ok(
+    !r.summary.toLowerCase().includes('mostly legitimate'),
+    `Summary should not imply AI judgment. Got: "${r.summary}"`
+  );
+});
+
+it('C5 — benign URL (no signals): summary indicates no threats found', () => {
+  const r = analyzeContent('https://www.example.com', 'url');
+  assert.ok(
+    r.riskLevel === 'safe' || r.riskLevel === 'low',
+    `Benign URL should be safe or low, got ${r.riskLevel}`
+  );
+  assert.ok(r.recommendations.some(rec => rec.toLowerCase().includes('no action') || rec.toLowerCase().includes('always remain')),
+    `Benign URL recommendations should be safe-oriented. Got: ${r.recommendations.join('; ')}`
+  );
+});
+
+it('C6 — url_shortener alone: moderate caution, not "Do not click"', () => {
+  const r = analyzeContent('https://bit.ly/3someCode', 'url');
+  const recLower = r.recommendations.map(rec => rec.toLowerCase()).join(' ');
+  assert.ok(
+    !recLower.includes('do not click'),
+    `url_shortener alone should not produce "Do not click". Got: ${r.recommendations.join('; ')}`
+  );
+});
+
+it('C7 — risk score always in bounds after resultBuilder changes', () => {
+  const testCases = [
+    'https://secure-login.account-verification.test/verify',
+    'https://www.example.com',
+    'https://bit.ly/3someCode',
+    'https://paypal-verify.fake.com/login',
+  ];
+  for (const url of testCases) {
+    const r = analyzeContent(url, 'url');
+    assert.ok(r.riskScore >= 0 && r.riskScore <= 100, `Score out of bounds for ${url}: ${r.riskScore}`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Results
+// ---------------------------------------------------------------------------
