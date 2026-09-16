@@ -91,6 +91,7 @@ export default function ThreatAnalytics({ trends, indicatorTypes, summary, isLoa
                 <Line type="monotone" dataKey="malicious" name="Malicious" stroke={THREAT_COLORS.malicious} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
                 <Line type="monotone" dataKey="suspicious" name="Suspicious" stroke={THREAT_COLORS.suspicious} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
                 <Line type="monotone" dataKey="clean" name="Clean" stroke={THREAT_COLORS.clean} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                <Line type="monotone" dataKey="unknown" name="Unknown" stroke={THREAT_COLORS.unknown} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
               </LineChart>
             </ResponsiveContainer>
           )}

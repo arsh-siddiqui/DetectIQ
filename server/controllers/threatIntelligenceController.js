@@ -177,7 +177,8 @@ exports.getThreatIntelligenceOverview = asyncHandler(async (req, res) => {
         },
         malicious: { $sum: { $cond: [{ $eq: ["$threatStatus", "malicious"] }, 1, 0] } },
         suspicious: { $sum: { $cond: [{ $eq: ["$threatStatus", "suspicious"] }, 1, 0] } },
-        clean: { $sum: { $cond: [{ $eq: ["$threatStatus", "clean"] }, 1, 0] } }
+        clean: { $sum: { $cond: [{ $eq: ["$threatStatus", "clean"] }, 1, 0] } },
+        unknown: { $sum: { $cond: [{ $in: ["$threatStatus", [null, "", "unknown"]] }, 1, 0] } }
       }
     },
     { $sort: { _id: 1 } },
@@ -189,7 +190,8 @@ exports.getThreatIntelligenceOverview = asyncHandler(async (req, res) => {
     date: t._id,
     malicious: t.malicious,
     suspicious: t.suspicious,
-    clean: t.clean
+    clean: t.clean,
+    unknown: t.unknown
   }));
 
   res.json({
