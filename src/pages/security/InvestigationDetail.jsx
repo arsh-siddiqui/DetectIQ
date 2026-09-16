@@ -262,18 +262,6 @@ const GraphTab = ({ inv }) => {
   }
   return (
     <div className="h-[calc(100vh-280px)] min-h-[600px] border border-border rounded-xl overflow-hidden bg-[#0f172a] relative">
-      <div className="absolute top-4 left-4 z-10 bg-card/90 backdrop-blur border border-border rounded-lg p-4 shadow-xl">
-        <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
-          <Network size={16} className="text-accent-violet" />
-          Investigation Graph
-        </h3>
-        <div className="text-[11px] text-muted mt-1 leading-relaxed">
-          Explore how evidence and indicators are connected.<br/>Click any node for details.
-        </div>
-        <div className="text-[11px] font-medium text-secondary mt-3 uppercase tracking-wider">
-          {inv.graph.nodes.length} Entities · {inv.graph.edges?.length || 0} Relationships
-        </div>
-      </div>
       <InvestigationGraph data={{ nodes: inv.graph.nodes, links: inv.graph.edges || [] }} />
     </div>
   );

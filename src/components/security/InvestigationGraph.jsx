@@ -1,20 +1,21 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ForceGraph2D from 'react-force-graph-2d';
-import { Maximize2, Minimize2, X, Copy, ExternalLink } from 'lucide-react';
+import { Maximize2, Minimize2, X, Copy, ExternalLink, Network } from 'lucide-react';
 
 const NODE_COLORS = {
-  investigation: '#3b82f6', // blue
-  email: '#3b82f6', // blue
-  person: '#10b981', // emerald
-  ip: '#f59e0b', // amber
-  domain: '#f59e0b', // amber
-  url: '#0ea5e9', // light blue/cyan for URL
-  hash: '#64748b', // slate
-  attachment: '#06b6d4', // cyan
-  location: '#84cc16', // lime
-  asn: '#d946ef', // fuchsia
-  default: '#9ca3af' // gray
+  investigation: '#3b82f6', 
+  email: '#3b82f6', 
+  person: '#10b981', 
+  ip: '#f59e0b', 
+  domain: '#f59e0b', 
+  url: '#0ea5e9', 
+  hash: '#64748b', 
+  attachment: '#06b6d4', 
+  location: '#84cc16', 
+  threat_intel: '#ef4444', 
+  asn: '#d946ef', 
+  default: '#9ca3af' 
 };
 
 const TYPE_LABELS = {
@@ -26,9 +27,12 @@ const TYPE_LABELS = {
   url: 'URL',
   hash: 'Hash',
   attachment: 'Attachment',
-  location: 'Location',
+  location: 'Geolocation',
+  threat_intel: 'Threat Intelligence',
   asn: 'ASN'
 };
+
+const FILTERS = ['All', 'IPs', 'Domains', 'URLs', 'Emails', 'Attachments'];
 
 const InvestigationGraph = ({ data }) => {
   const navigate = useNavigate();
@@ -38,6 +42,7 @@ const InvestigationGraph = ({ data }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedNode, setSelectedNode] = useState(null);
   const [hoveredNode, setHoveredNode] = useState(null);
+  const [activeFilter, setActiveFilter] = useState('All');
 
   const updateDimensions = useCallback(() => {
     if (containerRef.current) {
@@ -54,21 +59,83 @@ const InvestigationGraph = ({ data }) => {
     return () => window.removeEventListener('resize', updateDimensions);
   }, [updateDimensions]);
 
+  // Compute filtered graph data
+  const filteredData = useMemo(() => {
+    if (!data || !data.nodes) return { nodes: [], links: [] };
+    if (activeFilter === 'All') return data;
+
+    let allowedNodeIds = new Set();
+    const centralEmailNode = data.nodes.find(n => n.type === 'email');
+    if (centralEmailNode) allowedNodeIds.add(centralEmailNode.id);
+
+    // Helper to find immediate neighbors
+    const getNeighbors = (nodeIds) => {
+      const neighbors = new Set();
+      data.links.forEach(link => {
+        const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+        const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+        if (nodeIds.has(sourceId)) neighbors.add(targetId);
+        if (nodeIds.has(targetId)) neighbors.add(sourceId);
+      });
+      return neighbors;
+    };
+
+    let coreNodes = new Set();
+
+    if (activeFilter === 'IPs') {
+      data.nodes.filter(n => n.type === 'ip').forEach(n => coreNodes.add(n.id));
+    } else if (activeFilter === 'Domains') {
+      data.nodes.filter(n => n.type === 'domain').forEach(n => coreNodes.add(n.id));
+    } else if (activeFilter === 'URLs') {
+      data.nodes.filter(n => n.type === 'url').forEach(n => coreNodes.add(n.id));
+    } else if (activeFilter === 'Emails') {
+      data.nodes.filter(n => n.type === 'person' || n.type === 'email').forEach(n => coreNodes.add(n.id));
+      // Add sender domains
+      data.links.forEach(link => {
+        if (link.relation === 'sent from' || link.relation === 'reply_to domain') {
+          const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+          const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+          if (centralEmailNode && sourceId === centralEmailNode.id) {
+            coreNodes.add(targetId);
+          }
+        }
+      });
+    } else if (activeFilter === 'Attachments') {
+      data.nodes.filter(n => n.type === 'attachment' || n.type === 'hash').forEach(n => coreNodes.add(n.id));
+    }
+
+    coreNodes.forEach(id => allowedNodeIds.add(id));
+    const neighbors = getNeighbors(coreNodes);
+    neighbors.forEach(id => allowedNodeIds.add(id));
+
+    const nodes = data.nodes.filter(n => allowedNodeIds.has(n.id));
+    const links = data.links.filter(link => {
+      const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+      const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+      return allowedNodeIds.has(sourceId) && allowedNodeIds.has(targetId);
+    });
+
+    return { nodes, links };
+  }, [data, activeFilter]);
+
+  // Handle selected node disappearing when filter changes
   useEffect(() => {
-    if (fgRef.current && data?.nodes?.length) {
-      // Spread nodes further apart
+    if (selectedNode && !filteredData.nodes.find(n => n.id === selectedNode.id)) {
+      setSelectedNode(null);
+    }
+  }, [filteredData, selectedNode]);
+
+  useEffect(() => {
+    if (fgRef.current && filteredData.nodes.length) {
       fgRef.current.d3Force('charge').strength(-400);
       fgRef.current.d3Force('link').distance(60);
-      
       setTimeout(() => {
-        fgRef.current.zoomToFit(400, 80); // Increase padding to zoom out slightly, but with spread nodes it will look bigger
+        fgRef.current.zoomToFit(400, 80);
       }, 500);
     }
-  }, [data]);
+  }, [filteredData]);
 
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-  };
+  const toggleFullscreen = () => setIsFullscreen(!isFullscreen);
 
   const handleNodeClick = useCallback((node) => {
     setSelectedNode(node);
@@ -78,32 +145,29 @@ const InvestigationGraph = ({ data }) => {
     }
   }, []);
 
-  const handleBackgroundClick = useCallback(() => {
-    setSelectedNode(null);
-  }, []);
+  const handleBackgroundClick = useCallback(() => setSelectedNode(null), []);
 
   const presentTypes = useMemo(() => {
-    if (!data || !data.nodes) return [];
-    const types = new Set(data.nodes.map(n => n.type));
+    if (!filteredData.nodes) return [];
+    const types = new Set(filteredData.nodes.map(n => n.type));
     return Array.from(types).sort();
-  }, [data]);
+  }, [filteredData]);
 
-  // Find relationships for the selected node
   const selectedNodeRelationships = useMemo(() => {
-    if (!selectedNode || !data || !data.links) return [];
-    return data.links.filter(
+    if (!selectedNode || !filteredData.links) return [];
+    return filteredData.links.filter(
       link => (link.source.id || link.source) === selectedNode.id || (link.target.id || link.target) === selectedNode.id
     ).map(link => {
       const isSource = (link.source.id || link.source) === selectedNode.id;
       const otherNodeId = isSource ? (link.target.id || link.target) : (link.source.id || link.source);
-      const otherNode = data.nodes.find(n => n.id === otherNodeId);
+      const otherNode = filteredData.nodes.find(n => n.id === otherNodeId);
       return {
         direction: isSource ? 'outgoing' : 'incoming',
-        relType: link.label || link.relationship || 'links to',
+        relType: link.relation || link.label || link.type || 'links to',
         node: otherNode
       };
     });
-  }, [selectedNode, data]);
+  }, [selectedNode, filteredData]);
 
   if (!data || !data.nodes || data.nodes.length === 0) {
     return (
@@ -119,6 +183,38 @@ const InvestigationGraph = ({ data }) => {
       ref={containerRef}
     >
       <div className="flex-1 relative h-full">
+        {/* Graph Header and Filters */}
+        <div className="absolute top-4 left-4 z-10 space-y-3">
+          <div className="bg-card/90 backdrop-blur border border-border rounded-lg p-4 shadow-xl">
+            <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
+              <Network size={16} className="text-accent-violet" />
+              Investigation Graph
+            </h3>
+            <div className="text-[11px] text-muted mt-1 leading-relaxed">
+              Explore how evidence and indicators are connected.<br/>Click any node for details.
+            </div>
+            <div className="text-[11px] font-medium text-secondary mt-3 uppercase tracking-wider">
+              {activeFilter !== 'All' ? `${activeFilter} · ` : ''}{filteredData.nodes.length} Entities · {filteredData.links.length} Relationships
+            </div>
+          </div>
+          
+          <div className="bg-card/90 backdrop-blur border border-border rounded-lg p-2 shadow-xl flex gap-1">
+            {FILTERS.map(f => (
+              <button
+                key={f}
+                onClick={() => setActiveFilter(f)}
+                className={`px-3 py-1.5 rounded-md text-[11px] font-medium transition-colors ${
+                  activeFilter === f 
+                    ? 'bg-accent-blue text-white shadow-sm' 
+                    : 'text-secondary hover:text-primary hover:bg-secondary/50'
+                }`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Controls */}
         <div className="absolute top-4 right-4 z-10 flex space-x-2">
           <button 
@@ -152,95 +248,99 @@ const InvestigationGraph = ({ data }) => {
           </div>
         </div>
 
-        <ForceGraph2D
-          ref={fgRef}
-          width={selectedNode ? dimensions.width - 320 : dimensions.width}
-          height={dimensions.height}
-          graphData={data}
-          nodeLabel=""
-          nodeColor={(node) => NODE_COLORS[node.type] || NODE_COLORS.default}
-          nodeRelSize={6}
-          linkColor={() => 'rgba(255,255,255,0.2)'}
-          linkWidth={1.5}
-          linkDirectionalArrowLength={3.5}
-          linkDirectionalArrowRelPos={1}
-          linkLabel={(link) => {
-            const source = typeof link.source === 'object' ? link.source.label || link.source.id : link.source;
-            const target = typeof link.target === 'object' ? link.target.label || link.target.id : link.target;
-            const rel = link.label || link.relationship || link.type || 'links to';
-            return `${source} → ${rel} → ${target}`;
-          }}
-          onNodeClick={handleNodeClick}
-          onBackgroundClick={handleBackgroundClick}
-          onNodeHover={setHoveredNode}
-          backgroundColor="transparent"
-          nodeCanvasObject={(node, ctx, globalScale) => {
-            const isHovered = hoveredNode === node;
-            const isSelected = selectedNode === node;
-            const isCenter = node.type === 'investigation';
-            const color = NODE_COLORS[node.type] || NODE_COLORS.default;
-            
-            ctx.beginPath();
-            
-            if (isCenter) {
-              // Draw a larger central node
-              ctx.arc(node.x, node.y, 9, 0, 2 * Math.PI, false);
-            } else if (node.type === 'person') {
-              ctx.rect(node.x - 5, node.y - 5, 10, 10);
-            } else {
-              ctx.arc(node.x, node.y, 5, 0, 2 * Math.PI, false);
-            }
-            
-            ctx.fillStyle = color;
-            ctx.fill();
-
-            // Border
-            if (isSelected || isHovered || isCenter) {
-              ctx.lineWidth = isCenter ? 2 : 1.5;
-              ctx.strokeStyle = 'white';
-              ctx.stroke();
-            }
-
-            const getShortLabel = (label, type) => {
-              if (!label) return '';
-              // Don't modify person labels
-              if (type === 'email') {
-                const parts = label.split('@');
-                if (parts.length === 2) return parts[0] + '@...';
+        {filteredData.nodes.length === 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="text-secondary text-sm bg-card/80 backdrop-blur px-6 py-3 rounded-full border border-border">
+              No {activeFilter.toLowerCase()} relationships were found in this investigation.
+            </div>
+          </div>
+        ) : (
+          <ForceGraph2D
+            ref={fgRef}
+            width={selectedNode ? dimensions.width - 320 : dimensions.width}
+            height={dimensions.height}
+            graphData={filteredData}
+            nodeLabel=""
+            nodeColor={(node) => NODE_COLORS[node.type] || NODE_COLORS.default}
+            nodeRelSize={6}
+            linkColor={() => 'rgba(255,255,255,0.2)'}
+            linkWidth={1.5}
+            linkDirectionalArrowLength={3.5}
+            linkDirectionalArrowRelPos={1}
+            linkLabel={(link) => {
+              const source = typeof link.source === 'object' ? link.source.label || link.source.id : link.source;
+              const target = typeof link.target === 'object' ? link.target.label || link.target.id : link.target;
+              const rel = link.relation || link.label || link.type || 'links to';
+              return `${source} → ${rel} → ${target}`;
+            }}
+            onNodeClick={handleNodeClick}
+            onBackgroundClick={handleBackgroundClick}
+            onNodeHover={setHoveredNode}
+            backgroundColor="transparent"
+            nodeCanvasObject={(node, ctx, globalScale) => {
+              const isHovered = hoveredNode === node;
+              const isSelected = selectedNode === node;
+              const isCenter = node.type === 'investigation' || node.type === 'email';
+              const color = NODE_COLORS[node.type] || NODE_COLORS.default;
+              
+              ctx.beginPath();
+              
+              if (isCenter) {
+                ctx.arc(node.x, node.y, 9, 0, 2 * Math.PI, false);
+              } else if (node.type === 'person') {
+                ctx.rect(node.x - 5, node.y - 5, 10, 10);
+              } else {
+                ctx.arc(node.x, node.y, 5, 0, 2 * Math.PI, false);
               }
-              if (type === 'url') {
-                try {
-                  const url = new URL(label);
-                  const paths = url.pathname.split('/').filter(p => p);
-                  if (paths.length > 0) return paths[paths.length - 1];
-                  return url.hostname;
-                } catch(e) {}
-              }
-              if (label.length > 25) return label.substring(0, 22) + '...';
-              return label;
-            };
+              
+              ctx.fillStyle = color;
+              ctx.fill();
 
-            const fullLabel = node.label || node.id;
-            const label = (isHovered || isSelected) ? fullLabel : getShortLabel(fullLabel, node.type);
-            const fontSize = (isHovered || isSelected) ? 12 / globalScale : 10 / globalScale;
-            
-            ctx.font = `${fontSize}px Sans-Serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            
-            const textWidth = ctx.measureText(label).width;
-            const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.4);
-            
-            // Push the label further down depending on the node size to prevent overlap
-            const yOffset = isCenter ? 16 : 14; 
-            
-            ctx.fillStyle = (isHovered || isSelected) ? 'rgba(15, 23, 42, 0.95)' : 'rgba(15, 23, 42, 0.7)';
-            ctx.fillRect(node.x - bckgDimensions[0] / 2, node.y + yOffset - bckgDimensions[1] / 2, bckgDimensions[0], bckgDimensions[1]);
-            
-            ctx.fillStyle = (isHovered || isSelected) ? '#ffffff' : 'rgba(255, 255, 255, 0.9)';
-            ctx.fillText(label, node.x, node.y + yOffset);
-          }}
-        />
+              if (isSelected || isHovered || isCenter) {
+                ctx.lineWidth = isCenter ? 2 : 1.5;
+                ctx.strokeStyle = 'white';
+                ctx.stroke();
+              }
+
+              const getShortLabel = (label, type) => {
+                if (!label) return '';
+                if (type === 'email') {
+                  const parts = label.split('@');
+                  if (parts.length === 2) return parts[0] + '@...';
+                }
+                if (type === 'url') {
+                  try {
+                    const url = new URL(label.startsWith('http') ? label : `http://${label}`);
+                    const paths = url.pathname.split('/').filter(p => p);
+                    if (paths.length > 0) return paths[paths.length - 1];
+                    return url.hostname;
+                  } catch(e) {}
+                }
+                if (label.length > 25) return label.substring(0, 22) + '...';
+                return label;
+              };
+
+              const fullLabel = node.label || node.id;
+              const label = (isHovered || isSelected) ? fullLabel : getShortLabel(fullLabel, node.type);
+              const fontSize = (isHovered || isSelected) ? 12 / globalScale : 10 / globalScale;
+              
+              ctx.font = `${fontSize}px Sans-Serif`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              
+              const textWidth = ctx.measureText(label).width;
+              const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.4);
+              
+              const yOffset = isCenter ? 16 : 14; 
+              
+              ctx.fillStyle = (isHovered || isSelected) ? 'rgba(15, 23, 42, 0.95)' : 'rgba(15, 23, 42, 0.7)';
+              ctx.fillRect(node.x - bckgDimensions[0] / 2, node.y + yOffset - bckgDimensions[1] / 2, bckgDimensions[0], bckgDimensions[1]);
+              
+              ctx.fillStyle = (isHovered || isSelected) ? '#ffffff' : 'rgba(255, 255, 255, 0.9)';
+              ctx.fillText(label, node.x, node.y + yOffset);
+            }}
+          />
+        )}
       </div>
 
       {/* Right Side Details Panel */}
@@ -258,7 +358,6 @@ const InvestigationGraph = ({ data }) => {
 
           <div className="p-5 space-y-7 flex-1 text-sm">
             
-            {/* Main Identification */}
             <div className="space-y-1">
               <div className="text-[10px] uppercase tracking-wider font-bold text-muted">{TYPE_LABELS[selectedNode.type] || selectedNode.type || 'Unknown'}</div>
               <div className="text-sm font-medium text-primary break-all">{selectedNode.label || selectedNode.id}</div>
@@ -289,10 +388,10 @@ const InvestigationGraph = ({ data }) => {
                </div>
             )}
 
-            {selectedNode.metadata?.org && (
+            {selectedNode.metadata?.provider && selectedNode.type === 'threat_intel' && (
                <div className="space-y-1">
-                 <div className="text-[10px] uppercase tracking-wider font-bold text-muted">Organization</div>
-                 <div className="text-sm font-medium text-primary">{selectedNode.metadata.org}</div>
+                 <div className="text-[10px] uppercase tracking-wider font-bold text-muted">Provider</div>
+                 <div className="text-sm font-medium text-primary capitalize">{selectedNode.metadata.provider}</div>
                </div>
             )}
 
