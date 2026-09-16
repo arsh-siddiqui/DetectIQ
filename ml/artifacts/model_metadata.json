@@ -4,7 +4,7 @@
   "algorithm": "TF-IDF (word 1-2gram + char 3-5gram) + Logistic Regression",
   "dataset": "zefang-liu/phishing-email-dataset",
   "datasetLicense": "LGPL-3.0",
-  "trainedAt": "2026-09-16T03:55:17.520095+00:00",
+  "trainedAt": "2026-09-16T03:56:29.387414+00:00",
   "randomSeed": 42,
   "trainSamples": 14029,
   "testSamples": 3508,
