@@ -468,11 +468,16 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
 
       {validPointsCount > 0 && (
         <div className="absolute bottom-4 right-4 z-10">
-          <div className="bg-[#0f172a]/90 backdrop-blur-md border border-slate-800 rounded-lg px-3 py-1.5 shadow-lg">
+          <div className="bg-[#0f172a]/90 backdrop-blur-md border border-slate-800 rounded-lg px-3 py-1.5 shadow-lg group relative cursor-help">
             <span className="text-[11px] text-slate-300 font-medium flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-              {totalIndicators ? `Showing ${validPointsCount} of ${totalIndicators} indicators on the map` : `${validPointsCount} geolocated indicator${validPointsCount !== 1 ? "s" : ""}`}
+              {totalIndicators ? `Showing ${validPointsCount} of ${totalIndicators} indicators` : `${validPointsCount} geolocated indicator${validPointsCount !== 1 ? "s" : ""}`}
+              <Info size={12} className="text-slate-400 ml-1" />
             </span>
+            {/* Tooltip to explain why counts differ */}
+            <div className="absolute bottom-full right-0 mb-2 w-64 p-2 bg-[#1e293b] border border-slate-700 rounded-lg text-xs text-slate-300 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all pointer-events-none z-50">
+              Only indicators with a valid physical location (IPs and resolved Domains) can be plotted on the map. Hashes, email addresses, and private IPs do not have geographic coordinates.
+            </div>
           </div>
         </div>
       )}
