@@ -162,7 +162,7 @@ const IndicatorList = () => {
                 className="bg-input border border-input text-primary rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent-violet"
               >
                 <option value="">All Threat States</option>
-                <option value="flagged">Flagged</option>
+                <option value="malicious">Malicious</option>
                 <option value="suspicious">Suspicious</option>
                 <option value="clean">Clean</option>
                 <option value="unknown">Unknown</option>

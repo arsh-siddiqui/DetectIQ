@@ -455,7 +455,7 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
       <div className="absolute bottom-4 left-4 flex flex-col gap-3 z-10">
         <div className="bg-[#0f172a]/90 backdrop-blur-md border border-slate-800 rounded-lg px-3 py-2 shadow-xl flex items-center gap-3">
           <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Threat Status:</div>
-          <div className="flex flex-row items-center gap-3">
+          <div className="flex flex-row items-center gap-3 flex-wrap">
             {Object.entries(THREAT_COLORS).map(([threat, color]) => (
               <div key={threat} className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />

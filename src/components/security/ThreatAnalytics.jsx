@@ -30,11 +30,11 @@ export default function ThreatAnalytics({ trends, indicatorTypes, summary, isLoa
   const hasTypes = indicatorTypes && indicatorTypes.length > 0;
   
   const statusData = summary ? [
-    { name: 'Malicious', value: summary.malicious, color: THREAT_COLORS.malicious },
-    { name: 'Suspicious', value: summary.suspicious, color: THREAT_COLORS.suspicious },
-    { name: 'Clean', value: summary.clean, color: THREAT_COLORS.clean },
-    { name: 'Unknown', value: summary.unknown, color: THREAT_COLORS.unknown }
-  ].filter(d => d.value > 0) : [];
+    { name: 'Malicious', value: summary.malicious || 0, color: THREAT_COLORS.malicious },
+    { name: 'Suspicious', value: summary.suspicious || 0, color: THREAT_COLORS.suspicious },
+    { name: 'Clean', value: summary.clean || 0, color: THREAT_COLORS.clean },
+    { name: 'Unknown', value: summary.unknown || 0, color: THREAT_COLORS.unknown }
+  ] : [];
   
   const hasStatus = statusData.length > 0;
 
