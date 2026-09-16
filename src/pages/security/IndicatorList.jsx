@@ -249,7 +249,7 @@ const IndicatorList = () => {
               </div>
             )}
             
-            {/* Pagination */}
+            {/*Pagination*/}
             {!loading && totalPages > 1 && (
               <div className="px-6 py-4 border-t border-border bg-secondary/30 flex items-center justify-between">
                 <span className="text-sm text-secondary">
