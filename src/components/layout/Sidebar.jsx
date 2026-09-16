@@ -36,8 +36,7 @@ const navSections = [
 ];
 
 export default function Sidebar() {
-  const { user, xp, logout } = useAppData();
-  const level = Math.max(1, Math.floor((xp || 0) / 300) + 1);
+  const { user, logout } = useAppData();
 
   const handleLogout = async () => {
     await logout();
@@ -106,7 +105,7 @@ export default function Sidebar() {
           </div>
           <div className="min-w-0">
             <div className="text-[13px] font-semibold text-primary truncate">{user.name}</div>
-            <div className="text-[11px] font-medium text-muted truncate">Level {level} · {user.role}</div>
+            <div className="text-[11px] font-medium text-muted truncate">{user.role}</div>
           </div>
         </div>
         <button onClick={handleLogout} className="p-1.5 text-muted hover:text-danger hover:bg-danger/10 rounded-md transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100" title="Log Out">

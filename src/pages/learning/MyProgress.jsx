@@ -47,7 +47,6 @@ export default function MyProgress() {
   const avgScore = progressList.length > 0 
     ? Math.round(progressList.reduce((acc, p) => acc + (p.assessmentScore || 0), 0) / progressList.length)
     : 0;
-  const totalXP = user?.xp || 0;
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
@@ -77,7 +76,7 @@ export default function MyProgress() {
       )}
 
       {/* Analytics Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-card rounded-3xl border border-border shadow-elevated p-6 relative overflow-hidden flex items-center justify-between">
           <div className="absolute top-0 right-0 w-32 h-32 bg-accent-blue/5 rounded-full blur-[40px] pointer-events-none" />
           <div className="relative z-10">
@@ -96,16 +95,6 @@ export default function MyProgress() {
           </div>
           <div className="w-12 h-12 rounded-2xl bg-background border border-border flex items-center justify-center relative z-10">
             <Target className="w-6 h-6 text-success" />
-          </div>
-        </div>
-        <div className="bg-card rounded-3xl border border-border shadow-elevated p-6 relative overflow-hidden flex items-center justify-between">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-warning/5 rounded-full blur-[40px] pointer-events-none" />
-          <div className="relative z-10">
-            <span className="text-xs font-bold text-secondary uppercase tracking-wider mb-2 block">Total XP</span>
-            <div className="text-4xl font-black text-warning">{totalXP}</div>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-background border border-border flex items-center justify-center relative z-10">
-            <span className="text-xl font-black text-warning">XP</span>
           </div>
         </div>
       </div>

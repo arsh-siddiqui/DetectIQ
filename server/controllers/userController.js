@@ -13,7 +13,7 @@ const getProfile = asyncHandler(async (req, res) => {
 // @route  PUT /api/users/profile
 // @access Private
 const updateProfile = asyncHandler(async (req, res) => {
-  const allowedFields = ["name", "email", "accountRole"];
+  const allowedFields = ["name", "accountRole"];
   const updates = {};
   allowedFields.forEach((field) => {
     if (req.body[field] !== undefined) updates[field] = req.body[field];

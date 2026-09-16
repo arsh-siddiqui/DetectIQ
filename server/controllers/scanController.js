@@ -98,7 +98,8 @@ const scanContent = asyncHandler(async (req, res) => {
           normalizedText: body.toLowerCase().replace(/\s+/g, ' ').trim()
         },
         extracted: { emailAddresses: [], urls: [], domains: [], ipAddresses: [], hashes: [] },
-        attachments: []
+        attachments: [],
+        enrichmentStatus: 'skipped'
       });
       investigationId = investigation._id;
     }

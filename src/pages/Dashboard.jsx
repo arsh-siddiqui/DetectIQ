@@ -221,13 +221,6 @@ export default function Dashboard() {
               title={phishingScans === 0 ? "Zero Active Threats" : `${phishingScans} Threats Detected`}
               desc={phishingScans === 0 ? "System is secure" : "Action required"}
             />
-            <StatusRow
-              icon={Brain}
-              color="text-accent-blue"
-              bg="bg-accent-blue/10"
-              title="AI Detection Active"
-              desc="Adaptive learning enabled"
-            />
           </div>
         </div>
 
@@ -280,7 +273,7 @@ export default function Dashboard() {
       </div>
 
       {/* BOTTOM ROW: History & Learning */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
 
         {/* Recent Scans */}
         <div className="bg-card rounded-3xl p-6 sm:p-8 shadow-sm border border-border flex flex-col">
@@ -330,55 +323,6 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Vulnerability Learning */}
-        <div className="bg-card rounded-3xl p-6 sm:p-8 shadow-sm border border-border relative overflow-hidden flex flex-col">
-          <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-accent-violet/5 rounded-full blur-[80px] pointer-events-none" />
-          
-          <div className="flex items-center justify-between mb-6 relative z-10">
-            <h2 className="text-lg font-heading font-extrabold text-primary">Continuous Learning</h2>
-            <Link to="/learning/progress" className="text-xs font-bold text-accent-violet hover:underline flex items-center gap-1">
-              View Profile <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-
-          <div className="flex-1 flex flex-col relative z-10">
-            <div className="bg-background rounded-2xl p-5 mb-6 border border-border">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-accent-violet/10 text-accent-violet flex items-center justify-center">
-                  <Target className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-secondary uppercase tracking-wider">Current Focus</p>
-                  <p className="text-sm font-bold text-primary">{recommendedFocus}</p>
-                </div>
-              </div>
-              <p className="text-xs font-medium text-muted leading-relaxed">
-                Your AI-generated curriculum is currently focusing on {recommendedFocus.toLowerCase()} based on your recent scan history.
-              </p>
-            </div>
-
-            <div className="mb-8">
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span className="font-bold text-secondary">Course Progress</span>
-                <span className="font-extrabold text-primary">{completedLearning} <span className="text-muted font-medium">/ {totalModules > 0 ? totalModules : '-'} modules</span></span>
-              </div>
-              <div className="w-full h-2.5 bg-background rounded-full overflow-hidden border border-border">
-                <div
-                  className="h-full bg-gradient-to-r from-accent-blue to-accent-violet rounded-full transition-all duration-1000"
-                  style={{ width: `${totalModules > 0 ? (completedLearning / totalModules) * 100 : 0}%` }}
-                />
-              </div>
-            </div>
-
-            <Link
-              to="/vulnerabilities"
-              className="mt-auto flex items-center justify-center gap-2 w-full py-3.5 bg-accent-violet/10 hover:bg-accent-violet/20 text-accent-violet rounded-xl text-sm font-bold transition-colors border border-accent-violet/20"
-            >
-              <BookOpen className="w-4 h-4" /> Continue Next Module
-            </Link>
           </div>
         </div>
 

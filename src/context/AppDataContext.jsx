@@ -19,8 +19,8 @@ function mergeRemoteUser(local, remote) {
     name: remote.name,
     email: remote.email,
     role: remote.role,
+    authProvider: remote.authProvider || 'local',
     isAdmin: remote.isAdmin,
-    xp: remote.xp || 0,
     streakDays: remote.streakDays || 0,
     avatar: remote.avatar || (remote.name ? remote.name.substring(0, 2).toUpperCase() : "U"),
     learningProfile: remote.learningProfile || { strengths: [], weaknesses: [], recommendedFocus: null },
@@ -35,7 +35,6 @@ export function AppDataProvider({ children }) {
   const [user, setUser] = useState(defaultGuestUser);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
-  const [xp, setXp] = useState(0);
 
   const updateUser = useCallback((patch) => setUser((u) => ({ ...u, ...patch })), []);
 
@@ -43,8 +42,6 @@ export function AppDataProvider({ children }) {
     const mergedUser = mergeRemoteUser(defaultGuestUser, remoteUser);
     setUser(mergedUser);
     setIsAuthenticated(true);
-    // XP is at top level of the User model, not inside learningProfile
-    setXp(remoteUser.xp || 0);
   }, []);
 
 
@@ -94,7 +91,6 @@ export function AppDataProvider({ children }) {
     }
     setIsAuthenticated(false);
     setUser(defaultGuestUser);
-    setXp(0);
   }, []);
 
   const [theme, setThemeState] = useState(() => {
@@ -133,7 +129,6 @@ export function AppDataProvider({ children }) {
     login,
     register,
     logout,
-    xp,
     theme,
     toggleTheme,
   };

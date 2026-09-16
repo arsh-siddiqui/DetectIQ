@@ -11,7 +11,6 @@ export default function LessonEditor({ initialData, onSave, onCancel }) {
     topic: "",
     difficulty: "Beginner",
     estimatedTime: "3 min",
-    xpReward: 30,
     order: 0,
     isPublished: false,
     ...initialData,
@@ -68,7 +67,6 @@ export default function LessonEditor({ initialData, onSave, onCancel }) {
           </div>
           
           <Input label="Estimated Time" name="estimatedTime" value={formData.estimatedTime} onChange={handleChange} />
-          <Input label="XP Reward" name="xpReward" type="number" value={formData.xpReward} onChange={handleChange} />
           <Input label="Order" name="order" type="number" value={formData.order} onChange={handleChange} />
           
           <label className="flex items-center gap-2 mt-6 cursor-pointer">

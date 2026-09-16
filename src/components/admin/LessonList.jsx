@@ -22,7 +22,7 @@ export default function LessonList({ lessons, search, onEdit, onDelete, onToggle
               <th className="px-6 py-4">Title</th>
               <th className="px-6 py-4">Category</th>
               <th className="px-6 py-4">Diff. / Time</th>
-              <th className="px-6 py-4">XP / Order</th>
+              <th className="px-6 py-4">Order</th>
               <th className="px-6 py-4">Status</th>
               <th className="px-6 py-4 text-right">Actions</th>
             </tr>
@@ -39,7 +39,7 @@ export default function LessonList({ lessons, search, onEdit, onDelete, onToggle
                   {l.difficulty} <br/> <span className="text-xs">{l.estimatedTime}</span>
                 </td>
                 <td className="px-6 py-4 text-ink-light whitespace-nowrap">
-                  {l.xpReward} XP <br/> <span className="text-xs">Ord: {l.order}</span>
+                  <span className="text-xs">Ord: {l.order}</span>
                 </td>
                 <td className="px-6 py-4">
                   <Badge tone={l.isPublished ? "success" : "warning"} size="sm">
