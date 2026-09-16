@@ -117,9 +117,49 @@ export function buildMapGeoJSON(geoPoints = []) {
     threat: p.threat || 'unknown'
   }));
 
+  // Handle overlapping coordinates by applying a small offset (spiderify)
+  const coordsMap = new Map();
+  validPoints.forEach((p) => {
+    // Group by exact 4-decimal precision string (roughly ~11m resolution)
+    const key = `${p.latitude.toFixed(4)}_${p.longitude.toFixed(4)}`;
+    if (!coordsMap.has(key)) coordsMap.set(key, []);
+    coordsMap.get(key).push(p);
+  });
+
+  const spiderifiedPoints = [];
+  coordsMap.forEach((points) => {
+    if (points.length === 1) {
+      spiderifiedPoints.push(points[0]);
+    } else {
+      const baseLat = points[0].latitude;
+      const baseLon = points[0].longitude;
+      
+      // Radius of the circle roughly proportional to how many points there are
+      const radius = 0.0005 + (points.length * 0.00005); 
+      
+      points.forEach((p, index) => {
+        // First point stays in center, others form a circle around it
+        if (index === 0) {
+           spiderifiedPoints.push(p);
+           return;
+        }
+        const angle = (index / (points.length - 1)) * 2 * Math.PI;
+        // Adjust lon offset based on latitude to maintain roughly circular shape
+        const latOffset = Math.sin(angle) * radius;
+        const lonOffset = (Math.cos(angle) * radius) / Math.cos((baseLat * Math.PI) / 180);
+        
+        spiderifiedPoints.push({
+          ...p,
+          latitude: baseLat + latOffset,
+          longitude: baseLon + lonOffset
+        });
+      });
+    }
+  });
+
   return {
     type: "FeatureCollection",
-    features: validPoints.map((p) => ({
+    features: spiderifiedPoints.map((p) => ({
       type: "Feature",
       geometry: {
         type: "Point",
