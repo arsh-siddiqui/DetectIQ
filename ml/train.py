@@ -1,5 +1,5 @@
 """
-train.py — Train the ShieldIQ Phishing Text Classifier.
+train.py — Train the DetectIQ Phishing Text Classifier.
 
 Model: TF-IDF Vectorizer + Logistic Regression
 Dataset: zefang-liu/phishing-email-dataset (Hugging Face, LGPL-3.0)
@@ -352,7 +352,7 @@ def main():
     )
     ax.set_xlabel("Predicted")
     ax.set_ylabel("Actual")
-    ax.set_title("ShieldIQ Phishing Classifier — Confusion Matrix")
+    ax.set_title("DetectIQ Phishing Classifier — Confusion Matrix")
     plt.tight_layout()
     cm_path = os.path.join(REPORT_DIR, "confusion_matrix.png")
     plt.savefig(cm_path, dpi=150)
@@ -363,7 +363,7 @@ def main():
     # 12. Save model metadata
     # -----------------------------------------------------------------------
     metadata = {
-        "modelName": "ShieldIQ Phishing Text Classifier",
+        "modelName": "DetectIQ Phishing Text Classifier",
         "version": "1.0.0",
         "algorithm": "TF-IDF (word 1-2gram + char 3-5gram) + Logistic Regression",
         "dataset": "zefang-liu/phishing-email-dataset",

@@ -19,7 +19,7 @@ import numpy as np
 # but we need it loaded eventually. We'll load it eagerly in a background thread or just on init.
 from sentence_transformers import SentenceTransformer
 
-logger = logging.getLogger("shieldiq-rag")
+logger = logging.getLogger("detectiq-rag")
 
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 VECTOR_DIMENSION = 384

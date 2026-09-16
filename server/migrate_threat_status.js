@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const env = require('dotenv').config({ path: '.env.local' });
 if (env.error) require('dotenv').config({ path: '.env' });
 
-const uri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/shieldiq';
+const uri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/detectiq';
 
 mongoose.connect(uri).then(async () => {
   console.log('Connected to DB');

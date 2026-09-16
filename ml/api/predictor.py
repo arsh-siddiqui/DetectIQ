@@ -57,7 +57,7 @@ class PhishingPredictor:
             self._metadata = json.load(f)
 
         self._version = self._metadata.get("version", "1.0.0")
-        self._name    = self._metadata.get("modelName", "ShieldIQ Phishing Text Classifier")
+        self._name    = self._metadata.get("modelName", "DetectIQ Phishing Text Classifier")
 
     def predict(self, text: str) -> Dict[str, Any]:
         """

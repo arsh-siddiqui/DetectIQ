@@ -1,5 +1,5 @@
 {
-  "modelName": "ShieldIQ Phishing Text Classifier",
+  "modelName": "DetectIQ Phishing Text Classifier",
   "version": "1.0.0",
   "algorithm": "TF-IDF (word 1-2gram + char 3-5gram) + Logistic Regression",
   "dataset": "zefang-liu/phishing-email-dataset",

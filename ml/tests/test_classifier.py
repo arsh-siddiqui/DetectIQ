@@ -85,7 +85,7 @@ TEST_CASES = [
 
 def main():
     print("\n" + "="*60)
-    print("  ShieldIQ ML Classifier — Test Cases")
+    print("  DetectIQ ML Classifier — Test Cases")
     print("="*60)
 
     if not is_model_loaded():

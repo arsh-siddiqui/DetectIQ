@@ -3,7 +3,7 @@ services:
   # Node.js Backend API
   # ---------------------------------------------------------------------------
   - type: web
-    name: shieldiq-api
+    name: detectiq-api
     env: node
     plan: free
     rootDir: server
@@ -37,7 +37,7 @@ services:
   # Python ML Service
   # ---------------------------------------------------------------------------
   - type: web
-    name: shieldiq-ml
+    name: detectiq-ml
     env: python
     plan: free
     rootDir: ml

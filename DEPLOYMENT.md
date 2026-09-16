@@ -1,6 +1,6 @@
-# ShieldIQ Deployment Guide
+# DetectIQ Deployment Guide
 
-This guide outlines the production deployment architecture and steps required to launch ShieldIQ securely.
+This guide outlines the production deployment architecture and steps required to launch DetectIQ securely.
 
 ## A. Architecture Overview
 - **Frontend**: Hosted on Vercel (React + Vite SPA)

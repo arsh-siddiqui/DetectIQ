@@ -1,7 +1,7 @@
 {
-  "name": "shieldiq-server",
+  "name": "detectiq-server",
   "version": "1.0.0",
-  "description": "ShieldIQ backend — Express + MongoDB API",
+  "description": "DetectIQ backend — Express + MongoDB API",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {

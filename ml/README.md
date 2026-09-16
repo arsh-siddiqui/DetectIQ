@@ -1,8 +1,8 @@
-# ShieldIQ ML Pipeline
+# DetectIQ ML Pipeline
 
 ## Overview
 
-This directory contains the machine learning component of ShieldIQ's multi-layer phishing detection system.
+This directory contains the machine learning component of DetectIQ's multi-layer phishing detection system.
 
 **Model**: TF-IDF Vectorizer (word n-gram 1-2 + char n-gram 3-5) + Logistic Regression  
 **Dataset**: [zefang-liu/phishing-email-dataset](https://huggingface.co/datasets/zefang-liu/phishing-email-dataset) (Hugging Face)  
@@ -189,7 +189,7 @@ Applied to both train and test data using the same function (no leakage):
   "label": "phishing",
   "probability": 0.9421,
   "model": {
-    "name": "ShieldIQ Phishing Text Classifier",
+    "name": "DetectIQ Phishing Text Classifier",
     "version": "1.0.0"
   }
 }

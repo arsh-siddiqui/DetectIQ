@@ -1,5 +1,5 @@
 """
-main.py — FastAPI ML inference service for ShieldIQ.
+main.py — FastAPI ML inference service for DetectIQ.
 
 Exposes:
   POST /predict  — classify text as phishing or safe
@@ -35,13 +35,13 @@ from .rag import rag_service
 # Logging
 # ---------------------------------------------------------------------------
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("shieldiq-ml")
+logger = logging.getLogger("detectiq-ml")
 
 # ---------------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------------
 app = FastAPI(
-    title="ShieldIQ ML Inference Service",
+    title="DetectIQ ML Inference Service",
     description="Phishing text classifier — TF-IDF + Logistic Regression",
     version="1.0.0",
     docs_url="/docs",
@@ -193,18 +193,18 @@ async def startup_event():
     if is_model_loaded():
         predictor = get_predictor()
         logger.info(
-            f"[shieldiq-ml] Model loaded: {predictor.metadata.get('modelName')} "
+            f"[detectiq-ml] Model loaded: {predictor.metadata.get('modelName')} "
             f"v{predictor.version} | "
             f"Accuracy={predictor.metadata.get('accuracy')} | "
             f"F1={predictor.metadata.get('f1')}"
         )
     else:
         logger.warning(
-            f"[shieldiq-ml] Model NOT loaded: {_load_error}. "
+            f"[detectiq-ml] Model NOT loaded: {_load_error}. "
             "Run 'python ml/train.py' to generate artifacts."
         )
     
     if rag_service.is_loaded():
-        logger.info("[shieldiq-ml] RAG embedding model loaded successfully.")
+        logger.info("[detectiq-ml] RAG embedding model loaded successfully.")
     else:
-        logger.warning("[shieldiq-ml] RAG embedding model NOT loaded.")
+        logger.warning("[detectiq-ml] RAG embedding model NOT loaded.")
