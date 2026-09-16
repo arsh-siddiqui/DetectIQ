@@ -89,7 +89,7 @@ function normalizeStats(indicatorType, stats) {
   const total = (stats.harmless || 0) + (stats.undetected || 0) + malicious + suspicious + (stats.timeout || 0);
   const confidence = total > 0 ? Math.round((malicious / total) * 100) : 0;
 
-  let threat = 'clean';
+  let threat = total > 0 ? 'clean' : 'unknown';
   let severity = 'none';
   if (malicious >= 5) { threat = 'malicious'; severity = 'critical'; }
   else if (malicious >= 3) { threat = 'malicious'; severity = 'high'; }
@@ -97,9 +97,11 @@ function normalizeStats(indicatorType, stats) {
   else if (suspicious >= 3) { threat = 'suspicious'; severity = 'high'; }
   else if (suspicious >= 1) { threat = 'suspicious'; severity = 'medium'; }
 
-  const summary = threat === 'clean'
-    ? `Checked by ${total} security engines — no threats detected.`
-    : `Flagged by ${malicious} engines as malicious, ${suspicious} as suspicious (${total} total engines).`;
+  const summary = threat === 'unknown' 
+    ? 'No security engines evaluated this indicator.'
+    : threat === 'clean'
+      ? `Checked by ${total} security engines — no threats detected.`
+      : `Flagged by ${malicious} engines as malicious, ${suspicious} as suspicious (${total} total engines).`;
 
   return {
     provider: 'virustotal',

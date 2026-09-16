@@ -117,7 +117,7 @@ exports.getThreatIntelligenceOverview = asyncHandler(async (req, res) => {
     recentActivity.push({
       id: ind._id,
       entityType: 'indicator',
-      title: ind.value,
+      title: ind.normalizedValue || ind.value,
       type: ind.type,
       status: ind.threatStatus,
       country: ind.geolocation?.country || null,
