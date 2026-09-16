@@ -13,7 +13,7 @@ const THREAT_COLORS = {
   unknown: "#6b7280",
 };
 
-export default function ThreatIntelligenceMap({ markers = [], isLoading = false, selectedIndicatorId = null }) {
+export default function ThreatIntelligenceMap({ markers = [], isLoading = false, selectedIndicatorId = null, totalIndicators = null }) {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
   const [mapError, setMapError] = useState(false);
@@ -139,26 +139,7 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
           },
         });
 
-        // Add subtle glow layer for unclustered points
-        map.addLayer({
-          id: 'unclustered-point-glow',
-          type: 'circle',
-          source: 'locations',
-          filter: ['!', ['has', 'point_count']],
-          paint: {
-            'circle-color': [
-              'match',
-              ['get', 'threat'],
-              'malicious', THREAT_COLORS.malicious,
-              'suspicious', THREAT_COLORS.suspicious,
-              'clean', THREAT_COLORS.clean,
-              'unavailable', THREAT_COLORS.unavailable,
-              THREAT_COLORS.unknown
-            ],
-            'circle-radius': 16,
-            'circle-opacity': 0.2,
-          },
-        }, 'unclustered-point'); // Insert below the main point layer
+        // Add subtle glow layer for unclustered points removed for clarity
 
         // Click on cluster
         map.on('click', 'clusters', (e) => {
@@ -321,19 +302,19 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
               </div>
             </div>
           ` : ''}
-          ${props.urlhausStatus && props.urlhausStatus !== 'skipped' ? `
+          ${props.urlhausStatus === 'available' ? `
             <div class="mt-2 flex flex-col gap-0.5 ${props.urlhausThreat === 'malicious' ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'} p-2 rounded border">
               <div class="text-[10px] font-bold ${props.urlhausThreat === 'malicious' ? 'text-red-800' : 'text-gray-600'} uppercase tracking-wider">URLhaus</div>
               <div class="flex justify-between items-center ${props.urlhausThreat === 'malicious' ? 'text-red-700' : 'text-gray-600'} font-medium">
-                <span>${props.urlhausStatus === 'available' ? (props.urlhausThreat === 'malicious' ? 'Malicious URL' : 'Available') : (props.urlhausStatus === 'not_observed' ? 'Not observed' : 'Unavailable')}</span>
+                <span>${props.urlhausThreat === 'malicious' ? 'Malicious URL' : 'Available'}</span>
               </div>
             </div>
           ` : ''}
-          ${props.otxStatus && props.otxStatus !== 'skipped' ? `
-            <div class="mt-2 flex flex-col gap-0.5 ${props.otxPulseCount > 0 ? 'bg-orange-50 border-orange-100' : 'bg-gray-50 border-gray-100'} p-2 rounded border">
-              <div class="text-[10px] font-bold ${props.otxPulseCount > 0 ? 'text-orange-800' : 'text-gray-600'} uppercase tracking-wider">AlienVault OTX</div>
-              <div class="flex justify-between items-center ${props.otxPulseCount > 0 ? 'text-orange-700' : 'text-gray-600'} font-medium">
-                <span>${props.otxStatus === 'available' ? (props.otxPulseCount > 0 ? `Observed in ${props.otxPulseCount} pulse${props.otxPulseCount > 1 ? 's' : ''}` : 'Available (No Pulses)') : (props.otxStatus === 'not_observed' ? 'Not observed' : 'Unavailable')}</span>
+          ${props.otxStatus === 'available' && props.otxPulseCount > 0 ? `
+            <div class="mt-2 flex flex-col gap-0.5 bg-orange-50 border-orange-100 p-2 rounded border">
+              <div class="text-[10px] font-bold text-orange-800 uppercase tracking-wider">AlienVault OTX</div>
+              <div class="flex justify-between items-center text-orange-700 font-medium">
+                <span>Observed in ${props.otxPulseCount} pulse${props.otxPulseCount > 1 ? 's' : ''}</span>
               </div>
             </div>
           ` : ''}
@@ -472,12 +453,12 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
       </div>
 
       <div className="absolute bottom-4 left-4 flex flex-col gap-3 z-10">
-        <div className="bg-[#0f172a]/90 backdrop-blur-md border border-slate-800 rounded-xl px-4 py-3 shadow-xl">
-          <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-2">Threat Status</div>
-          <div className="flex flex-wrap items-center gap-4">
+        <div className="bg-[#0f172a]/90 backdrop-blur-md border border-slate-800 rounded-lg px-3 py-2 shadow-xl flex items-center gap-3">
+          <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Threat Status:</div>
+          <div className="flex flex-row items-center gap-3">
             {Object.entries(THREAT_COLORS).map(([threat, color]) => (
-              <div key={threat} className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]" style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}80` }} />
+              <div key={threat} className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
                 <span className="text-xs text-slate-300 capitalize font-medium">{threat}</span>
               </div>
             ))}
@@ -486,11 +467,11 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
       </div>
 
       {validPointsCount > 0 && (
-        <div className="absolute bottom-4 right-14 z-10">
+        <div className="absolute bottom-4 right-4 z-10">
           <div className="bg-[#0f172a]/90 backdrop-blur-md border border-slate-800 rounded-lg px-3 py-1.5 shadow-lg">
             <span className="text-[11px] text-slate-300 font-medium flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-              {validPointsCount} geolocated indicator{validPointsCount !== 1 ? "s" : ""}
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+              {totalIndicators ? `Showing ${validPointsCount} of ${totalIndicators} indicators on the map` : `${validPointsCount} geolocated indicator${validPointsCount !== 1 ? "s" : ""}`}
             </span>
           </div>
         </div>

@@ -215,12 +215,12 @@ export default function ThreatIntelligence() {
           />
         </div>
 
-        {/* Center: Map */}
         <div className="lg:col-span-6 h-[400px] lg:h-full relative flex flex-col overflow-hidden rounded-2xl">
           <ThreatIntelligenceMap 
             markers={data.markers} 
             isLoading={isLoading} 
             selectedIndicatorId={selectedIndicatorId}
+            totalIndicators={data.summary.total}
           />
         </div>
 

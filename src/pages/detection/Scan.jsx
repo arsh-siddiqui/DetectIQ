@@ -91,7 +91,11 @@ export default function Scan() {
         navigate('/detection/history');
       }
     } catch (err) {
-      setError(err.response?.data?.message || err.message || "Failed to analyze content. Please try again.");
+      let errorMessage = err.response?.data?.message || err.message || "Failed to analyze content. Please try again.";
+      if (err.code === 'ECONNABORTED' || errorMessage.toLowerCase().includes('timeout')) {
+        errorMessage = "Email analysis is taking longer than expected. Please try again.";
+      }
+      setError(errorMessage);
       setIsScanning(false);
     }
   };
@@ -109,7 +113,11 @@ export default function Scan() {
         navigate('/detection/history');
       }
     } catch (err) {
-      setError(err.response?.data?.message || err.message || "Failed to analyze .eml file.");
+      let errorMessage = err.response?.data?.message || err.message || "Failed to analyze .eml file.";
+      if (err.code === 'ECONNABORTED' || errorMessage.toLowerCase().includes('timeout')) {
+        errorMessage = "Email analysis is taking longer than expected. Please try again.";
+      }
+      setError(errorMessage);
       setFileStatus("");
       setIsScanning(false);
     }
@@ -226,7 +234,11 @@ export default function Scan() {
         navigate('/detection/history');
       }
     } catch (err) {
-      setError(err.response?.data?.message || err.message || "Failed to analyze content.");
+      let errorMessage = err.response?.data?.message || err.message || "Failed to analyze content.";
+      if (err.code === 'ECONNABORTED' || errorMessage.toLowerCase().includes('timeout')) {
+        errorMessage = "Email analysis is taking longer than expected. Please try again.";
+      }
+      setError(errorMessage);
       setIsScanning(false);
       setFileStatus("");
     }

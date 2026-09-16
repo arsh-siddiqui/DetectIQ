@@ -11,7 +11,9 @@ export async function submitScan(content, scanType, inputType = null) {
     if (inputType) payload.inputType = inputType;
   }
   
-  const { data } = await apiClient.post("/scan", payload);
+  const { data } = await apiClient.post("/scan", payload, {
+    timeout: 30000
+  });
   return data.data;
 }
 
@@ -20,7 +22,8 @@ export async function submitEml(file) {
   formData.append('file', file);
   
   const { data } = await apiClient.post("/email-forensics/analyze", formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 30000
   });
   return data.data;
 }

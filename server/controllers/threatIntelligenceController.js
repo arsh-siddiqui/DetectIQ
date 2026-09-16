@@ -85,10 +85,11 @@ exports.getThreatIntelligenceOverview = asyncHandler(async (req, res) => {
     .lean();
 
   // C. Top Countries
+  // Group by country only if country is present.
   const countriesAgg = await Indicator.aggregate([
-    { $match: mapFilter },
+    { $match: filter },
+    { $match: { "geolocation.country": { $exists: true, $nin: [null, ""] } } },
     { $group: { _id: "$geolocation.country", count: { $sum: 1 } } },
-    { $match: { _id: { $ne: null } } },
     { $sort: { count: -1 } },
     { $limit: 10 }
   ]);
@@ -137,10 +138,21 @@ exports.getThreatIntelligenceOverview = asyncHandler(async (req, res) => {
       .lean();
 
     recentInvestigations.forEach(inv => {
+      let title = inv.headers?.subject;
+      if (!title) {
+         // Try from sender if no subject
+         const sender = inv.headers?.from;
+         if (sender) {
+             title = `From: ${sender}`;
+         } else {
+             title = 'Untitled investigation';
+         }
+      }
+
       recentActivity.push({
         id: inv._id,
         entityType: 'investigation',
-        title: inv.headers?.subject || 'Investigation',
+        title: title,
         type: 'Investigation',
         status: inv.status,
         country: null,
