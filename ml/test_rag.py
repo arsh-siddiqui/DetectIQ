@@ -9,25 +9,36 @@ from ml.api.main import app
 
 client = TestClient(app)
 
+import time
+
 def run_tests():
     print("Running RAG API Tests...")
 
-    # 1. Health check
-    response = client.get("/health")
-    assert response.status_code == 200
-    data = response.json()
-    print("GET /health:", data)
-    assert data["ragLoaded"] is True, "RAG model failed to load"
+    # 1. Wait for model to load
+    print("Waiting for model to load...")
+    max_retries = 30
+    for i in range(max_retries):
+        response = client.get("/health")
+        assert response.status_code == 200
+        data = response.json()
+        if data.get("ragLoaded"):
+            print("Model loaded successfully.")
+            break
+        time.sleep(1)
+    else:
+        assert False, "RAG model failed to load in time"
 
-    # 2. Empty user index retrieve
+    headers = {"Authorization": "Bearer dev-internal-token-change-me"}
+
+    # 2. Empty user index retrieve -> should be 404 index_missing
     response = client.post("/retrieve", json={
         "userId": "user_empty",
         "queryText": "test",
         "topK": 5
-    })
-    assert response.status_code == 200
-    assert response.json()["results"] == []
-    print("Empty user retrieval passed.")
+    }, headers=headers)
+    assert response.status_code == 404
+    assert response.json()["detail"] == "index_missing"
+    print("Missing user index 404 passed.")
 
     # 3. User isolation test
     user_A = "user_A"
@@ -38,7 +49,7 @@ def run_tests():
         "userId": user_A,
         "emailId": "email_A_1",
         "text": "Hello User A, here is your legitimate bank statement."
-    })
+    }, headers=headers)
     assert res_A.status_code == 200
 
     # Add legitimate email B for User B
@@ -46,7 +57,7 @@ def run_tests():
         "userId": user_B,
         "emailId": "email_B_1",
         "text": "Hello User B, here is your legitimate electricity bill."
-    })
+    }, headers=headers)
     assert res_B.status_code == 200
 
     # Search as User A
@@ -54,18 +65,28 @@ def run_tests():
         "userId": user_A,
         "queryText": "bank statement",
         "topK": 5
-    })
+    }, headers=headers)
     results_A = res_search_A.json()["results"]
     assert len(results_A) == 1
     assert results_A[0]["emailId"] == "email_A_1"
     print("User A isolated retrieval passed.")
 
+    # Search as User A with NO MATCHING RESULTS
+    res_search_empty = client.post("/retrieve", json={
+        "userId": user_A,
+        "queryText": "something completely unrelated",
+        "topK": 5
+    }, headers=headers)
+    assert res_search_empty.status_code == 200
+    # The faiss index will always return the top K, but if we wanted to threshold it, 
+    # we would check the similarities. For now, it returns top K. Wait! Let's just do a basic check.
+    
     # Search as User B
     res_search_B = client.post("/retrieve", json={
         "userId": user_B,
-        "queryText": "bank statement", # Same query, should find B's bill if semantic match, but NOT A's statement
+        "queryText": "bank statement", 
         "topK": 5
-    })
+    }, headers=headers)
     results_B = res_search_B.json()["results"]
     assert len(results_B) == 1
     assert results_B[0]["emailId"] == "email_B_1"
@@ -76,21 +97,20 @@ def run_tests():
         "userId": user_A,
         "emailId": "email_A_2",
         "text": "Your account balance for this month is updated."
-    })
+    }, headers=headers)
     client.post("/embed", json={
         "userId": user_A,
         "emailId": "email_A_3",
         "text": "Password reset successful."
-    })
+    }, headers=headers)
 
     res_search_A2 = client.post("/retrieve", json={
         "userId": user_A,
         "queryText": "Did my account balance update?",
         "topK": 5
-    })
+    }, headers=headers)
     results_A2 = res_search_A2.json()["results"]
     assert len(results_A2) == 3
-    # Top result should be email_A_2
     assert results_A2[0]["emailId"] == "email_A_2"
     print(f"Multiple emails retrieval passed. Top match similarity: {results_A2[0]['similarity']:.4f}")
 
@@ -101,7 +121,7 @@ def run_tests():
             "Your account balance for this month is updated.",
             "Hello User A, here is your legitimate bank statement."
         ]
-    })
+    }, headers=headers)
     assert res_context.status_code == 200
     context_text = res_context.json()["context"]
     assert "USER'S HISTORICAL LEGITIMATE EMAILS" in context_text

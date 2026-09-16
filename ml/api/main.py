@@ -145,6 +145,11 @@ async def retrieve(request: RetrieveRequest):
     try:
         results = rag_service.retrieve(request.userId, request.queryText, request.topK)
         return RetrieveResponse(results=[RetrievedEmail(**r) for r in results])
+    except ValueError as e:
+        if str(e) == "index_missing":
+            raise HTTPException(status_code=404, detail="index_missing")
+        logger.error(f"Retrieval ValueError: {e}")
+        raise HTTPException(status_code=500, detail="Retrieval failed.")
     except Exception as e:
         logger.error(f"Retrieval error: {type(e).__name__}: {e}")
         raise HTTPException(status_code=500, detail="Retrieval failed.")

@@ -1,28 +1,15 @@
-# DetectIQ ML Pipeline Requirements
-# Install with: pip install -r requirements.txt
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
 
 # Core ML
-scikit-learn>=1.3.0
+scikit-learn==1.9.0
 joblib>=1.3.0
-
-# Dataset download
-datasets>=2.14.0
-huggingface_hub>=0.17.0
-
-# Data processing
-pandas>=2.0.0
 numpy>=1.24.0
-
-# Visualization
-matplotlib>=3.7.0
-seaborn>=0.12.0
 
 # FastAPI inference service
 fastapi>=0.103.0
 uvicorn[standard]>=0.23.0
 pydantic>=2.3.0
-
-# HTTP client (for health checks)
 httpx>=0.25.0
 
 # RAG / Embedding

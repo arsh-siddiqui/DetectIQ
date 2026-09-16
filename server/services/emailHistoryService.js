@@ -118,10 +118,32 @@ async function rebuildUserRAGIndex(userId) {
   return { successCount, failCount, total: emails.length };
 }
 
+const rebuildLocks = new Set();
+
+/**
+ * Trigger an asynchronous rebuild of a user's RAG index, protected by a lock.
+ */
+function triggerRebuild(userId) {
+  const uid = String(userId);
+  if (rebuildLocks.has(uid)) return;
+  rebuildLocks.add(uid);
+
+  setImmediate(async () => {
+    try {
+      await rebuildUserRAGIndex(userId);
+    } catch (err) {
+      console.error(`[RAG Rebuild] Failed for user ${uid}:`, err);
+    } finally {
+      rebuildLocks.delete(uid);
+    }
+  });
+}
+
 module.exports = {
   createEmailHistory,
   getEmailHistoryList,
   getEmailHistoryById,
   deleteEmailHistory,
-  rebuildUserRAGIndex
+  rebuildUserRAGIndex,
+  triggerRebuild
 };

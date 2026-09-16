@@ -110,6 +110,12 @@ async function analyzeContent(content, scanType = 'url', userId = null) {
     ragTask = (async () => {
       try {
         const retrieveRes = await ragClient.retrieveContext(userId, content, 5);
+        if (!retrieveRes.success && retrieveRes.reason === 'index_missing') {
+          const { triggerRebuild } = require('../emailHistoryService');
+          triggerRebuild(userId);
+          return { status: 'unavailable', reason: 'index_rebuilding' };
+        }
+        
         if (retrieveRes.success && retrieveRes.results && retrieveRes.results.length > 0) {
           // Fetch full bodies from Mongo
           const emailIds = retrieveRes.results.map(r => r.emailId);

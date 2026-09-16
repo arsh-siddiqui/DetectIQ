@@ -56,6 +56,9 @@ async function retrieveContext(userId, queryText, topK = 5) {
     }
     return { success: false, reason: response.data?.detail || 'unknown' };
   } catch (err) {
+    if (err.response && err.response.status === 404 && err.response.data?.detail === 'index_missing') {
+      return { success: false, reason: 'index_missing' };
+    }
     console.error("ragClient.retrieveContext Error:", err.message, "URL:", getClient().defaults.baseURL);
     return { success: false, reason: err.message };
   }

@@ -14,6 +14,7 @@ import logging
 from typing import List, Dict, Any, Tuple
 import faiss
 import numpy as np
+import threading
 
 # Lazy load to avoid slowing down startup unless RAG is actually called,
 # but we need it loaded eventually. We'll load it eagerly in a background thread or just on init.
@@ -26,18 +27,22 @@ VECTOR_DIMENSION = 384
 
 class RAGService:
     def __init__(self):
+        self._is_loaded = False
+        self.model = None
+        # user_id -> { "index": faiss.IndexFlatIP, "id_map": { faiss_id: email_id }, "next_id": int }
+        self.user_indexes: Dict[str, Dict[str, Any]] = {}
+        threading.Thread(target=self._load_async, daemon=True).start()
+
+    def _load_async(self):
         logger.info(f"Loading embedding model: {EMBEDDING_MODEL_NAME}...")
         try:
-            self.model = SentenceTransformer(EMBEDDING_MODEL_NAME)
-            logger.info("Embedding model loaded successfully.")
+            self.model = SentenceTransformer(EMBEDDING_MODEL_NAME, device='cpu')
+            logger.info("Embedding model loaded successfully on CPU.")
             self._is_loaded = True
         except Exception as e:
             logger.error(f"Failed to load embedding model: {e}")
             self._is_loaded = False
             self.model = None
-
-        # user_id -> { "index": faiss.IndexFlatIP, "id_map": { faiss_id: email_id }, "next_id": int }
-        self.user_indexes: Dict[str, Dict[str, Any]] = {}
 
     def is_loaded(self) -> bool:
         return self._is_loaded
@@ -68,10 +73,10 @@ class RAGService:
         if not text.strip():
             return False
 
-        # Generate embedding
-        embedding = self.model.encode(text, normalize_embeddings=True)
+        # Generate embedding as a 2D batch tensor directly
+        vector = self.model.encode([text], normalize_embeddings=True)
         # Ensure correct shape and type for FAISS
-        vector = np.array([embedding], dtype=np.float32)
+        vector = np.array(vector, dtype=np.float32)
 
         user_data = self.get_user_index(user_id)
         faiss_id = user_data["next_id"]
@@ -91,7 +96,7 @@ class RAGService:
             raise RuntimeError("Embedding model is not loaded.")
 
         if user_id not in self.user_indexes:
-            return []  # Empty index for this user
+            raise ValueError("index_missing")
 
         user_data = self.user_indexes[user_id]
         if user_data["index"].ntotal == 0:
@@ -103,9 +108,9 @@ class RAGService:
         # Ensure we don't ask for more than exists
         k = min(top_k, user_data["index"].ntotal)
 
-        # Generate query embedding
-        query_embedding = self.model.encode(query_text, normalize_embeddings=True)
-        vector = np.array([query_embedding], dtype=np.float32)
+        # Generate query embedding as a 2D batch tensor directly
+        vector = self.model.encode([query_text], normalize_embeddings=True)
+        vector = np.array(vector, dtype=np.float32)
 
         # Search
         similarities, indices = user_data["index"].search(vector, k)
