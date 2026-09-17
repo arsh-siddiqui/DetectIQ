@@ -210,6 +210,7 @@ async function vtGet(endpoint, indicatorType) {
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
+/**
  * Check a domain against VirusTotal. (Phase 2 normalized format)
  * @param {string} domain - Already normalized domain (lowercase, no www)
  */
