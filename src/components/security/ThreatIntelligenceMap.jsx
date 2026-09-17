@@ -57,6 +57,10 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
         style: `https://tiles.openfreemap.org/styles/positron`,
         center: [0, 20],
         zoom: 1.5,
+        dragRotate: false,
+        touchPitch: false,
+        pitchWithRotate: false,
+        keyboard: false,
         attributionControl: false,
       });
       
@@ -85,43 +89,13 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
         map.addSource('locations', {
           type: 'geojson',
           data: geoJsonRef.current,
-          cluster: true,
-          clusterMaxZoom: 14,
-          clusterRadius: 50,
-        });
-
-        map.addLayer({
-          id: 'clusters',
-          type: 'circle',
-          source: 'locations',
-          filter: ['has', 'point_count'],
-          paint: {
-            'circle-color': '#1e40af',
-            'circle-radius': ['step', ['get', 'point_count'], 15, 10, 22, 50, 30],
-            'circle-stroke-width': 2,
-            'circle-stroke-color': '#0f172a',
-          },
-        });
-
-        map.addLayer({
-          id: 'cluster-count',
-          type: 'symbol',
-          source: 'locations',
-          filter: ['has', 'point_count'],
-          layout: {
-            'text-field': '{point_count_abbreviated}',
-            'text-size': 12,
-          },
-          paint: {
-            'text-color': '#ffffff',
-          },
+          cluster: false,
         });
 
         map.addLayer({
           id: 'unclustered-point',
           type: 'circle',
           source: 'locations',
-          filter: ['!', ['has', 'point_count']],
           paint: {
             'circle-color': [
               'match',
@@ -132,58 +106,19 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
               'unavailable', THREAT_COLORS.unavailable,
               THREAT_COLORS.unknown
             ],
-            'circle-radius': 8,
-            'circle-stroke-width': 2,
+            'circle-radius': 6,
+            'circle-stroke-width': 1.5,
             'circle-stroke-color': '#0d1117',
           },
         });
 
         // Add subtle glow layer for unclustered points removed for clarity
 
-        // Click on cluster
-        map.on('click', 'clusters', (e) => {
-          const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
-          if (!features.length) return;
-
-          const clusterId = features[0].properties.cluster_id;
-          const pointCount = features[0].properties.point_count;
-          
-          map.getSource('locations').getClusterExpansionZoom(clusterId, (err, zoom) => {
-            if (err) return;
-            
-            const coordinates = features[0].geometry.coordinates.slice();
-            const popupHtml = `
-              <div class="p-2 min-w-[150px] text-gray-900">
-                <div class="font-bold text-sm mb-1 text-center">${pointCount} indicators in this area</div>
-                <div class="text-xs text-gray-500 text-center mb-2">Zoom in to explore</div>
-                <button id="zoom-cluster-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1.5 px-3 rounded shadow-sm transition-colors">
-                  Zoom
-                </button>
-              </div>
-            `;
-            
-            const popup = new window.maplibregl.Popup({
-              closeButton: false,
-              closeOnClick: false,
-              className: 'detectiq-map-popup'
-            }).setLngLat(coordinates)
-              .setHTML(popupHtml)
-              .addTo(map);
-
-            document.getElementById('zoom-cluster-btn')?.addEventListener('click', () => {
-              popup.remove();
-              map.easeTo({ center: features[0].geometry.coordinates, zoom: zoom + 1 });
-            });
-          });
-        });
-
         // Click on individual point
         map.on('click', 'unclustered-point', (e) => {
           openIndicatorPopup(e.features[0]);
         });
 
-        map.on('mouseenter', 'clusters', () => { map.getCanvas().style.cursor = 'pointer'; });
-        map.on('mouseleave', 'clusters', () => { map.getCanvas().style.cursor = ''; });
         map.on('mouseenter', 'unclustered-point', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'unclustered-point', () => { map.getCanvas().style.cursor = ''; });
 
@@ -506,7 +441,7 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
 
       {/* Empty State Overlay if Map is loaded but no points */}
       {!isLoading && validPointsCount === 0 && !mapError && (
-        <div className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none">
+        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
           <div className="bg-[#0f172a]/90 border border-slate-800 px-8 py-6 rounded-2xl text-center backdrop-blur-md shadow-2xl max-w-sm pointer-events-auto">
             <Shield className="w-10 h-10 text-slate-500 mx-auto mb-3 opacity-80" />
             <h3 className="text-white font-bold text-lg mb-1">No geolocated indicators</h3>
