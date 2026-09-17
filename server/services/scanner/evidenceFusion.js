@@ -77,9 +77,8 @@ function vtEvidenceStrength(vtResult) {
   if (mal === 0 && sus === 0) return { evidenceStrength: 'none', scoreBump: 0 };
   if (mal === 0 && sus >= 1) return { evidenceStrength: 'suspicious', scoreBump: 35 + Math.min(sus * 2, 10) };
   if (mal === 1)             return { evidenceStrength: 'isolated',   scoreBump: 45 };
-  if (mal === 2)             return { evidenceStrength: 'limited',    scoreBump: 55 };
-  if (mal <= 4)              return { evidenceStrength: 'significant', scoreBump: 65 };
-  return                           { evidenceStrength: 'strong',      scoreBump: 85 };
+  if (mal >= 2 && mal <= 3)  return { evidenceStrength: 'limited',    scoreBump: 55 };
+  return                     { evidenceStrength: 'multiple',   scoreBump: 60 };
 }
 
 // ---------------------------------------------------------------------------
@@ -90,16 +89,26 @@ function otxEvidenceStrength(otxResult) {
   if (!otxResult || otxResult.status === 'skipped' || otxResult.status === 'not_observed'
       || otxResult.status === 'error' || otxResult.status === 'timeout'
       || otxResult.status === 'rate_limited') {
-    return { evidenceStrength: 'none', scoreBump: 0 };
+    return { evidenceStrength: 'none', scoreBump: 0, contextual: true };
   }
   if (otxResult.status === 'available') {
     const count = otxResult.pulseCount || 0;
-    if (count === 0) return { evidenceStrength: 'none', scoreBump: 0 };
-    if (count <= 2) return { evidenceStrength: 'observed', scoreBump: 10 };
-    if (count <= 5) return { evidenceStrength: 'notable',  scoreBump: 20 };
-    return { evidenceStrength: 'significant', scoreBump: 30 };
+    if (count === 0) return { evidenceStrength: 'none', scoreBump: 0, contextual: true };
+    
+    // Explicit malicious evidence
+    const OTX_MALICIOUS_TAGS = ['phishing', 'malware', 'botnet', 'ransomware', 'c2', 'exploit', 'trojan'];
+    const hasMaliciousTag = (otxResult.tags || []).some(t => OTX_MALICIOUS_TAGS.includes(t.toLowerCase()));
+    
+    if (hasMaliciousTag) {
+      return { evidenceStrength: 'malicious_evidence', scoreBump: 45, contextual: false };
+    }
+    
+    // Contextual metadata only
+    if (count <= 2) return { evidenceStrength: 'observed', scoreBump: 0, contextual: true };
+    if (count <= 5) return { evidenceStrength: 'notable',  scoreBump: 0, contextual: true };
+    return { evidenceStrength: 'significant', scoreBump: 0, contextual: true };
   }
-  return { evidenceStrength: 'none', scoreBump: 0 };
+  return { evidenceStrength: 'none', scoreBump: 0, contextual: true };
 }
 
 // ---------------------------------------------------------------------------
@@ -225,40 +234,57 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
 
   // — OTX (URL-level)
   const otxUrlStrength = otxEvidenceStrength(otxUrl);
-  if (otxUrlStrength.scoreBump > 0) {
+  if (otxUrlStrength.evidenceStrength !== 'none') {
     analysisSources.push('otx_url');
-    tiScoreBump = Math.max(tiScoreBump, Math.min(tiScoreBump + otxUrlStrength.scoreBump, 60));
-    tiReasons.push({
-      source: 'Threat_Intelligence',
-      title: 'OTX: URL Observed',
-      detail: `This URL was observed in ${otxUrl.pulseCount} OTX threat intelligence pulse(s).`,
-      severity: otxUrlStrength.evidenceStrength === 'significant' ? 'medium' : 'low',
-    });
+    if (!otxUrlStrength.contextual) {
+      tiScoreBump = Math.max(tiScoreBump, Math.min(tiScoreBump + otxUrlStrength.scoreBump, 60));
+      tiReasons.push({
+        source: 'Threat_Intelligence',
+        title: 'OTX: Malicious Evidence',
+        detail: `This URL was observed in ${otxUrl.pulseCount} OTX threat pulse(s) with explicit malicious tags.`,
+        severity: 'medium',
+      });
+    } else {
+      tiReasons.push({
+        source: 'Threat_Intelligence',
+        title: 'OTX: Contextual Metadata',
+        detail: `This URL was observed in ${otxUrl.pulseCount} OTX threat intelligence pulse(s).`,
+        severity: 'info',
+      });
+    }
   } else if (otxUrl && (otxUrl.status === 'error' || otxUrl.status === 'timeout')) {
     limitations.push('OTX lookup was unavailable.');
   }
 
   // — OTX (domain-level, contextual)
   const otxDomainStrength = otxEvidenceStrength(otxDomain);
-  if (otxDomainStrength.scoreBump > 0) {
+  if (otxDomainStrength.evidenceStrength !== 'none') {
     analysisSources.push('otx_domain');
-    const domainBump = Math.floor(otxDomainStrength.scoreBump * 0.5);
-    tiScoreBump = Math.max(tiScoreBump, Math.min(tiScoreBump + domainBump, 55));
+    if (!otxDomainStrength.contextual) {
+      const domainBump = Math.floor(otxDomainStrength.scoreBump * 0.5);
+      tiScoreBump = Math.max(tiScoreBump, Math.min(tiScoreBump + domainBump, 55));
+    }
     tiReasons.push({
       source: 'Threat_Intelligence',
-      title: 'OTX: Domain Observed',
+      title: 'OTX: Domain Context',
       detail: `The domain was observed in ${otxDomain.pulseCount} OTX pulse(s).`,
-      severity: 'low',
+      severity: 'info',
     });
   }
 
   // — CORROBORATION BONUS
   // When multiple independent sources agree, confidence increases
+  const isVtMalicious = (vtUrlStrength.evidenceStrength !== 'none' && vtUrlStrength.evidenceStrength !== 'unavailable' && vtUrlStrength.evidenceStrength !== 'suspicious') || 
+                        (vtDomainStrength.evidenceStrength !== 'none' && vtDomainStrength.evidenceStrength !== 'unavailable' && vtDomainStrength.evidenceStrength !== 'suspicious');
+                        
+  const isOtxMalicious = (otxUrlStrength.evidenceStrength !== 'none' && !otxUrlStrength.contextual) || 
+                         (otxDomainStrength.evidenceStrength !== 'none' && !otxDomainStrength.contextual);
+                         
   const activeMaliciousSources = [
-    vtUrlStrength.evidenceStrength !== 'none' && vtUrlStrength.evidenceStrength !== 'unavailable',
+    isVtMalicious,
     urlhausIsMalicious,
-    otxUrlStrength.evidenceStrength !== 'none',
-    vtDomainStrength.evidenceStrength !== 'none' && vtDomainStrength.evidenceStrength !== 'unavailable',
+    isOtxMalicious,
+    hasSignals && (heuristicResult.riskScore >= 45) // Heuristics counts as 1 source if high risk
   ].filter(Boolean).length;
 
   if (activeMaliciousSources >= 2 && tiScoreBump >= 45) {
@@ -267,7 +293,7 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
     tiReasons.push({
       source: 'Threat_Intelligence',
       title: 'Corroborated Threat Evidence',
-      detail: `${activeMaliciousSources} independent threat-intelligence sources reported malicious or suspicious activity for this URL/domain.`,
+      detail: `${activeMaliciousSources} independent threat-intelligence providers/engines reported malicious activity.`,
       severity: 'high',
     });
   }
@@ -427,6 +453,19 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
   // =========================================================================
 
   if (finalClassification === 'legitimate') {
+    const providersUnavailable = (
+      (!vtUrl || vtUrl.status !== 'available') &&
+      (!urlhaus || urlhaus.status !== 'available') &&
+      (!otxUrl || otxUrl.status !== 'available')
+    );
+
+    if (providersUnavailable && !hasSignals) {
+      finalSummary = 'No threat signals were detected, but external intelligence was unavailable.';
+    } else if (finalSummary.toLowerCase().includes('malicious')) {
+      // Remove hallucinatory summaries
+      finalSummary = 'No significant threat indicators were detected.';
+    }
+
     // Strip contradictory high-severity recommendations
     finalRecommendations = finalRecommendations.filter(rec => {
       const lower = rec.toLowerCase();
@@ -434,10 +473,6 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
              !lower.includes('report this') && !lower.includes('quarantine') &&
              !lower.includes('do not interact');
     });
-    // Remove hallucinatory summaries
-    if (finalSummary.toLowerCase().includes('malicious')) {
-      finalSummary = 'No significant threat indicators were detected.';
-    }
     // Ensure at least one safe recommendation
     if (finalRecommendations.length === 0) {
       finalRecommendations.push('No significant threat indicators detected. Continue practicing normal security hygiene.');

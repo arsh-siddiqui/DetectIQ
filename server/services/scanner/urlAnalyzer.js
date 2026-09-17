@@ -116,43 +116,37 @@ function analyzeUrl(urlString, options = {}) {
     });
   }
 
-  // Brand impersonation: brand word appears in hostname but the root domain is NOT the official one.
-  // e.g., "paypal-verify.com" → FLAGGED; "pay.paypal.com" → NOT flagged.
+  // Brand substring match: brand word appears embedded inside a larger domain label.
+  // e.g., "paypal-verify.com" (parts: ['paypal-verify', 'com']) -> includes 'paypal' but 'paypal' is not a standalone part.
+  // e.g., "google.com" (parts: ['google', 'com']) -> 'google' is a standalone part, so it is skipped generically.
   const hostParts = hostname.split('.');
-  const rootDomain = hostParts.slice(-2).join('.'); // e.g. "paypal.com" or "fake-paypal.com"
   for (const brand of BRANDS) {
-    const officialDomain = `${brand}.com`;
-    // Skip if the root domain IS the official domain (handles subdomains like pay.google.com)
-    if (rootDomain === officialDomain) continue;
-    // Flag if the hostname contains the brand name but isn't on the official domain
-    if (hostname.includes(brand)) {
+    if (hostname.includes(brand) && !hostParts.includes(brand)) {
       signals.push({
-        type: 'brand_impersonation',
-        severity: 'high',
-        title: 'Brand Impersonation',
-        explanation: `The domain attempts to look like ${brand}, but it is not their official website.`,
+        type: 'brand_substring',
+        severity: 'medium',
+        title: 'Brand Name Embedded in Domain',
+        explanation: `The domain contains the brand name "${brand}" embedded within other text, which can indicate impersonation.`,
         evidence: hostname,
       });
       break;
     }
   }
 
-  // Typosquatting: normalize 0→o, 1→l, then check if normalized hostname contains a brand
-  // but the original hostname does NOT (meaning substituted chars were used to deceive).
-  const normalizedHostname = hostname.replace(/0/g, 'o').replace(/1/g, 'l').replace(/3/g, 'e');
-  const rootNormalized = normalizedHostname.split('.').slice(-2).join('.');
-  for (const brand of BRANDS) {
-    const officialDomain = `${brand}.com`;
-    if (rootNormalized === officialDomain) continue; // skip exact official
-    if (normalizedHostname.includes(brand) && !hostname.includes(brand)) {
-      signals.push({
-        type: 'typosquatting',
-        severity: 'high',
-        title: 'Deceptive Domain Spelling',
-        explanation: 'The domain uses look-alike characters (e.g., "0" for "o") to impersonate a legitimate brand.',
-        evidence: hostname,
-      });
-      break;
+  // Typosquatting: normalize common lookalike characters, then check if it reveals a brand.
+  const normalizedHostname = hostname.replace(/0/g, 'o').replace(/1/g, 'l').replace(/3/g, 'e').replace(/rn/g, 'm');
+  if (normalizedHostname !== hostname) {
+    for (const brand of BRANDS) {
+      if (normalizedHostname.includes(brand) && !hostname.includes(brand)) {
+        signals.push({
+          type: 'typosquatting',
+          severity: 'high',
+          title: 'Deceptive Domain Spelling',
+          explanation: `The domain uses look-alike characters (e.g., "0" for "o") to impersonate the brand "${brand}".`,
+          evidence: hostname,
+        });
+        break;
+      }
     }
   }
 
