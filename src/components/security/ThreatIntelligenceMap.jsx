@@ -205,30 +205,43 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
     const locationText = [props.city, props.country].filter(Boolean).join(" · ");
     const threatColor = THREAT_COLORS[props.threat] || THREAT_COLORS.unknown;
 
-    // Add source text mapping
     const sourceLabelMap = {
       'direct_ip': 'Direct IP',
       'resolved_ip': 'DNS-resolved IP',
       'received_header_ip': 'Received-header IP'
     };
     const sourceText = sourceLabelMap[props.sourceType] || props.sourceType || 'Direct IP';
+    const indicatorCount = props.indicatorCount || 1;
+    let typesCountHtml = '';
+    
+    if (indicatorCount > 1 && props.typesCount) {
+      try {
+        const parsedCounts = JSON.parse(props.typesCount);
+        typesCountHtml = Object.entries(parsedCounts)
+          .map(([type, count]) => `<span class="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[9px] uppercase">${count} ${type}</span>`)
+          .join(' ');
+      } catch (e) {}
+    }
 
     const popupHtml = `
       <div class="p-1 min-w-[240px] text-gray-900 flex flex-col h-full">
         <div class="flex flex-col gap-1 mb-3 pb-3 border-b border-gray-200">
           <div class="flex items-center gap-2">
             <div class="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm" style="background-color: ${threatColor}"></div>
-            <span class="font-mono text-[15px] font-bold truncate max-w-[200px]" title="${props.ip}">${props.ip}</span>
+            <span class="font-mono text-[15px] font-bold truncate max-w-[200px]" title="${props.ip}">${indicatorCount > 1 ? `${indicatorCount} Indicators` : props.ip}</span>
           </div>
           <div class="text-[10px] uppercase font-bold text-gray-500 tracking-wider flex items-center justify-between">
-            <span>${props.type}</span>
+            <div class="flex items-center gap-1">
+              <span>${props.type}</span>
+              ${typesCountHtml ? `<div class="flex gap-1 ml-1">${typesCountHtml}</div>` : ''}
+            </div>
             <span style="color: ${threatColor}" class="capitalize">${props.threat}</span>
           </div>
         </div>
         
         <div class="space-y-2 text-[11px] text-gray-600 mb-4">
           ${locationText ? `<div class="font-medium text-gray-800 flex items-center gap-1.5"><span class="text-gray-400">📍</span> ${locationText}</div>` : ''}
-          <div class="text-gray-500 italic">Source: ${sourceText}</div>
+          ${indicatorCount === 1 ? `<div class="text-gray-500 italic">Source: ${sourceText}</div>` : `<div class="text-gray-500 italic">Grouped location</div>`}
           ${props.asn || props.isp ? `
             <div class="flex flex-col gap-0.5 bg-gray-50 p-2 rounded border border-gray-100">
               ${props.isp ? `<div class="truncate text-gray-800 font-medium" title="${props.isp}">${props.isp}</div>` : ''}
@@ -263,14 +276,20 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
         </div>
         
         <div class="mt-auto pt-2 border-t border-gray-200 flex items-center gap-2">
-          <button id="copy-indicator-btn-${props.id}" class="flex-1 flex items-center justify-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 py-1.5 px-2 rounded transition-colors text-xs font-bold">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-            Copy
-          </button>
-          <a href="/security/indicators/${props.id}" class="flex-[2] flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white py-1.5 px-2 rounded transition-colors text-xs font-bold">
-            View Indicator 
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-          </a>
+          ${indicatorCount === 1 ? `
+            <button id="copy-indicator-btn-${props.id}" class="flex-1 flex items-center justify-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 py-1.5 px-2 rounded transition-colors text-xs font-bold">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              Copy
+            </button>
+            <a href="/security/indicators/${props.id}" class="flex-[2] flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white py-1.5 px-2 rounded transition-colors text-xs font-bold">
+              View Indicator 
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            </a>
+          ` : `
+            <div class="flex-1 text-center text-xs text-gray-500 italic">
+              See left panel for indicators
+            </div>
+          `}
         </div>
       </div>
     `;

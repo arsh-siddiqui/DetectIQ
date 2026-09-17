@@ -128,9 +128,41 @@ export function buildMapGeoJSON(geoPoints = []) {
 
   const uniquePoints = [];
   coordsMap.forEach((points) => {
-    // User requested to treat all indicators pointing to the same geolocation as 1 indicator.
-    // So we just take the first one and drop the duplicates.
-    uniquePoints.push(points[0]);
+    if (points.length === 1) {
+      uniquePoints.push({ ...points[0], indicatorCount: 1, indicatorsList: [points[0]] });
+    } else {
+      const threatRanking = { malicious: 4, suspicious: 3, clean: 1, unknown: 0, unavailable: 0 };
+      
+      let highestThreat = 'unknown';
+      let maxRank = -1;
+      
+      const typesSet = new Set();
+      const typesCount = {};
+      
+      points.forEach(p => {
+        const rank = threatRanking[p.threat] !== undefined ? threatRanking[p.threat] : 0;
+        if (rank > maxRank) {
+          maxRank = rank;
+          highestThreat = p.threat;
+        }
+        typesSet.add(p.type);
+        typesCount[p.type] = (typesCount[p.type] || 0) + 1;
+      });
+      
+      const displayType = typesSet.size === 1 ? Array.from(typesSet)[0] : 'Mixed';
+      
+      const mergedPoint = {
+        ...points[0], 
+        id: points.map(p => p.id).join(','),
+        threat: highestThreat,
+        type: displayType,
+        indicatorCount: points.length,
+        typesCount: typesCount,
+        indicatorsList: points
+      };
+      
+      uniquePoints.push(mergedPoint);
+    }
   });
 
   return {
@@ -151,7 +183,10 @@ export function buildMapGeoJSON(geoPoints = []) {
         asn: p.asn || '',
         isp: p.isp || '',
         threat: p.threat,
-        vtStatus: p.vtStatus || ''
+        vtStatus: p.vtStatus || '',
+        indicatorCount: p.indicatorCount || 1,
+        typesCount: p.typesCount ? JSON.stringify(p.typesCount) : '{}',
+        indicatorsList: p.indicatorsList ? JSON.stringify(p.indicatorsList.slice(0, 10)) : '[]'
       },
     })),
   };
