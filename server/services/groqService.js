@@ -221,7 +221,7 @@ async function analyzeWithGroq(content, scanType, heuristicResult, mlEvidence, t
       category: heuristicResult.category,
       summary: heuristicResult.summary || "Content flagged due to standard security patterns.",
       confidence: heuristicResult.confidence || 85,
-      reasons: ["(AI Unavailable) " + (heuristicResult.summary || "Heuristics identified risky patterns.")],
+      reasons: [heuristicResult.summary || "Heuristics identified risky patterns."],
       socialEngineeringSignals: heuristicResult.detectedSignals || [],
       personalizationEvidence: ragEvidence?.status === 'available' ? ["Pattern matches your saved email baseline."] : [],
       recommendations: heuristicResult.recommendations || ["Exercise standard caution."],
