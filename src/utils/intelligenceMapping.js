@@ -128,33 +128,11 @@ export function buildMapGeoJSON(geoPoints = []) {
 
   const spiderifiedPoints = [];
   coordsMap.forEach((points) => {
-    if (points.length === 1) {
-      spiderifiedPoints.push(points[0]);
-    } else {
-      const baseLat = points[0].latitude;
-      const baseLon = points[0].longitude;
-      
-      // Radius of the circle roughly proportional to how many points there are
-      const radius = 0.0005 + (points.length * 0.00005); 
-      
-      points.forEach((p, index) => {
-        // First point stays in center, others form a circle around it
-        if (index === 0) {
-           spiderifiedPoints.push(p);
-           return;
-        }
-        const angle = (index / (points.length - 1)) * 2 * Math.PI;
-        // Adjust lon offset based on latitude to maintain roughly circular shape
-        const latOffset = Math.sin(angle) * radius;
-        const lonOffset = (Math.cos(angle) * radius) / Math.cos((baseLat * Math.PI) / 180);
-        
-        spiderifiedPoints.push({
-          ...p,
-          latitude: baseLat + latOffset,
-          longitude: baseLon + lonOffset
-        });
-      });
-    }
+    // Push all points exactly at their original coordinates.
+    // They will visually stack on top of each other as a single dot on the map.
+    points.forEach(p => {
+      spiderifiedPoints.push(p);
+    });
   });
 
   return {
