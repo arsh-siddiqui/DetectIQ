@@ -552,7 +552,14 @@ export default function ScanResult() {
                   )}
                 </div>
               ) : (
-                <p className="text-sm text-secondary font-medium">No threat intelligence data available for this scan.</p>
+                <div className="space-y-2">
+                  <p className="text-sm text-secondary font-medium">No threat intelligence data available for this scan.</p>
+                  {scan.limitations?.length > 0 && (
+                    <div className="text-xs text-muted font-medium mt-1">
+                      <span className="font-bold">Note: </span>{scan.limitations.join(' ')}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 

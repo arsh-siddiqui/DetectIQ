@@ -99,7 +99,7 @@ async function analyzeContent(content, scanType = 'url', userId = null) {
   const shouldRunThreatIntel = URL_TYPES.has(type) || /https?:\/\//i.test(content);
   const tiTask = shouldRunThreatIntel
     ? getThreatIntelService().getThreatIntelligence(content, type).catch(() => null)
-    : Promise.resolve(null);
+    : Promise.resolve({ checked: false, reason: 'no_urls_found' });
 
   // RAG Retrieval Task
   let ragTask = Promise.resolve(null);
