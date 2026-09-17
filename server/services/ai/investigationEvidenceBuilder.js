@@ -83,6 +83,18 @@ function buildEvidencePackage(investigation, scan, indicators, timeline, graph) 
           };
         } else if (provider === 'phishdestroy') {
           intelSummary.phishdestroy = data.status;
+        } else if (provider === 'rdap' && data.state === 'success') {
+          intelSummary.rdap = {
+            domain: data.domain,
+            registrar: data.registrar,
+            createdAt: data.createdAt,
+            registrationAgeDays: data.registrationAgeDays,
+            updatedAt: data.updatedAt,
+            expiresAt: data.expiresAt,
+            statuses: data.statuses,
+            nameservers: data.nameservers,
+            rdapServer: data.rdapServer
+          };
         }
       }
     }

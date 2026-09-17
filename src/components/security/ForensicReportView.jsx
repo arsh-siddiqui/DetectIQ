@@ -64,7 +64,72 @@ export default function ForensicReportView({ report }) {
             </div>
           </div>
         </section>
-
+        {/* Registration Intelligence */}
+        {deterministicSummary?.registrationIntelligence && (
+          <section>
+            <h3 className="text-lg font-semibold text-primary mb-4 border-b border-border pb-2 flex items-center gap-2">
+              Registration Intelligence
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {deterministicSummary.registrationIntelligence.registrar && (
+                <div className="bg-secondary/50 p-4 rounded-lg border border-border">
+                  <p className="text-muted text-xs uppercase tracking-wider mb-1">Registrar</p>
+                  <p className="font-semibold text-primary">{deterministicSummary.registrationIntelligence.registrar}</p>
+                </div>
+              )}
+              {deterministicSummary.registrationIntelligence.createdAt && (
+                <div className="bg-secondary/50 p-4 rounded-lg border border-border">
+                  <p className="text-muted text-xs uppercase tracking-wider mb-1">Created</p>
+                  <p className="font-semibold text-primary">{format(new Date(deterministicSummary.registrationIntelligence.createdAt), 'MMM d, yyyy')}</p>
+                </div>
+              )}
+              {deterministicSummary.registrationIntelligence.registrationAgeDays !== null && (
+                <div className="bg-secondary/50 p-4 rounded-lg border border-border">
+                  <p className="text-muted text-xs uppercase tracking-wider mb-1">Registration Age</p>
+                  <p className="font-semibold text-primary">{deterministicSummary.registrationIntelligence.registrationAgeDays} days</p>
+                </div>
+              )}
+              {deterministicSummary.registrationIntelligence.expiresAt && (
+                <div className="bg-secondary/50 p-4 rounded-lg border border-border">
+                  <p className="text-muted text-xs uppercase tracking-wider mb-1">Expires</p>
+                  <p className="font-semibold text-primary">{format(new Date(deterministicSummary.registrationIntelligence.expiresAt), 'MMM d, yyyy')}</p>
+                </div>
+              )}
+            </div>
+            
+            {(deterministicSummary.registrationIntelligence.statuses?.length > 0 || deterministicSummary.registrationIntelligence.nameservers?.length > 0) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                {deterministicSummary.registrationIntelligence.statuses?.length > 0 && (
+                  <div className="bg-secondary/50 p-4 rounded-lg border border-border">
+                    <p className="text-muted text-xs uppercase tracking-wider mb-2">Domain Statuses</p>
+                    <div className="flex flex-wrap gap-2">
+                      {deterministicSummary.registrationIntelligence.statuses.map((status, idx) => (
+                        <span key={idx} className="px-2 py-1 bg-secondary text-[11px] rounded border border-border">
+                          {status}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {deterministicSummary.registrationIntelligence.nameservers?.length > 0 && (
+                  <div className="bg-secondary/50 p-4 rounded-lg border border-border">
+                    <p className="text-muted text-xs uppercase tracking-wider mb-2">Nameservers</p>
+                    <div className="flex flex-col gap-1">
+                      {deterministicSummary.registrationIntelligence.nameservers.map((ns, idx) => (
+                        <span key={idx} className="text-sm font-mono text-secondary">
+                          {ns}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="text-right mt-2">
+              <span className="text-xs text-muted">Source: {deterministicSummary.registrationIntelligence.rdapServer || 'RDAP'}</span>
+            </div>
+          </section>
+        )}
         {/* AI Findings */}
         {aiFindings ? (
           <section>

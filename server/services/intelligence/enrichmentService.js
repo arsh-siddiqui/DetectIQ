@@ -40,6 +40,7 @@ const {
 const { checkAbuseIpDbIP } = require('../threatIntel/abuseIpDbService');
 const { checkUrlhausURL } = require('../threatIntel/urlhausService');
 const { checkOtxIndicator } = require('../threatIntel/otxService');
+const { checkRdapDomain } = require('../threatIntel/rdapService');
 const env = require('../../config/env');
 
 const DEFAULT_MAX_INDICATORS = 20;
@@ -279,6 +280,22 @@ async function enrichOtx(indicator) {
   return result;
 }
 
+/**
+ * Enrich one indicator with RDAP intelligence.
+ */
+async function enrichRdap(indicator) {
+  // RDAP is strictly for domains
+  if (indicator.type !== 'domain') return null;
+
+  // Cache check
+  const cached = await getCached('rdap', indicator.type, indicator.normalizedValue);
+  if (cached) return { ...cached, fromCache: true };
+
+  const result = await checkRdapDomain(indicator.normalizedValue);
+  await setCache('rdap', indicator.type, indicator.normalizedValue, result);
+  return result;
+}
+
 // ---------------------------------------------------------------------------
 // Concurrent enrichment with per-indicator resilience
 // ---------------------------------------------------------------------------
@@ -299,7 +316,7 @@ async function enrichIndicators(indicators, investigation, options = {}) {
   // Enrich all indicators in parallel (per-indicator resilience)
   const enriched = await Promise.all(
     limited.map(async (indicator) => {
-      const [geoResult, vtResult, abuseIpDbResult, urlhausResult, otxResult] = await Promise.all([
+      const [geoResult, vtResult, abuseIpDbResult, urlhausResult, otxResult, rdapResult] = await Promise.all([
         enrichGeo(indicator, investigation).catch(err => ({
           status: 'error',
           errorDetail: err.message,
@@ -351,6 +368,13 @@ async function enrichIndicators(indicators, investigation, options = {}) {
           summary: `Error: ${err.message}`,
           checkedAt: new Date().toISOString(),
         })),
+        enrichRdap(indicator).catch(err => ({
+          provider: 'rdap',
+          indicatorType: indicator.type,
+          state: 'error',
+          domain: indicator.normalizedValue,
+          summary: `Error: ${err.message}`,
+        })),
       ]);
 
       return {
@@ -360,6 +384,7 @@ async function enrichIndicators(indicators, investigation, options = {}) {
         abuseIpDb: abuseIpDbResult || null,
         urlhaus: urlhausResult || null,
         otx: otxResult || null,
+        rdap: rdapResult || null,
         // Three-state model:
         //   'extracted' = IOC found but no intelligence yet
         //   'available' = intelligence retrieved
@@ -409,6 +434,10 @@ async function persistIndicators(enrichedIndicators, investigationId, userId) {
 
       if (ind.otx) {
         intelligence.set('otx', ind.otx);
+      }
+
+      if (ind.rdap) {
+        intelligence.set('rdap', ind.rdap);
       }
 
       const doc = await Model.findOneAndUpdate(

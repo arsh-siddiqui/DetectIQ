@@ -58,6 +58,35 @@ async function generateReport(user, investigation, scan, indicators, timeline, g
   // 2. Deterministic Sections
   const limitations = deriveLimitations(investigation, scan, indicators);
 
+  let registrationIntelligence = null;
+  if (indicators) {
+    const rdapIndicator = indicators.find(i => {
+      if (!i.intelligence) return false;
+      const data = typeof i.intelligence.get === 'function' 
+        ? i.intelligence.get('rdap') 
+        : i.intelligence.rdap;
+      return data && data.state === 'success';
+    });
+    
+    if (rdapIndicator) {
+      const rdapData = typeof rdapIndicator.intelligence.get === 'function'
+        ? rdapIndicator.intelligence.get('rdap')
+        : rdapIndicator.intelligence.rdap;
+      
+      registrationIntelligence = {
+        domain: rdapData.domain,
+        registrar: rdapData.registrar,
+        createdAt: rdapData.createdAt,
+        updatedAt: rdapData.updatedAt,
+        expiresAt: rdapData.expiresAt,
+        registrationAgeDays: rdapData.registrationAgeDays,
+        statuses: rdapData.statuses,
+        nameservers: rdapData.nameservers,
+        rdapServer: rdapData.rdapServer
+      };
+    }
+  }
+
   const deterministicSummary = {
     verdict: {
       classification: scan.classification,
@@ -77,6 +106,10 @@ async function generateReport(user, investigation, scan, indicators, timeline, g
       hops: (investigation.headers?.received || []).length
     }
   };
+
+  if (registrationIntelligence) {
+    deterministicSummary.registrationIntelligence = registrationIntelligence;
+  }
 
   // 3. Optional AI Insights
   let aiFindings = null;
