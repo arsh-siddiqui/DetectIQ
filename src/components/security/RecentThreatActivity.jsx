@@ -71,7 +71,7 @@ export default function RecentThreatActivity({ activities, isLoading }) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-bold text-primary line-clamp-2 break-all" title={activity.title}>
+                    <p className="text-sm font-bold text-primary line-clamp-2 break-words" title={activity.title}>
                       {activity.title}
                     </p>
                     <span className="text-[10px] font-medium text-muted flex-shrink-0 whitespace-nowrap">

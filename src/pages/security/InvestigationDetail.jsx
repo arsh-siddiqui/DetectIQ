@@ -108,20 +108,20 @@ const OverviewTab = ({ inv }) => {
         <div className="space-y-4 text-sm bg-secondary/30 p-4 rounded-lg">
           <div>
             <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Sender (From)</div>
-            <div className="text-primary font-mono text-sm break-all">{inv.headers?.from || 'Unknown'}</div>
+            <div className="text-primary font-mono text-sm break-words">{inv.headers?.from || 'Unknown'}</div>
           </div>
           <div>
             <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Recipient (To)</div>
-            <div className="text-secondary font-mono text-sm break-all">{inv.headers?.to || 'Unknown'}</div>
+            <div className="text-secondary font-mono text-sm break-words">{inv.headers?.to || 'Unknown'}</div>
           </div>
           <div>
             <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Subject</div>
-            <div className="text-primary font-medium break-all">{inv.headers?.subject || '(No Subject)'}</div>
+            <div className="text-primary font-medium break-words">{inv.headers?.subject || '(No Subject)'}</div>
           </div>
           {inv.headers?.replyTo && (
             <div>
               <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Reply-To</div>
-              <div className="text-secondary font-mono text-sm break-all">{inv.headers?.replyTo}</div>
+              <div className="text-secondary font-mono text-sm break-words">{inv.headers?.replyTo}</div>
             </div>
           )}
         </div>
@@ -137,14 +137,14 @@ const EvidenceTab = ({ inv }) => {
          <div className="space-y-4 text-sm">
             <div>
               <div className="text-xs text-muted mb-1">Message-ID</div>
-              <div className="text-secondary break-all font-mono text-xs bg-secondary/50 p-2 rounded">{inv.headers?.messageId || 'None'}</div>
+              <div className="text-secondary break-words font-mono text-xs bg-secondary/50 p-2 rounded">{inv.headers?.messageId || 'None'}</div>
             </div>
             {inv.headers?.received?.length > 0 && (
               <div>
                 <div className="text-xs text-muted mb-2">Received Routing Hops</div>
                 <div className="space-y-2">
                   {inv.headers.received.map((hop, idx) => (
-                    <div key={idx} className="text-[11px] p-2 rounded bg-secondary/50 font-mono text-secondary break-all border border-border">
+                    <div key={idx} className="text-[11px] p-2 rounded bg-secondary/50 font-mono text-secondary break-words border border-border">
                       {hop.raw}
                     </div>
                   ))}
@@ -173,7 +173,7 @@ const EvidenceTab = ({ inv }) => {
              {inv.extracted?.urls?.length > 0 && (
                <div>
                  <span className="text-muted text-xs font-bold uppercase block mb-2">URLs:</span>
-                 <ul className="space-y-1 list-disc list-inside text-xs font-mono text-secondary break-all">
+                 <ul className="space-y-1 list-disc list-inside text-xs font-mono text-secondary break-words">
                    {inv.extracted.urls.map((url, idx) => (
                      <li key={idx}>{url}</li>
                    ))}
@@ -197,7 +197,7 @@ const EvidenceTab = ({ inv }) => {
                   <span className="bg-secondary/50 px-2 py-0.5 rounded">{att.contentType}</span>
                 </div>
                 {att.sha256 && (
-                  <div className="text-[11px] font-mono text-secondary break-all pt-2 border-t border-border mt-2">
+                  <div className="text-[11px] font-mono text-secondary break-words pt-2 border-t border-border mt-2">
                     <span className="text-muted font-semibold mr-2">SHA-256:</span>
                     {att.sha256}
                   </div>

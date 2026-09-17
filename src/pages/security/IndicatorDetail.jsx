@@ -120,7 +120,7 @@ const IndicatorDetail = () => {
                   {getTypeIcon(ind.type)}
                 </div>
                 <div>
-                  <h1 className="text-[28px] font-bold font-mono text-primary truncate max-w-2xl break-all">
+                  <h1 className="text-[28px] font-bold font-mono text-primary truncate max-w-2xl break-words">
                     {ind.normalizedValue}
                   </h1>
                   <div className="flex items-center gap-3 text-sm text-secondary mt-1">

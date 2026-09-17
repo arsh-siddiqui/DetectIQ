@@ -18,7 +18,7 @@ function IndicatorRow({ indicator }) {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-mono text-sm font-bold text-primary break-all">{indicator.value}</span>
+            <span className="font-mono text-sm font-bold text-primary break-words">{indicator.value}</span>
             <span className={`text-xs font-semibold uppercase tracking-wider ${stateMeta.color}`}>
               {stateMeta.label}
             </span>

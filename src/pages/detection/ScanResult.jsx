@@ -229,7 +229,7 @@ export default function ScanResult() {
               {displayClassification}
             </h1>
             
-            <p className="text-secondary font-medium text-base md:text-lg break-all max-w-2xl leading-relaxed">
+            <p className="text-secondary font-medium text-base md:text-lg break-words max-w-2xl leading-relaxed">
               {displayTarget}
             </p>
           </div>
@@ -263,7 +263,7 @@ export default function ScanResult() {
               Resolved as: <span className="uppercase text-primary">{analysisType}</span>
             </span>
           </div>
-          <p className="p-5 bg-card border border-border rounded-2xl text-primary font-mono text-sm break-all max-h-40 overflow-y-auto shadow-inner">
+          <p className="p-5 bg-card border border-border rounded-2xl text-primary font-mono text-sm break-words max-h-40 overflow-y-auto shadow-inner">
             {displayTarget}
           </p>
         </div>

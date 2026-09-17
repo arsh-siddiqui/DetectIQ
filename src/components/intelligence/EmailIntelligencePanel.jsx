@@ -102,12 +102,12 @@ export default function EmailIntelligencePanel({ intelligence }) {
           <div className="space-y-4 text-sm">
             <div>
               <span className="text-xs text-muted block mb-1">From</span>
-              <span className="font-mono text-primary break-all">{sender.from || 'Unknown'}</span>
+              <span className="font-mono text-primary break-words">{sender.from || 'Unknown'}</span>
             </div>
             {sender.replyTo && (
               <div>
                 <span className="text-xs text-muted block mb-1">Reply-To</span>
-                <span className={`font-mono break-all ${sender.differ ? 'text-warning font-bold' : 'text-primary'}`}>
+                <span className={`font-mono break-words ${sender.differ ? 'text-warning font-bold' : 'text-primary'}`}>
                   {sender.replyTo}
                 </span>
                 {sender.differ && <div className="text-xs text-warning mt-1">Differs from sender</div>}
@@ -190,7 +190,7 @@ export default function EmailIntelligencePanel({ intelligence }) {
               {urls.map((urlObj, idx) => (
                 <div key={idx} className="border border-border rounded-xl p-4 bg-background">
                   <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                    <span className="font-mono font-bold text-primary text-sm break-all max-w-full">{urlObj.url}</span>
+                    <span className="font-mono font-bold text-primary text-sm break-words max-w-full">{urlObj.url}</span>
                     <ThreatBadge status={urlObj.threatStatus} />
                   </div>
                   {urlObj.intelligence && Object.keys(urlObj.intelligence).length > 0 && (
@@ -213,7 +213,7 @@ export default function EmailIntelligencePanel({ intelligence }) {
               {domains.map((domObj, idx) => (
                 <div key={idx} className="border border-border rounded-xl p-4 bg-background">
                   <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                    <span className="font-mono font-bold text-primary text-sm break-all">{domObj.domain}</span>
+                    <span className="font-mono font-bold text-primary text-sm break-words">{domObj.domain}</span>
                     <ThreatBadge status={domObj.threatStatus} />
                   </div>
                   {domObj.intelligence && Object.keys(domObj.intelligence).length > 0 && (

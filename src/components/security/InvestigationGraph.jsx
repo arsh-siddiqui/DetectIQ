@@ -360,7 +360,7 @@ const InvestigationGraph = ({ data }) => {
             
             <div className="space-y-1">
               <div className="text-[10px] uppercase tracking-wider font-bold text-muted">{TYPE_LABELS[selectedNode.type] || selectedNode.type || 'Unknown'}</div>
-              <div className="text-sm font-medium text-primary break-all">{selectedNode.label || selectedNode.id}</div>
+              <div className="text-sm font-medium text-primary break-words">{selectedNode.label || selectedNode.id}</div>
             </div>
 
             {selectedNode.metadata?.domain && selectedNode.type !== 'domain' && (
