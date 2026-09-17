@@ -95,15 +95,8 @@ function otxEvidenceStrength(otxResult) {
     const count = otxResult.pulseCount || 0;
     if (count === 0) return { evidenceStrength: 'none', scoreBump: 0, contextual: true };
     
-    // Explicit malicious evidence
-    const OTX_MALICIOUS_TAGS = ['phishing', 'malware', 'botnet', 'ransomware', 'c2', 'exploit', 'trojan'];
-    const hasMaliciousTag = (otxResult.tags || []).some(t => OTX_MALICIOUS_TAGS.includes(t.toLowerCase()));
-    
-    if (hasMaliciousTag) {
-      return { evidenceStrength: 'malicious_evidence', scoreBump: 45, contextual: false };
-    }
-    
-    // Contextual metadata only
+    // OTX pulses and user-submitted tags are too noisy for root domains to generate score bumps automatically.
+    // We treat OTX strictly as contextual metadata.
     if (count <= 2) return { evidenceStrength: 'observed', scoreBump: 0, contextual: true };
     if (count <= 5) return { evidenceStrength: 'notable',  scoreBump: 0, contextual: true };
     return { evidenceStrength: 'significant', scoreBump: 0, contextual: true };
@@ -277,13 +270,9 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
   const isVtMalicious = (vtUrlStrength.evidenceStrength !== 'none' && vtUrlStrength.evidenceStrength !== 'unavailable' && vtUrlStrength.evidenceStrength !== 'suspicious') || 
                         (vtDomainStrength.evidenceStrength !== 'none' && vtDomainStrength.evidenceStrength !== 'unavailable' && vtDomainStrength.evidenceStrength !== 'suspicious');
                         
-  const isOtxMalicious = (otxUrlStrength.evidenceStrength !== 'none' && !otxUrlStrength.contextual) || 
-                         (otxDomainStrength.evidenceStrength !== 'none' && !otxDomainStrength.contextual);
-                         
   const activeMaliciousSources = [
     isVtMalicious,
     urlhausIsMalicious,
-    isOtxMalicious,
     hasSignals && (heuristicResult.riskScore >= 45) // Heuristics counts as 1 source if high risk
   ].filter(Boolean).length;
 
