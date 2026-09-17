@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Mail, Globe, MessageSquare, QrCode, Image as ImageLucide, ShieldAlert, Loader2, ScanSearch, UploadCloud, ShieldCheck, Lock, FileText, Upload } from "lucide-react";
 import Button from "../../components/ui/Button";
 import { submitScan, submitEml } from "../../services/detectionService";
+import { normalizeUrl } from "../../utils/urlValidation";
 import jsQR from "jsqr";
 import Tesseract from "tesseract.js";
 import { motion, AnimatePresence } from "framer-motion";
@@ -71,6 +72,17 @@ export default function Scan() {
 
       let result;
       
+      let finalContent = content;
+      if (actualScanType === 'url') {
+        try {
+          finalContent = normalizeUrl(content);
+        } catch (validationErr) {
+          setError(validationErr.message);
+          setIsScanning(false);
+          return;
+        }
+      }
+
       if (scanType === 'email' && emailInputMode === 'paste') {
         // Send structured object for pasted email
         const emailObj = {
@@ -78,11 +90,11 @@ export default function Scan() {
           sender: emailSender,
           recipient: emailRecipient,
           subject: emailSubject,
-          body: content
+          body: finalContent
         };
         result = await submitScan(emailObj, actualScanType);
       } else {
-        result = await submitScan(content, actualScanType);
+        result = await submitScan(finalContent, actualScanType);
       }
 
       if (result.scanId) {
@@ -489,7 +501,7 @@ export default function Scan() {
                           <Globe className="w-5 h-5 text-muted" />
                         </div>
                         <input 
-                          type="url"
+                          type="text"
                           value={content}
                           onChange={(e) => setContent(e.target.value)}
                           placeholder="https://suspicious-link.com/login"
