@@ -122,8 +122,53 @@ export default function ScanResult() {
     llmAnalysisStr = "Analysis could not be parsed.";
   }
 
-  // confidence (not confidenceScore)
   const confidenceDisplay = scan.confidence ?? scan.confidenceScore ?? 0;
+
+  // Format strings for URL analysis
+  const formatUrlText = (text) => {
+    if (!text || typeof text !== 'string') return text;
+    
+    if (text === 'No action needed — this message appears safe.') {
+      return 'No immediate action needed — no significant threat indicators were detected for this URL.';
+    }
+    if (text === 'No phishing indicators, suspicious links, or manipulation tactics were found in this message.') {
+      return 'No significant phishing indicators, suspicious URL patterns, or known threat-intelligence matches were detected.';
+    }
+    if (text === 'This content shows multiple severe warning signs of a scam or phishing attempt. It is highly recommended not to interact with it.') {
+      return 'This URL shows multiple severe warning signs of a scam or phishing attempt. It is highly recommended not to visit it.';
+    }
+    if (text === "This message has some warning signs but isn't a clear-cut scam. Treat it with caution before acting.") {
+      return "This URL has some warning signs but isn't a clear-cut scam. Treat it with caution before visiting.";
+    }
+    if (text === 'This content has minor indicators that warrant a closer look, but no confirmed threats were detected.') {
+      return 'This URL has minor indicators that warrant a closer look, but no confirmed threats were detected.';
+    }
+    if (text === 'No suspicious indicators were found. This content appears safe based on deterministic analysis.') {
+      return 'No suspicious indicators were found. This URL appears safe based on deterministic analysis.';
+    }
+
+    // General replacements for LLM or other dynamically generated text
+    return text
+      .replace(/\\bthis message\\b/gi, 'this URL')
+      .replace(/\\bmessage\\b/gi, 'URL')
+      .replace(/\\bemail\\b/gi, 'URL')
+      .replace(/\\bcontent\\b/gi, 'URL')
+      .replace(/\\bsender\\b/gi, 'domain')
+      .replace(/\\binteract with it\\b/gi, 'visit it')
+      .replace(/\\binteracting with\\b/gi, 'visiting');
+  };
+
+  const finalRecommendations = isUrlAnalysis && scan.recommendations
+    ? scan.recommendations.map(formatUrlText)
+    : scan.recommendations;
+
+  const finalLlmAnalysisStr = isUrlAnalysis 
+    ? formatUrlText(llmAnalysisStr)
+    : llmAnalysisStr;
+
+  const finalReasons = isUrlAnalysis && scan.llmResult?.reasons
+    ? scan.llmResult.reasons.map(formatUrlText)
+    : scan.llmResult?.reasons;
 
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -229,9 +274,9 @@ export default function ScanResult() {
             <h3 className="text-2xl font-heading font-extrabold text-primary">Why this result?</h3>
           </div>
           <div className="text-base md:text-lg font-medium text-secondary leading-relaxed flex-1 relative z-10 p-6 md:p-8 bg-background rounded-2xl border border-border shadow-inner">
-            {scan.llmResult?.reasons && Array.isArray(scan.llmResult.reasons) && scan.llmResult.reasons.length > 0 ? (
+            {finalReasons && Array.isArray(finalReasons) && finalReasons.length > 0 ? (
               <ul className="space-y-4">
-                {scan.llmResult.reasons.map((r, i) => (
+                {finalReasons.map((r, i) => (
                   <li key={i} className="flex gap-3">
                     <span className="text-accent-violet font-bold mt-0.5">•</span>
                     <span>{r}</span>
@@ -239,7 +284,7 @@ export default function ScanResult() {
                 ))}
               </ul>
             ) : (
-              <div className="whitespace-pre-wrap">{llmAnalysisStr}</div>
+              <div className="whitespace-pre-wrap">{finalLlmAnalysisStr}</div>
             )}
           </div>
         </div>
@@ -252,9 +297,9 @@ export default function ScanResult() {
             </div>
             <h2 className="text-2xl font-heading font-extrabold text-primary">Recommended Action</h2>
           </div>
-          {scan.recommendations && scan.recommendations.length > 0 ? (
+          {finalRecommendations && finalRecommendations.length > 0 ? (
             <ul className="space-y-4 flex-1">
-              {scan.recommendations.map((rec, i) => (
+              {finalRecommendations.map((rec, i) => (
                 <li key={i} className="flex gap-4 text-sm bg-background p-5 rounded-2xl border border-border shadow-sm">
                   <div className="w-7 h-7 rounded-full bg-accent-blue/10 text-accent-blue flex items-center justify-center flex-shrink-0 mt-0.5">
                     <span className="text-sm font-bold">{i + 1}</span>
