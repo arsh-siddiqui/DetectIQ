@@ -112,6 +112,8 @@ function normalizeStats(indicatorType, stats) {
     confidence,
     maliciousVotes: malicious,
     suspiciousVotes: suspicious,
+    harmlessVotes: stats.harmless || 0,
+    undetectedVotes: stats.undetected || 0,
     totalEngines: total,
     summary,
     checkedAt: new Date().toISOString(),
@@ -208,33 +210,6 @@ async function vtGet(endpoint, indicatorType) {
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
-
-/**
- * Check a domain against VirusTotal.
- * Preserves original behavior used by the scanner pipeline.
- * @param {string} rawUrl - URL or domain
- */
-async function checkVirusTotal(rawUrl) {
-  const { normalizeDomain } = require('./phishDestroyService');
-  const domain = normalizeDomain(rawUrl);
-  if (!domain) {
-    return { provider: 'VirusTotal', status: 'error', malicious: false };
-  }
-  const result = await checkVirusTotalDomain(domain);
-  // Legacy format compatibility for existing scanner pipeline
-  return {
-    provider: 'VirusTotal',
-    status: result.status === 'available' ? 'found' : result.status,
-    threat: result.threat,
-    malicious: result.threat === 'malicious',
-    riskScore: result.confidence,
-    severity: result.severity,
-    detail: result.summary,
-    checkedAt: result.checkedAt,
-  };
-}
-
-/**
  * Check a domain against VirusTotal. (Phase 2 normalized format)
  * @param {string} domain - Already normalized domain (lowercase, no www)
  */
@@ -285,10 +260,9 @@ async function checkVirusTotalHash(hash) {
 }
 
 module.exports = {
-  checkVirusTotal,         // Legacy — scanner pipeline
-  checkVirusTotalDomain,   // Phase 2
-  checkVirusTotalIP,       // Phase 2
-  checkVirusTotalURL,      // Phase 2
-  checkVirusTotalHash,     // Phase 2
+  checkVirusTotalDomain,
+  checkVirusTotalURL,
+  checkVirusTotalIP,
+  checkVirusTotalHash,
   normalizeStats,          // Exported for unit testing
 };

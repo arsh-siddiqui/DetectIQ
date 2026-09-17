@@ -166,10 +166,6 @@ async function analyzeContent(content, scanType = 'url', userId = null) {
     finalResult = fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, groqResult);
     finalResult.groq = groqResult;
   }
-  
-  finalResult.rag = ragEvidence;
-  finalResult.ml = mlEvidence;
-  finalResult.intelligence = threatIntel;
 
   return finalResult;
 }

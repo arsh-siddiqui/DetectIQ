@@ -74,9 +74,18 @@ export default function ScanResult() {
   const evidenceList = scan.evidence || [];
   const heuristics = evidenceList.filter(e => e.source === 'Heuristics');
   const ml = evidenceList.filter(e => e.source === 'ML_Classifier');
-  const threatIntel = evidenceList.filter(e => e.source === 'PhishDestroy' || e.source === 'Threat_Intelligence' || e.source === 'VirusTotal');
   const personalization = evidenceList.filter(e => e.source === 'Personalization_RAG');
-  
+
+  // Multi-provider intelligence from new format
+  const intel = scan.intelligence || {};
+  const vtResult = intel.virusTotal || null;
+  const vtDomainResult = intel.virusTotalDomain || null;
+  const urlhausResult = intel.urlhaus || null;
+  const otxResult = intel.otx || null;
+  const rdapResult = intel.rdap || null;
+
+  const hasRichIntel = vtResult || urlhausResult || otxResult || rdapResult;
+
   // Human-readable classification labels
   const CLASSIFICATION_LABEL = {
     phishing: 'Phishing',
@@ -442,6 +451,7 @@ export default function ScanResult() {
               />
             )}
 
+            {/* Threat Intelligence */}
             <div className="bg-background p-6 md:p-8 rounded-3xl border border-border shadow-sm">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-10 h-10 rounded-xl bg-accent-blue/10 text-accent-blue flex items-center justify-center">
@@ -449,20 +459,100 @@ export default function ScanResult() {
                 </div>
                 <h3 className="text-lg font-bold text-primary">Threat Intelligence</h3>
               </div>
-              {threatIntel.length > 0 ? (
-                <ul className="space-y-4">
-                  {threatIntel.map((e, i) => (
-                    <li key={i} className="flex gap-4 text-sm bg-card p-5 rounded-2xl border border-border shadow-sm">
-                      <Info className={`w-6 h-6 flex-shrink-0 mt-0.5 ${e.severity === 'high' || e.severity === 'critical' ? 'text-danger' : 'text-accent-blue'}`} />
-                      <div>
-                        <span className="font-bold text-primary text-base">{e.title || e.type} ({e.source}):</span>{" "}
-                        <span className="text-secondary font-medium leading-relaxed block mt-1">{e.detail}</span>
+              {hasRichIntel ? (
+                <div className="space-y-4">
+                  {/* VirusTotal URL */}
+                  {vtResult && (
+                    <ThreatIntelBlock
+                      label="VirusTotal — URL Analysis"
+                      status={vtResult.status}
+                      content={
+                        vtResult.status === 'available' ? (
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                            <VTStat label="Malicious" value={vtResult.maliciousVotes} color="text-danger" />
+                            <VTStat label="Suspicious" value={vtResult.suspiciousVotes} color="text-warning" />
+                            <VTStat label="Harmless" value={vtResult.harmlessVotes} color="text-success" />
+                            <VTStat label="Analyzed" value={vtResult.totalEngines} color="text-secondary" />
+                          </div>
+                        ) : null
+                      }
+                    />
+                  )}
+                  {/* VirusTotal Domain */}
+                  {vtDomainResult && vtDomainResult.status === 'available' && vtDomainResult.maliciousVotes > 0 && (
+                    <ThreatIntelBlock
+                      label="VirusTotal — Domain Context"
+                      status={vtDomainResult.status}
+                      content={
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
+                          <VTStat label="Malicious" value={vtDomainResult.maliciousVotes} color="text-danger" />
+                          <VTStat label="Suspicious" value={vtDomainResult.suspiciousVotes} color="text-warning" />
+                          <VTStat label="Analyzed" value={vtDomainResult.totalEngines} color="text-secondary" />
+                        </div>
+                      }
+                    />
+                  )}
+                  {/* URLhaus */}
+                  {urlhausResult && (
+                    <ThreatIntelBlock
+                      label="URLhaus (Abuse Database)"
+                      status={urlhausResult.status}
+                      threat={urlhausResult.threat}
+                      content={
+                        urlhausResult.status === 'available' && urlhausResult.threat === 'malicious' ? (
+                          <div className="mt-2 text-xs text-danger font-semibold">
+                            Malicious — {urlhausResult.urlStatus || 'active'}
+                            {urlhausResult.tags?.length > 0 && (
+                              <span className="ml-2 text-muted font-normal">[{urlhausResult.tags.join(', ')}]</span>
+                            )}
+                          </div>
+                        ) : null
+                      }
+                    />
+                  )}
+                  {/* OTX */}
+                  {otxResult && (
+                    <ThreatIntelBlock
+                      label="OTX AlienVault"
+                      status={otxResult.status}
+                      content={
+                        otxResult.status === 'available' && otxResult.pulseCount > 0 ? (
+                          <div className="mt-2 text-xs text-warning font-semibold">
+                            Observed in {otxResult.pulseCount} threat pulse(s)
+                          </div>
+                        ) : null
+                      }
+                    />
+                  )}
+                  {/* RDAP */}
+                  {rdapResult && (
+                    <div className="bg-card p-4 rounded-2xl border border-border">
+                      <div className="text-xs font-bold text-muted uppercase tracking-wider mb-3">Registration Intelligence (RDAP)</div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-sm">
+                        {rdapResult.registrationAgeDays !== null && (
+                          <div><span className="text-muted text-xs">Domain Age</span><div className="font-semibold text-primary">{rdapResult.registrationAgeDays} days</div></div>
+                        )}
+                        {rdapResult.registrar && (
+                          <div><span className="text-muted text-xs">Registrar</span><div className="font-semibold text-primary truncate">{rdapResult.registrar}</div></div>
+                        )}
+                        {rdapResult.createdAt && (
+                          <div><span className="text-muted text-xs">Registered</span><div className="font-semibold text-primary">{new Date(rdapResult.createdAt).toLocaleDateString()}</div></div>
+                        )}
+                        {rdapResult.expiresAt && (
+                          <div><span className="text-muted text-xs">Expires</span><div className="font-semibold text-primary">{new Date(rdapResult.expiresAt).toLocaleDateString()}</div></div>
+                        )}
                       </div>
-                    </li>
-                  ))}
-                </ul>
+                    </div>
+                  )}
+                  {/* Provider limitations */}
+                  {scan.limitations?.length > 0 && (
+                    <div className="text-xs text-muted font-medium mt-2">
+                      <span className="font-bold">Note: </span>{scan.limitations.join(' ')}
+                    </div>
+                  )}
+                </div>
               ) : (
-                <p className="text-sm text-secondary font-medium">No threat intelligence hits for this content.</p>
+                <p className="text-sm text-secondary font-medium">No threat intelligence data available for this scan.</p>
               )}
             </div>
 
@@ -523,6 +613,38 @@ function EvidenceCard({ title, icon: Icon, evidence, emptyMsg }) {
       ) : (
         <p className="text-sm text-secondary font-medium">{emptyMsg || "No evidence detected in this category."}</p>
       )}
+    </div>
+  );
+}
+
+function statusBadge(status, threat) {
+  if (status === 'available' && threat === 'malicious') return { label: 'Malicious', cls: 'bg-danger/10 text-danger border-danger/20' };
+  if (status === 'available' && threat === 'suspicious') return { label: 'Suspicious', cls: 'bg-warning/10 text-warning border-warning/20' };
+  if (status === 'available') return { label: 'Analyzed', cls: 'bg-success/10 text-success border-success/20' };
+  if (status === 'not_observed') return { label: 'Not Observed', cls: 'bg-secondary/40 text-muted border-border' };
+  if (status === 'not_found') return { label: 'Not Found', cls: 'bg-secondary/40 text-muted border-border' };
+  if (status === 'skipped') return { label: 'Not Configured', cls: 'bg-secondary/30 text-muted border-border' };
+  return { label: status || 'Unavailable', cls: 'bg-secondary/30 text-muted border-border' };
+}
+
+function ThreatIntelBlock({ label, status, threat, content }) {
+  const badge = statusBadge(status, threat);
+  return (
+    <div className="bg-card p-4 rounded-2xl border border-border">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-bold text-primary">{label}</span>
+        <span className={`text-xs font-bold px-2 py-0.5 rounded-lg border ${badge.cls}`}>{badge.label}</span>
+      </div>
+      {content}
+    </div>
+  );
+}
+
+function VTStat({ label, value, color }) {
+  return (
+    <div className="text-center">
+      <div className={`text-2xl font-black ${color}`}>{value ?? '—'}</div>
+      <div className="text-xs text-muted font-semibold mt-0.5">{label}</div>
     </div>
   );
 }

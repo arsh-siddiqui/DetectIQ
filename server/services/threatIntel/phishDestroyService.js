@@ -73,7 +73,7 @@ async function checkPhishDestroy(rawUrl) {
       checkedAt: data.checked_at || new Date().toISOString()
     };
 
-  } catch (error) {
+  } catch {
     return {
       source: 'phishdestroy',
       status: 'error'

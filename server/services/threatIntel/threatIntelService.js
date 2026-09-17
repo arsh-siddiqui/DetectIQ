@@ -3,46 +3,80 @@
 /**
  * threatIntelService.js — Orchestrates threat intelligence lookups.
  *
- * Flow:
- *   1. Extract URLs from content (or use the content directly if it's a URL type)
- *   2. Normalise each URL for caching
- *   3. Check MongoDB cache (avoid redundant external calls)
- *   4. Run PhishDestroy lookup
- *   5. Normalize + combine results
- *   6. Store in cache
- *   7. Return structured evidence
+ * For a submitted URL this service runs:
+ *   1. Exact-URL intelligence  → VirusTotal (URL), URLhaus, OTX (URL)
+ *   2. Domain-level context    → VirusTotal (domain), OTX (domain), RDAP
  *
- * Failure handling:
- *   - If PhishDestroy fails: return empty evidence (scanner continues with heuristics)
- *   - MongoDB cache errors: log and proceed without cache
+ * All lookups are concurrent.  Provider failures (timeout / error / unavailable)
+ * do NOT contribute threat evidence — only affirmative data does.
  *
- * Cache TTL: THREAT_INTEL_CACHE_TTL env var (hours), default 6 hours
+ * Output shape:
+ *   {
+ *     checked       : boolean,
+ *     checkedUrl    : string,
+ *     fromCache     : boolean,
+ *     virusTotal    : VTResult,          // URL-level
+ *     virusTotalDomain: VTResult,        // domain-level (contextual)
+ *     urlhaus       : URLhausResult,
+ *     otx           : OTXResult,
+ *     rdap          : RDAPResult,
+ *   }
+ *
+ * Cache TTL: THREAT_INTEL_CACHE_TTL env var (hours), default 6h.
  */
 
 const crypto = require('crypto');
-const { checkPhishDestroy, normalizeDomain } = require('./phishDestroyService');
-const { checkVirusTotal } = require('./virusTotalService');
+const { checkVirusTotalURL, checkVirusTotalDomain } = require('./virusTotalService');
+const { checkUrlhausURL } = require('./urlhausService');
+const { checkOtxIndicator } = require('./otxService');
+const { checkRdapDomain } = require('./rdapService');
 const env = require('../../config/env');
 
 const DEFAULT_CACHE_TTL_HOURS = 6;
 
-// Import model lazily to avoid crashing if MongoDB is unavailable
+// ---------------------------------------------------------------------------
+// Cache helpers
+// ---------------------------------------------------------------------------
+
 let ThreatIntelCache;
 function getCacheModel() {
   if (!ThreatIntelCache) {
-    try {
-      ThreatIntelCache = require('../../models/ThreatIntelCache');
-    } catch {
-      // MongoDB not available — cache disabled
-    }
+    try { ThreatIntelCache = require('../../models/ThreatIntelCache'); } catch { /* DB unavailable */ }
   }
   return ThreatIntelCache;
 }
 
+function urlCacheKey(value) {
+  return crypto.createHash('sha256').update(value).digest('hex');
+}
+
+async function getCachedResult(hash) {
+  const Model = getCacheModel();
+  if (!Model) return null;
+  try { return await Model.findOne({ urlHash: hash }) || null; } catch { return null; }
+}
+
+async function setCachedResult(hash, normalizedUrl, providers) {
+  const Model = getCacheModel();
+  if (!Model) return;
+  const ttlHours = parseFloat(env.THREAT_INTEL_CACHE_TTL) || DEFAULT_CACHE_TTL_HOURS;
+  const expiresAt = new Date(Date.now() + ttlHours * 3_600_000);
+  try {
+    await Model.findOneAndUpdate(
+      { urlHash: hash },
+      { urlHash: hash, normalizedUrl, providers, checkedAt: new Date(), expiresAt },
+      { upsert: true, new: true }
+    );
+  } catch { /* non-fatal */ }
+}
+
+// ---------------------------------------------------------------------------
+// URL extraction helpers
+// ---------------------------------------------------------------------------
+
 /**
- * Extract URLs from text content.
- * @param {string} text
- * @returns {string[]}
+ * Extract candidate URLs from arbitrary text.
+ * Returns de-duplicated array.
  */
 function extractUrls(text) {
   const urlRegex = /https?:\/\/[^\s"'<>]+/gi;
@@ -51,136 +85,113 @@ function extractUrls(text) {
 }
 
 /**
- * Generate a SHA-256 cache key for a domain.
- * @param {string} normalizedDomain
- * @returns {string}
+ * Canonicalize a URL string:
+ *   - prepend https:// when protocol is missing
+ *   - lowercase hostname
+ *   - reject dangerous schemes
+ * Returns { ok: true, url } or { ok: false, reason }.
  */
-function urlCacheKey(normalizedDomain) {
-  return crypto.createHash('sha256').update(normalizedDomain).digest('hex');
-}
+function canonicalizeUrl(raw) {
+  if (!raw || typeof raw !== 'string') return { ok: false, reason: 'empty' };
+  let s = raw.trim();
 
-/**
- * Get cached threat intelligence result for a domain, or null if not cached / expired.
- */
-async function getCachedResult(urlHash) {
-  const Model = getCacheModel();
-  if (!Model) return null;
+  // Reject blocked schemes
+  if (/^(javascript|data|file|vbscript):/i.test(s)) {
+    return { ok: false, reason: 'blocked_scheme' };
+  }
+
+  // Prepend https:// if no scheme
+  if (!/^https?:\/\//i.test(s)) {
+    s = 'https://' + s;
+  }
+
   try {
-    const cached = await Model.findOne({ urlHash });
-    return cached || null;
+    const u = new URL(s);
+    // Lowercase hostname
+    u.hostname = u.hostname.toLowerCase();
+    return { ok: true, url: u.href };
   } catch {
-    return null;
+    return { ok: false, reason: 'malformed' };
   }
 }
 
 /**
- * Store threat intelligence result in cache.
+ * Extract registrable domain (eTLD+1) using simple heuristic.
+ * For now strips leading www. from the hostname as a reasonable approximation;
+ * we avoid pulling in heavy tldts/psl libraries.
  */
-async function setCachedResult(urlHash, normalizedDomain, providers) {
-  const Model = getCacheModel();
-  if (!Model) return;
-  const ttlHours = parseFloat(env.THREAT_INTEL_CACHE_TTL) || DEFAULT_CACHE_TTL_HOURS;
-  const expiresAt = new Date(Date.now() + ttlHours * 60 * 60 * 1000);
+function extractRegistrableDomain(hostname) {
+  if (!hostname) return null;
+  // Remove trailing dot
+  let h = hostname.replace(/\.$/, '').toLowerCase();
+  // Strip leading www.
+  if (h.startsWith('www.')) h = h.slice(4);
+  return h;
+}
+
+// ---------------------------------------------------------------------------
+// Core URL intelligence lookup
+// ---------------------------------------------------------------------------
+
+async function runProviders(canonicalUrl) {
+  let hostname, registrableDomain;
   try {
-    await Model.findOneAndUpdate(
-      { urlHash },
-      {
-        urlHash,
-        normalizedUrl: normalizedDomain,
-        providers,
-        checkedAt: new Date(),
-        expiresAt,
-      },
-      { upsert: true, new: true }
-    );
+    const u = new URL(canonicalUrl);
+    hostname = u.hostname.toLowerCase();
+    registrableDomain = extractRegistrableDomain(hostname);
   } catch {
-    // Cache write failure is non-fatal
+    hostname = null;
+    registrableDomain = null;
   }
+
+  // Run all lookups concurrently — any failure returns the provider's own error shape
+  const [vtUrl, urlhaus, otxUrl, vtDomain, otxDomain, rdap] = await Promise.allSettled([
+    checkVirusTotalURL(canonicalUrl),
+    checkUrlhausURL(canonicalUrl),
+    checkOtxIndicator('url', canonicalUrl),
+    hostname ? checkVirusTotalDomain(registrableDomain || hostname) : Promise.resolve(null),
+    hostname ? checkOtxIndicator('domain', registrableDomain || hostname) : Promise.resolve(null),
+    hostname ? checkRdapDomain(registrableDomain || hostname) : Promise.resolve(null),
+  ]);
+
+  const settled = (result) => result.status === 'fulfilled' ? result.value : null;
+
+  return {
+    virusTotal: settled(vtUrl),
+    urlhaus: settled(urlhaus),
+    otx: settled(otxUrl),
+    virusTotalDomain: settled(vtDomain),
+    otxDomain: settled(otxDomain),
+    rdap: settled(rdap),
+  };
 }
 
-/**
- * Check a single URL against threat intelligence providers.
- * @param {string} url
- * @returns {Promise<{phishdestroy: Object}>}
- */
-async function checkUrl(url) {
-  const normalized = normalizeDomain(url);
-  if (!normalized) {
-    return {
-      threatintel: { provider: 'Unknown', status: 'error', malicious: false },
-      fromCache: false
-    };
-  }
-  const hash = urlCacheKey(normalized);
-
-  // Check cache first
-  const cached = await getCachedResult(hash);
-  if (cached && cached.providers && cached.providers.threatintel) {
-    return {
-      threatintel: cached.providers.threatintel,
-      fromCache: true,
-    };
-  }
-
-  // Run provider (VirusTotal if key exists, else PhishDestroy)
-  let threatintel;
-  if (env.VIRUSTOTAL_API_KEY) {
-    const result = await checkVirusTotal(url);
-    threatintel = {
-      provider: 'VirusTotal',
-      status: result.status === 'available' ? 'found' : result.status,
-      threat: result.severity === 'medium' || result.severity === 'high' || result.severity === 'critical' 
-        ? (result.malicious ? 'malicious' : 'suspicious') 
-        : 'clean',
-      malicious: result.malicious,
-      riskScore: result.riskScore || 0,
-      severity: result.severity || 'none',
-      detail: result.detail || 'Checked by VirusTotal.',
-      checkedAt: result.checkedAt
-    };
-  } else {
-    const pdResult = await checkPhishDestroy(url);
-    threatintel = {
-      provider: 'PhishDestroy',
-      status: pdResult.status,
-      threat: pdResult.malicious ? 'malicious' : (pdResult.status === 'found' ? 'suspicious' : 'clean'),
-      malicious: pdResult.malicious,
-      riskScore: pdResult.riskScore,
-      severity: pdResult.severity,
-      detail: pdResult.status === 'found' ? 'Flagged by PhishDestroy.' : 'Not flagged.',
-      checkedAt: pdResult.checkedAt
-    };
-  }
-
-  // Cache the results
-  await setCachedResult(hash, normalized, { threatintel });
-
-  return { threatintel, fromCache: false };
-}
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 /**
- * Main threat intelligence function called by the scanner.
+ * Main entry point called by scanner/index.js.
  *
- * @param {string} content - The raw scan content
- * @param {string} scanType - 'url', 'qr', 'email', 'sms', 'whatsapp'
- * @returns {Promise<Object>} Threat intelligence evidence
+ * @param {string} content  Raw submitted content
+ * @param {string} scanType 'url' | 'qr' | 'email' | 'message' | etc.
+ * @returns {Promise<Object>} Composite threat intelligence object
  */
 async function getThreatIntelligence(content, scanType) {
-  // Extract URLs to check
+  // Determine which URL(s) to analyze
   let urlsToCheck = [];
 
   if (scanType === 'url' || scanType === 'qr') {
-    // The content itself IS the URL (or contains it)
-    urlsToCheck = extractUrls(content);
-    if (urlsToCheck.length === 0) {
-      // Try the whole content as a URL
-      const trimmed = content.trim();
-      if (trimmed.length > 0 && trimmed.length <= 2048) {
-        urlsToCheck = [trimmed];
-      }
+    // Try canonicalizing the whole content first
+    const attempt = canonicalizeUrl(content.trim());
+    if (attempt.ok) {
+      urlsToCheck = [attempt.url];
+    } else {
+      // Fall back to extracting embedded https:// URLs
+      urlsToCheck = extractUrls(content);
     }
   } else {
-    // Email / SMS / WhatsApp — extract embedded URLs
+    // Email / SMS / WhatsApp / message — extract embedded URLs
     urlsToCheck = extractUrls(content);
   }
 
@@ -188,31 +199,62 @@ async function getThreatIntelligence(content, scanType) {
     return {
       checked: false,
       reason: 'no_urls_found',
-      threatintel: { provider: 'None', status: 'skipped', malicious: false }
+      virusTotal: null,
+      urlhaus: null,
+      otx: null,
+      virusTotalDomain: null,
+      otxDomain: null,
+      rdap: null,
     };
   }
 
-  // Check the first (primary) URL
-  // In future, multiple URLs could be checked; for now we focus on the first
   const primaryUrl = urlsToCheck[0];
+  const cacheHash = urlCacheKey(primaryUrl);
 
-  try {
-    const result = await checkUrl(primaryUrl);
+  // Check cache
+  const cached = await getCachedResult(cacheHash);
+  if (cached?.providers) {
     return {
       checked: true,
       checkedUrl: primaryUrl,
-      fromCache: result.fromCache,
-      threatintel: result.threatintel,
+      fromCache: true,
+      ...cached.providers,
     };
+  }
+
+  // Run live lookups
+  let providers;
+  try {
+    providers = await runProviders(primaryUrl);
   } catch (err) {
     return {
       checked: false,
       reason: 'lookup_failed',
       error: err.message,
-      threatintel: { provider: 'Unknown', status: 'error', malicious: false }
+      virusTotal: null,
+      urlhaus: null,
+      otx: null,
+      virusTotalDomain: null,
+      otxDomain: null,
+      rdap: null,
     };
   }
+
+  // Cache results
+  await setCachedResult(cacheHash, primaryUrl, providers);
+
+  return {
+    checked: true,
+    checkedUrl: primaryUrl,
+    fromCache: false,
+    ...providers,
+  };
 }
 
-module.exports = { getThreatIntelligence, normalizeDomain, urlCacheKey, extractUrls };
-
+module.exports = {
+  getThreatIntelligence,
+  canonicalizeUrl,
+  extractRegistrableDomain,
+  extractUrls,
+  urlCacheKey,
+};

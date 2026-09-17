@@ -145,7 +145,7 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
         mapRef.current = null;
       }
     };
-  }, []);
+  }, [mapError]);
 
   // Update data if it changes
   useEffect(() => {

@@ -1,87 +1,338 @@
 'use strict';
 
 /**
- * evidenceFusion.js — Combines heuristic, ML, and threat intelligence evidence
- * into a final, coherent risk assessment.
+ * evidenceFusion.js — Single-source-of-truth verdict engine.
+ *
+ * All channels (URL, Email, Message, QR, Screenshot) call fuseEvidence()
+ * and receive ONE authoritative assessment object.
+ *
+ * Score → Classification mapping (canonical, never duplicated):
+ *   0–29   safe / low   → legitimate
+ *   30–59  medium       → suspicious
+ *   60–84  high         → phishing
+ *   85–100 critical     → phishing
+ *
+ * Provider precedence (deterministic, corroboration-aware):
+ *   Strong corroborated malicious  →  score ≥ 85
+ *   Single-source malicious        →  score ≥ 60
+ *   Isolated VT detection (1 vote) →  score ≥ 45 (suspicious, not phishing)
+ *   URLhaus / OTX malicious        →  score ≥ 65 (confirmed abuse DB)
+ *   Multiple VT suspicious votes   →  score ≥ 40
+ *   Single VT suspicious vote      →  score ≥ 35
+ *   Strong heuristics alone        →  score follows heuristic engine
+ *   RDAP / contextual only         →  no score escalation
+ *   AI unilateral                  →  capped at 59 (suspicious ceiling)
+ *   Provider failure               →  no evidence, no score change
  */
 
-// A single unified mapping function to guarantee consistency across all channels
+// ---------------------------------------------------------------------------
+// Core classification mapping
+// ---------------------------------------------------------------------------
+
+/**
+ * Single canonical score → classification function used everywhere.
+ * @param {number} score 0-100
+ * @returns {{ riskLevel: string, classification: string }}
+ */
 function determineClassification(score) {
   let riskLevel = 'safe';
-  if (score >= 80) riskLevel = 'critical';
+  if (score >= 85) riskLevel = 'critical';
   else if (score >= 60) riskLevel = 'high';
   else if (score >= 30) riskLevel = 'medium';
-  else if (score > 0) riskLevel = 'low';
+  else if (score > 0)  riskLevel = 'low';
 
   let classification = 'legitimate';
   if (riskLevel === 'critical' || riskLevel === 'high') classification = 'phishing';
-  else if (riskLevel === 'medium') classification = 'suspicious';
+  else if (riskLevel === 'medium')                      classification = 'suspicious';
 
   return { riskLevel, classification };
 }
 
+// ---------------------------------------------------------------------------
+// VT evidence strength helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Determine VirusTotal evidence strength from raw votes.
+ * Returns { evidenceStrength, scoreBump } where scoreBump is the floor to apply.
+ *
+ * Strength tiers:
+ *   none          (0 malicious, 0 suspicious)
+ *   suspicious    (0 malicious, >=1 suspicious)
+ *   isolated      (1 malicious, low confidence)
+ *   limited       (2 malicious)
+ *   significant   (3-4 malicious)
+ *   strong        (>=5 malicious)
+ */
+function vtEvidenceStrength(vtResult) {
+  if (!vtResult || vtResult.status !== 'available') {
+    return { evidenceStrength: 'unavailable', scoreBump: 0 };
+  }
+
+  const mal = vtResult.maliciousVotes || 0;
+  const sus = vtResult.suspiciousVotes || 0;
+  const total = vtResult.totalEngines || 0;
+
+  if (total === 0) return { evidenceStrength: 'none', scoreBump: 0 };
+  if (mal === 0 && sus === 0) return { evidenceStrength: 'none', scoreBump: 0 };
+  if (mal === 0 && sus >= 1) return { evidenceStrength: 'suspicious', scoreBump: 35 + Math.min(sus * 2, 10) };
+  if (mal === 1)             return { evidenceStrength: 'isolated',   scoreBump: 45 };
+  if (mal === 2)             return { evidenceStrength: 'limited',    scoreBump: 55 };
+  if (mal <= 4)              return { evidenceStrength: 'significant', scoreBump: 65 };
+  return                           { evidenceStrength: 'strong',      scoreBump: 85 };
+}
+
+// ---------------------------------------------------------------------------
+// OTX evidence helper
+// ---------------------------------------------------------------------------
+
+function otxEvidenceStrength(otxResult) {
+  if (!otxResult || otxResult.status === 'skipped' || otxResult.status === 'not_observed'
+      || otxResult.status === 'error' || otxResult.status === 'timeout'
+      || otxResult.status === 'rate_limited') {
+    return { evidenceStrength: 'none', scoreBump: 0 };
+  }
+  if (otxResult.status === 'available') {
+    const count = otxResult.pulseCount || 0;
+    if (count === 0) return { evidenceStrength: 'none', scoreBump: 0 };
+    if (count <= 2) return { evidenceStrength: 'observed', scoreBump: 10 };
+    if (count <= 5) return { evidenceStrength: 'notable',  scoreBump: 20 };
+    return { evidenceStrength: 'significant', scoreBump: 30 };
+  }
+  return { evidenceStrength: 'none', scoreBump: 0 };
+}
+
+// ---------------------------------------------------------------------------
+// Main fusion function
+// ---------------------------------------------------------------------------
+
+/**
+ * Fuse evidence from all layers into one authoritative assessment.
+ *
+ * @param {Object}      heuristicResult  from signalDetector + riskScorer + resultBuilder
+ * @param {Object|null} mlEvidence       from mlService
+ * @param {Object|null} threatIntel      from threatIntelService (multi-provider composite)
+ * @param {Object|null} ragEvidence      from ragClient
+ * @param {Object|null} groqResult       from groqService
+ * @returns {Object}  Final authoritative assessment
+ */
 function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, groqResult) {
   const analysisSources = ['heuristics'];
-  let finalRiskScore = heuristicResult.riskScore || 0;
-  let finalConfidence = heuristicResult.confidence || 0;
-  let finalCategory = heuristicResult.category || 'unknown';
-  let finalSummary = heuristicResult.summary || 'No significant threats detected.';
-  let finalReasons = (heuristicResult.reasons || []).map(r => ({ ...r, source: 'Heuristics' }));
+  let finalRiskScore    = heuristicResult.riskScore  || 0;
+  let finalConfidence   = heuristicResult.confidence || 0;
+  let finalCategory     = heuristicResult.category   || 'unknown';
+  let finalSummary      = heuristicResult.summary    || 'No significant threats detected.';
+  let finalReasons      = (heuristicResult.reasons   || []).map(r => ({ ...r, source: 'Heuristics' }));
   let finalRecommendations = [...(heuristicResult.recommendations || [])];
+  const limitations     = [];
 
   const hasSignals = (heuristicResult.detectedSignals || []).length > 0;
 
-  // 1. Threat Intelligence (highest priority evidence)
-  const tiState = threatIntel?.threatintel?.status;
-  const tiThreat = threatIntel?.threatintel?.threat;
-  const tiMalicious = tiState === 'found' && (tiThreat === 'malicious' || threatIntel.threatintel.malicious === true);
-  const tiSuspicious = tiState === 'found' && tiThreat === 'suspicious' && !tiMalicious;
+  // =========================================================================
+  // 1. THREAT INTELLIGENCE — Multi-provider corroboration
+  // =========================================================================
 
-  if (tiMalicious || tiSuspicious) {
-    analysisSources.push('threatintel');
-    const tiProvider = threatIntel.threatintel.provider || 'Threat Intelligence';
-    const tiSeverity = threatIntel.threatintel.severity || 'unknown';
-    
-    // Explicit malicious TI evidence overrides heuristic baseline
-    if (tiMalicious) {
-      finalRiskScore = Math.max(finalRiskScore, 85); // Forces 'critical'/'phishing'
-      finalConfidence = Math.max(finalConfidence, 95);
-      finalCategory = `Known Suspicious Domain (${tiProvider})`;
-      finalSummary = `This indicator was flagged by ${tiProvider} threat intelligence as highly suspicious or malicious.`;
-      finalReasons = [
-        { source: 'Threat_Intelligence', title: 'Known Threat Indicator', detail: `${tiProvider} classified this indicator as malicious. Severity: ${tiSeverity}.`, severity: 'high' },
-        ...finalReasons,
-      ];
-      finalRecommendations = [
-        'Do NOT interact with this content or link.',
-        'Consider blocking or reporting this indicator based on organizational policy.',
-        ...finalRecommendations,
-      ];
-    } else if (tiSuspicious) {
-      // Suspicious TI evidence elevates to at least 'medium'/'suspicious'
-      finalRiskScore = Math.max(finalRiskScore, 45); 
-      finalConfidence = Math.max(finalConfidence, 85);
-      finalCategory = `Suspicious Domain (${tiProvider})`;
-      finalSummary = `This indicator was flagged by ${tiProvider} with suspicious activity.`;
-      finalReasons = [
-        { source: 'Threat_Intelligence', title: 'Suspicious Indicator', detail: `${tiProvider} flagged this indicator as suspicious. Severity: ${tiSeverity}.`, severity: 'medium' },
-        ...finalReasons,
-      ];
-      // Do not add severe blocking recommendations automatically for suspicious
+  // Unpack providers (new multi-provider format)
+  const vtUrl    = threatIntel?.virusTotal     || null;  // exact URL VT result
+  const vtDomain = threatIntel?.virusTotalDomain || null; // domain VT context
+  const urlhaus  = threatIntel?.urlhaus         || null;
+  const otxUrl   = threatIntel?.otx             || null;
+  const otxDomain= threatIntel?.otxDomain       || null;
+  const rdap     = threatIntel?.rdap            || null;
+
+  // Also support old single-provider format (backward compat for email/message paths)
+  const legacyTI = threatIntel?.threatintel || null;
+
+  let tiScoreBump = 0;
+  let tiConfidenceBump = 0;
+  const tiReasons = [];
+
+  // — VirusTotal (exact URL)
+  const vtUrlStrength = vtEvidenceStrength(vtUrl);
+  if (vtUrlStrength.scoreBump > 0) {
+    analysisSources.push('virustotal_url');
+    tiScoreBump = Math.max(tiScoreBump, vtUrlStrength.scoreBump);
+    tiConfidenceBump = Math.max(tiConfidenceBump, vtUrl.confidence || 0);
+
+    const mal = vtUrl.maliciousVotes || 0;
+    const sus = vtUrl.suspiciousVotes || 0;
+    const tot = vtUrl.totalEngines || 0;
+
+    let detail;
+    if (vtUrlStrength.evidenceStrength === 'isolated') {
+      detail = `1 out of ${tot} security engines flagged this URL as malicious. This is an isolated detection — false positives are possible.`;
+    } else if (vtUrlStrength.evidenceStrength === 'suspicious') {
+      detail = `${sus} out of ${tot} security engines reported this URL as suspicious.`;
+    } else {
+      detail = `${mal} out of ${tot} security engines flagged this URL as malicious (${sus} suspicious).`;
+    }
+
+    tiReasons.push({
+      source: 'Threat_Intelligence',
+      title: `VirusTotal URL Analysis (${vtUrlStrength.evidenceStrength})`,
+      detail,
+      severity: vtUrlStrength.evidenceStrength === 'strong' || vtUrlStrength.evidenceStrength === 'significant' ? 'high' : 'medium',
+    });
+  } else if (vtUrl && vtUrl.status === 'available' && vtUrl.totalEngines > 0) {
+    // Clean result from VT — useful context
+    tiReasons.push({
+      source: 'Threat_Intelligence',
+      title: 'VirusTotal URL Analysis',
+      detail: `Analyzed by ${vtUrl.totalEngines} security engines — no threats detected.`,
+      severity: 'info',
+    });
+  } else if (vtUrl && (vtUrl.status === 'error' || vtUrl.status === 'timeout' || vtUrl.status === 'rate_limited')) {
+    limitations.push('VirusTotal URL lookup was unavailable.');
+  } else if (!vtUrl || vtUrl.status === 'skipped' || vtUrl.status === 'not_found') {
+    limitations.push('VirusTotal URL data was not available.');
+  }
+
+  // — VirusTotal (domain context, secondary)
+  const vtDomainStrength = vtEvidenceStrength(vtDomain);
+  if (vtDomainStrength.scoreBump > 0) {
+    analysisSources.push('virustotal_domain');
+    // Domain is contextual — weighted lower than exact URL result
+    const domainBump = Math.floor(vtDomainStrength.scoreBump * 0.7);
+    tiScoreBump = Math.max(tiScoreBump, domainBump);
+
+    tiReasons.push({
+      source: 'Threat_Intelligence',
+      title: `VirusTotal Domain Context (${vtDomainStrength.evidenceStrength})`,
+      detail: `Domain reputation: ${vtDomain.maliciousVotes || 0} malicious, ${vtDomain.suspiciousVotes || 0} suspicious out of ${vtDomain.totalEngines || 0} engines.`,
+      severity: 'medium',
+    });
+  }
+
+  // — URLhaus (URL-level abuse database)
+  const urlhausIsMalicious = urlhaus?.status === 'available' && urlhaus?.threat === 'malicious';
+  if (urlhausIsMalicious) {
+    analysisSources.push('urlhaus');
+    tiScoreBump = Math.max(tiScoreBump, 65);
+    tiConfidenceBump = Math.max(tiConfidenceBump, 90);
+    const tags = urlhaus.tags?.length ? ` Tags: ${urlhaus.tags.join(', ')}.` : '';
+    tiReasons.push({
+      source: 'Threat_Intelligence',
+      title: 'URLhaus: Malicious URL',
+      detail: `This URL is listed in the URLhaus abuse database as malicious (${urlhaus.urlStatus || 'active'}).${tags}`,
+      severity: 'high',
+    });
+  } else if (urlhaus?.status === 'not_observed') {
+    // not_observed is NOT clean — just unconfirmed
+    // no bump, no reason, just a neutral note
+  } else if (urlhaus && (urlhaus.status === 'error' || urlhaus.status === 'timeout')) {
+    limitations.push('URLhaus lookup was unavailable.');
+  }
+
+  // — OTX (URL-level)
+  const otxUrlStrength = otxEvidenceStrength(otxUrl);
+  if (otxUrlStrength.scoreBump > 0) {
+    analysisSources.push('otx_url');
+    tiScoreBump = Math.max(tiScoreBump, Math.min(tiScoreBump + otxUrlStrength.scoreBump, 60));
+    tiReasons.push({
+      source: 'Threat_Intelligence',
+      title: 'OTX: URL Observed',
+      detail: `This URL was observed in ${otxUrl.pulseCount} OTX threat intelligence pulse(s).`,
+      severity: otxUrlStrength.evidenceStrength === 'significant' ? 'medium' : 'low',
+    });
+  } else if (otxUrl && (otxUrl.status === 'error' || otxUrl.status === 'timeout')) {
+    limitations.push('OTX lookup was unavailable.');
+  }
+
+  // — OTX (domain-level, contextual)
+  const otxDomainStrength = otxEvidenceStrength(otxDomain);
+  if (otxDomainStrength.scoreBump > 0) {
+    analysisSources.push('otx_domain');
+    const domainBump = Math.floor(otxDomainStrength.scoreBump * 0.5);
+    tiScoreBump = Math.max(tiScoreBump, Math.min(tiScoreBump + domainBump, 55));
+    tiReasons.push({
+      source: 'Threat_Intelligence',
+      title: 'OTX: Domain Observed',
+      detail: `The domain was observed in ${otxDomain.pulseCount} OTX pulse(s).`,
+      severity: 'low',
+    });
+  }
+
+  // — CORROBORATION BONUS
+  // When multiple independent sources agree, confidence increases
+  const activeMaliciousSources = [
+    vtUrlStrength.evidenceStrength !== 'none' && vtUrlStrength.evidenceStrength !== 'unavailable',
+    urlhausIsMalicious,
+    otxUrlStrength.evidenceStrength !== 'none',
+    vtDomainStrength.evidenceStrength !== 'none' && vtDomainStrength.evidenceStrength !== 'unavailable',
+  ].filter(Boolean).length;
+
+  if (activeMaliciousSources >= 2 && tiScoreBump >= 45) {
+    // Corroboration lifts isolated to confirmed (45→60) or limited to significant (55→75)
+    tiScoreBump = Math.min(100, tiScoreBump + 15);
+    tiReasons.push({
+      source: 'Threat_Intelligence',
+      title: 'Corroborated Threat Evidence',
+      detail: `${activeMaliciousSources} independent threat-intelligence sources reported malicious or suspicious activity for this URL/domain.`,
+      severity: 'high',
+    });
+  }
+
+  // Apply TI score bump
+  if (tiScoreBump > 0) {
+    finalRiskScore   = Math.max(finalRiskScore, tiScoreBump);
+    finalConfidence  = Math.max(finalConfidence, tiConfidenceBump > 0 ? tiConfidenceBump : finalConfidence + 10);
+    finalReasons     = [...tiReasons, ...finalReasons];
+
+    // Replace heuristic summary with TI summary if TI is the dominant source
+    if (tiScoreBump >= 45) {
+      const strength = activeMaliciousSources >= 2 ? 'Multiple independent sources' : 'A threat-intelligence source';
+      finalSummary = `${strength} reported malicious or suspicious activity for this URL.`;
+      finalCategory = tiScoreBump >= 85 ? 'Confirmed Malicious URL' : tiScoreBump >= 60 ? 'Malicious URL' : 'Suspicious URL';
+    }
+  } else {
+    finalReasons = [...tiReasons, ...finalReasons];
+  }
+
+  // — RDAP (contextual only — never sets threat evidence)
+  if (rdap?.state === 'success') {
+    analysisSources.push('rdap');
+    const ageDays = rdap.registrationAgeDays;
+    if (ageDays !== null && ageDays < 30) {
+      tiReasons.push({
+        source: 'Domain_Intelligence',
+        title: 'Newly Registered Domain',
+        detail: `This domain was registered ${ageDays} day(s) ago. Newly registered domains are sometimes used in phishing campaigns.`,
+        severity: 'low',
+      });
+      // Only a contextual note — no score bump on its own
+    }
+  } else if (rdap && rdap.state === 'error') {
+    limitations.push('RDAP domain registration data was unavailable.');
+  }
+
+  // — Legacy TI format backward compatibility (email/message paths)
+  if (legacyTI && !vtUrl && !urlhaus) {
+    const legacyMalicious = legacyTI.status === 'found' && (legacyTI.threat === 'malicious' || legacyTI.malicious === true);
+    const legacySuspicious = legacyTI.status === 'found' && legacyTI.threat === 'suspicious' && !legacyMalicious;
+    if (legacyMalicious) {
+      finalRiskScore = Math.max(finalRiskScore, 65);
+      finalReasons.unshift({ source: 'Threat_Intelligence', title: 'Known Threat', detail: `${legacyTI.provider || 'Threat Intelligence'} flagged this indicator.`, severity: 'high' });
+      analysisSources.push('legacy_threatintel');
+    } else if (legacySuspicious) {
+      finalRiskScore = Math.max(finalRiskScore, 45);
+      analysisSources.push('legacy_threatintel');
     }
   }
 
-  // 2. Machine Learning evidence
+  // =========================================================================
+  // 2. MACHINE LEARNING
+  // =========================================================================
+
   if (mlEvidence?.status === 'available') {
     analysisSources.push('machine_learning');
-    const mlPhishProb = mlEvidence.probability;
-    const mlLabel = mlEvidence.label;
-    const mlPct = Math.round(mlPhishProb * 100);
+    const mlPhishProb = mlEvidence.probability || 0;
+    const mlLabel     = mlEvidence.label;
+    const mlPct       = Math.round(mlPhishProb * 100);
 
     finalReasons.push({
       source: 'ML_Classifier',
       title: `ML Classifier: ${mlLabel === 'phishing' ? 'Phishing' : 'Legitimate'}`,
-      detail: `The machine learning model classified this content as ${mlLabel} with ${mlPct}% probability.`,
+      detail: `The machine learning model classified this content as ${mlLabel} with ${mlPct}% confidence.`,
       severity: mlLabel === 'phishing' && mlPhishProb >= 0.7 ? 'high' : mlLabel === 'phishing' ? 'medium' : 'low',
       type: 'ML Classification',
     });
@@ -90,79 +341,67 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
       if (mlPhishProb >= 0.85) finalRiskScore = Math.max(finalRiskScore, 72);
       else if (mlPhishProb >= 0.70) finalRiskScore = Math.max(finalRiskScore, 45);
       finalConfidence = Math.min(99, finalConfidence + 10);
-    } else if (mlLabel === 'safe' && !tiMalicious && !tiSuspicious) {
+    } else if (mlLabel === 'safe' && tiScoreBump === 0) {
       if (mlPhishProb <= 0.15) {
-        finalRiskScore = Math.min(finalRiskScore, 10);
+        finalRiskScore  = Math.min(finalRiskScore, 10);
         finalConfidence = Math.min(99, finalConfidence + 5);
       }
     }
   }
 
-  // 3. RAG Personalization Evidence (Deterministic)
+  // =========================================================================
+  // 3. RAG PERSONALIZATION
+  // =========================================================================
+
   if (ragEvidence?.status === 'available' && ragEvidence.similarityData?.length > 0) {
     analysisSources.push('rag');
-    const avgSim = ragEvidence.similarityData.reduce((acc, curr) => acc + curr.similarity, 0) / ragEvidence.similarityData.length;
+    const avgSim = ragEvidence.similarityData.reduce((a, c) => a + c.similarity, 0) / ragEvidence.similarityData.length;
     const simPct = Math.round(avgSim * 100);
     if (avgSim > 0.8 && finalRiskScore < 30) {
       finalConfidence = Math.min(99, finalConfidence + 10);
-      finalReasons.push({ source: 'Personalization_RAG', title: 'Personalized Context: Familiar Pattern', detail: `Highly similar (${simPct}% match) to your saved legitimate patterns.`, severity: 'info', type: 'RAG Match' });
+      finalReasons.push({ source: 'Personalization_RAG', title: 'Familiar Pattern', detail: `Highly similar (${simPct}%) to your saved legitimate patterns.`, severity: 'info' });
     } else if (avgSim < 0.3) {
-      finalReasons.push({ source: 'Personalization_RAG', title: 'Personalized Context: Unusual Pattern', detail: `Low similarity (${simPct}%) with your saved patterns.`, severity: 'medium', type: 'RAG Anomaly' });
-    } else {
-      finalReasons.push({ source: 'Personalization_RAG', title: 'Personalized Context', detail: `Pattern similarity to your history: ${simPct}%.`, severity: 'info', type: 'RAG Context' });
+      finalReasons.push({ source: 'Personalization_RAG', title: 'Unusual Pattern', detail: `Low similarity (${simPct}%) with your saved patterns.`, severity: 'medium' });
     }
   }
 
-  // 4. Groq contextual refinement
+  // =========================================================================
+  // 4. GROQ — ADVISORY ONLY
+  // =========================================================================
+
   if (groqResult) {
     analysisSources.push('groq');
 
-    // AI Escalation Policy:
-    // If AI detects strong phishing evidence, we allow it to elevate the score to suspicious (e.g. 50),
-    // but we do NOT allow AI to unilaterally force a critical/blocking state (>=80) without TI/Heuristics support.
-    // If TI already found it malicious, AI does not override it downwards.
-    if (!tiMalicious && typeof groqResult.riskScore === 'number') {
-       if (groqResult.riskScore > finalRiskScore) {
-          // Cap AI unilateral escalation at 59 (suspicious/needs_review) to prevent hallucinations blocking domains
-          finalRiskScore = Math.min(59, Math.max(finalRiskScore, groqResult.riskScore));
-       }
+    // AI can escalate score but cannot bypass the suspicious ceiling (59)
+    // if no deterministic evidence supports a higher classification.
+    if (typeof groqResult.riskScore === 'number' && tiScoreBump < 60) {
+      const aiCeiling = tiScoreBump > 0 ? 75 : 59; // With TI backing, allow up to 75
+      finalRiskScore = Math.min(aiCeiling, Math.max(finalRiskScore, groqResult.riskScore));
     }
 
-    if (typeof groqResult.confidence === 'number' && !tiMalicious) {
+    if (typeof groqResult.confidence === 'number') {
       finalConfidence = Math.min(99, Math.round((finalConfidence + groqResult.confidence) / 2));
     }
 
-    // Capture structured AI findings
-    if (!tiMalicious && !tiSuspicious) {
+    // Only let AI set narrative if TI didn't already
+    if (tiScoreBump < 45) {
       if (groqResult.category) finalCategory = groqResult.category;
       if (groqResult.summary)  finalSummary  = groqResult.summary;
     }
 
+    // Add AI reasoning as evidence
     if (Array.isArray(groqResult.reasons)) {
       for (const reason of groqResult.reasons) {
-        finalReasons.push({
-          source: 'AI_Analysis',
-          title: `AI Analysis: ${reason.slice(0, 80)}`,
-          detail: reason,
-          severity: 'low',
-          type: 'Groq Reasoning',
-        });
+        finalReasons.push({ source: 'AI_Analysis', title: `AI Analysis`, detail: reason, severity: 'low', type: 'AI Reasoning' });
       }
     }
-
     if (Array.isArray(groqResult.socialEngineeringSignals)) {
       for (const sig of groqResult.socialEngineeringSignals) {
-        finalReasons.push({
-          source: 'AI_Analysis',
-          title: `Social Engineering: ${sig.slice(0, 80)}`,
-          detail: sig,
-          severity: 'medium',
-          type: 'Social Engineering',
-        });
+        finalReasons.push({ source: 'AI_Analysis', title: 'Social Engineering Signal', detail: sig, severity: 'medium', type: 'Social Engineering' });
       }
     }
 
-    // Unconditionally add AI recommendations, but we will filter them below based on final verdict
+    // Merge AI recommendations (de-duplicated)
     if (Array.isArray(groqResult.recommendations)) {
       const existingSet = new Set(finalRecommendations.map(r => r.toLowerCase()));
       for (const rec of groqResult.recommendations) {
@@ -174,75 +413,122 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
     }
   }
 
-  // Ensure score bounds
-  finalRiskScore = Math.min(100, Math.max(0, Math.round(finalRiskScore)));
-  finalConfidence = Math.min(99, Math.max(0, Math.round(finalConfidence)));
+  // =========================================================================
+  // 5. FINAL SCORE → CLASSIFICATION
+  // =========================================================================
 
-  // Derive Single Source of Truth Verdict
+  finalRiskScore  = Math.min(100, Math.max(0, Math.round(finalRiskScore)));
+  finalConfidence = Math.min(99,  Math.max(0, Math.round(finalConfidence)));
+
   const { riskLevel: finalRiskLevel, classification: finalClassification } = determineClassification(finalRiskScore);
 
-  // Filter recommendations based on final verdict to prevent contradictions
+  // =========================================================================
+  // 6. RECOMMENDATION FILTERING — match classification
+  // =========================================================================
+
   if (finalClassification === 'legitimate') {
-     // Remove apocalyptic AI recommendations
-     finalRecommendations = finalRecommendations.filter(rec => {
-        const lower = rec.toLowerCase();
-        return !lower.includes('block') && !lower.includes('phishing attempt') && !lower.includes('report this') && !lower.includes('quarantine');
-     });
-     
-     // Override hallucinatory AI summaries for legitimate results
-     if (finalClassification === 'legitimate' && finalSummary.toLowerCase().includes('malicious')) {
-         finalSummary = 'No significant threat indicators were detected during analysis.';
-     }
+    // Strip contradictory high-severity recommendations
+    finalRecommendations = finalRecommendations.filter(rec => {
+      const lower = rec.toLowerCase();
+      return !lower.includes('block') && !lower.includes('phishing attempt') &&
+             !lower.includes('report this') && !lower.includes('quarantine') &&
+             !lower.includes('do not interact');
+    });
+    // Remove hallucinatory summaries
+    if (finalSummary.toLowerCase().includes('malicious')) {
+      finalSummary = 'No significant threat indicators were detected.';
+    }
+    // Ensure at least one safe recommendation
+    if (finalRecommendations.length === 0) {
+      finalRecommendations.push('No significant threat indicators detected. Continue practicing normal security hygiene.');
+    }
   } else {
-     // For suspicious or phishing, remove the "safe" baseline recommendations
-     finalRecommendations = finalRecommendations.filter(rec => {
-        const lower = rec.toLowerCase();
-        return !lower.includes('appears safe') && !lower.includes('no action needed');
-     });
+    // Strip "safe" baseline from non-legitimate results
+    finalRecommendations = finalRecommendations.filter(rec => {
+      const lower = rec.toLowerCase();
+      return !lower.includes('appears safe') && !lower.includes('no action needed') && !lower.includes('no immediate action');
+    });
+
+    // Ensure classification-appropriate recommendations are present
+    if (finalClassification === 'suspicious' && !finalRecommendations.some(r => r.toLowerCase().includes('verif'))) {
+      finalRecommendations.unshift('Verify the destination independently before interacting.', 'Avoid entering credentials until the URL is verified.');
+    }
+    if (finalClassification === 'phishing' && !finalRecommendations.some(r => r.toLowerCase().includes('do not'))) {
+      finalRecommendations.unshift('Do not interact with this URL.', 'Report or block this URL according to your organizational security policy.');
+    }
   }
 
-  const intelligence = {};
-  if (threatIntel?.threatintel && threatIntel.threatintel.status !== 'skipped') {
-    intelligence.threatintel = {
-      provider:  threatIntel.threatintel.provider,
-      status:    threatIntel.threatintel.status,
-      threat:    threatIntel.threatintel.threat || 'unknown',
-      malicious: threatIntel.threatintel.malicious || false,
-      riskScore: threatIntel.threatintel.riskScore,
-      severity:  threatIntel.threatintel.severity,
-      detail:    threatIntel.threatintel.detail,
-    };
-  }
+  // =========================================================================
+  // 7. BUILD STRUCTURED INTELLIGENCE BLOCK
+  // =========================================================================
+
+  const intelligenceBlock = {
+    virusTotal: vtUrl ? {
+      status: vtUrl.status,
+      threat: vtUrl.threat,
+      maliciousVotes:   vtUrl.maliciousVotes   || 0,
+      suspiciousVotes:  vtUrl.suspiciousVotes  || 0,
+      harmlessVotes:    vtUrl.harmlessVotes    || 0,
+      undetectedVotes:  vtUrl.undetectedVotes  || 0,
+      totalEngines:     vtUrl.totalEngines     || 0,
+      evidenceStrength: vtUrlStrength.evidenceStrength,
+      summary: vtUrl.summary,
+    } : null,
+    virusTotalDomain: vtDomain ? {
+      status: vtDomain.status,
+      maliciousVotes:   vtDomain.maliciousVotes  || 0,
+      suspiciousVotes:  vtDomain.suspiciousVotes || 0,
+      totalEngines:     vtDomain.totalEngines    || 0,
+      evidenceStrength: vtDomainStrength.evidenceStrength,
+    } : null,
+    urlhaus: urlhaus ? {
+      status: urlhaus.status,
+      threat: urlhaus.threat,
+      urlStatus: urlhaus.urlStatus,
+      tags: urlhaus.tags || [],
+    } : null,
+    otx: otxUrl ? {
+      status: otxUrl.status,
+      pulseCount: otxUrl.pulseCount || 0,
+      tags: otxUrl.tags || [],
+    } : null,
+    rdap: rdap?.state === 'success' ? {
+      registrar: rdap.registrar,
+      createdAt: rdap.createdAt,
+      expiresAt: rdap.expiresAt,
+      registrationAgeDays: rdap.registrationAgeDays,
+      statuses: rdap.statuses || [],
+    } : null,
+    // Legacy compat
+    threatintel: legacyTI || null,
+  };
 
   const mlOutput = mlEvidence?.status === 'available'
-    ? {
-        status:       'available',
-        label:        mlEvidence.label,
-        probability:  mlEvidence.probability,
-        modelName:    mlEvidence.modelName,
-        modelVersion: mlEvidence.modelVersion,
-      }
-    : {
-        status: mlEvidence?.status || 'unavailable',
-        reason: mlEvidence?.reason || 'not_run',
-      };
+    ? { status: 'available', label: mlEvidence.label, probability: mlEvidence.probability }
+    : { status: mlEvidence?.status || 'unavailable', reason: mlEvidence?.reason || 'not_run' };
+
+  // Add all provider limitations
+  if (threatIntel && !threatIntel.checked && threatIntel.reason === 'no_urls_found') {
+    limitations.push('No URL was detected in the submitted content.');
+  }
 
   return {
-    classification:  finalClassification,
-    riskScore:       finalRiskScore,
-    confidence:      finalConfidence,
-    riskLevel:       finalRiskLevel,
-    scanType:        heuristicResult.scanType,
-    scannedAt:       heuristicResult.scannedAt,
-    category:        finalCategory,
-    summary:         finalSummary,
-    reasons:         finalReasons,
-    recommendations: finalRecommendations,
-    detectedSignals: heuristicResult.detectedSignals || [],
+    classification:   finalClassification,
+    riskScore:        finalRiskScore,
+    confidence:       finalConfidence,
+    riskLevel:        finalRiskLevel,
+    scanType:         heuristicResult.scanType,
+    scannedAt:        heuristicResult.scannedAt,
+    category:         finalCategory,
+    summary:          finalSummary,
+    reasons:          finalReasons,
+    recommendations:  finalRecommendations,
+    detectedSignals:  heuristicResult.detectedSignals || [],
+    limitations,
 
-    intelligence,
-    ml:  mlOutput,
-    rag: ragEvidence,
+    intelligence: intelligenceBlock,
+    ml:           mlOutput,
+    rag:          ragEvidence,
     heuristics: {
       signalCount: (heuristicResult.detectedSignals || []).length,
       riskLevel:   heuristicResult.riskLevel,
@@ -252,4 +538,4 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
   };
 }
 
-module.exports = { fuseEvidence, determineClassification };
+module.exports = { fuseEvidence, determineClassification, vtEvidenceStrength };

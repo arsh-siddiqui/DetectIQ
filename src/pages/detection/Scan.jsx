@@ -8,13 +8,14 @@ import jsQR from "jsqr";
 import Tesseract from "tesseract.js";
 import { motion, AnimatePresence } from "framer-motion";
 
+const VALID_SCAN_MODES = ["email", "url", "message", "qr", "screenshot"];
+
 export default function Scan() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   
-  const validModes = ["email", "url", "message", "qr", "screenshot"];
   const urlMode = searchParams.get("mode");
-  const initialMode = validModes.includes(urlMode) ? urlMode : "email";
+  const initialMode = VALID_SCAN_MODES.includes(urlMode) ? urlMode : "email";
   
   const [scanType, setScanType] = useState(initialMode);
   
@@ -37,13 +38,13 @@ export default function Scan() {
 
   useEffect(() => {
     const mode = searchParams.get("mode");
-    if (validModes.includes(mode) && mode !== scanType) {
+    if (VALID_SCAN_MODES.includes(mode) && mode !== scanType) {
       setScanType(mode);
       setContent("");
       setError("");
       setFileStatus("");
     }
-  }, [searchParams]);
+  }, [searchParams, scanType]);
 
   const handleTabChange = (mode) => {
     setScanType(mode);

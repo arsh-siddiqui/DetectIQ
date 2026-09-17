@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAppData } from "../../context/AppDataContext";
 import { useSearchParams } from "react-router-dom";
 import apiClient from "../../services/apiClient";
@@ -38,7 +38,7 @@ export default function ThreatIntelligence() {
   const [lastUpdated, setLastUpdated] = useState(null);
 
   // Fetch Data
-  const fetchOverview = async () => {
+  const fetchOverview = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -58,11 +58,11 @@ export default function ThreatIntelligence() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [filters]);
 
   useEffect(() => {
     fetchOverview();
-  }, [filters]); // Refetch when filters change
+  }, [filters, fetchOverview]); // Refetch when filters change
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
