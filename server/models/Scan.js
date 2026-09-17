@@ -65,6 +65,9 @@ const scanSchema = new mongoose.Schema(
     ragResult: {
       type: mongoose.Schema.Types.Mixed,
     },
+    emailPatternComparison: {
+      type: mongoose.Schema.Types.Mixed,
+    },
     llmResult: {
       type: mongoose.Schema.Types.Mixed,
     },

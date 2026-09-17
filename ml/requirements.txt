@@ -1,6 +1,3 @@
---extra-index-url https://download.pytorch.org/whl/cpu
-torch
-
 # Core ML
 scikit-learn==1.7.2
 joblib>=1.3.0
@@ -13,5 +10,5 @@ pydantic>=2.3.0
 httpx>=0.25.0
 
 # RAG / Embedding
-sentence-transformers>=3.0.0
+fastembed>=0.2.6
 faiss-cpu>=1.8.0

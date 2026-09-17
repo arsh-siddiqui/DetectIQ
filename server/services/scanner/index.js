@@ -109,11 +109,16 @@ async function analyzeContent(content, scanType = 'url', userId = null) {
     
     ragTask = (async () => {
       try {
+        const historyCount = await EmailHistory.countDocuments({ user: userId });
+        if (historyCount === 0) {
+          return { status: 'no_history', historyCount: 0 };
+        }
+
         const retrieveRes = await ragClient.retrieveContext(userId, content, 5);
         if (!retrieveRes.success && retrieveRes.reason === 'index_missing') {
           const { triggerRebuild } = require('../emailHistoryService');
           triggerRebuild(userId);
-          return { status: 'unavailable', reason: 'index_rebuilding' };
+          return { status: 'unavailable', historyCount, reason: 'index_rebuilding' };
         }
         
         if (retrieveRes.success && retrieveRes.results && retrieveRes.results.length > 0) {
@@ -127,15 +132,20 @@ async function analyzeContent(content, scanType = 'url', userId = null) {
           if (contextRes.success) {
             return {
               status: 'available',
+              historyCount,
               contextString: contextRes.context,
               retrievedEmails: emailIds,
-              similarityData: retrieveRes.results
+              similarityData: retrieveRes.results,
+              historicalDocs: historicalEmails
             };
           }
         }
-        return { status: 'unavailable', reason: 'no_results' };
+        // If we got here, retrieval succeeded but returned 0 matches, or buildRagContext failed
+        return { status: 'no_match', historyCount, similarityData: retrieveRes.results || [] };
       } catch (err) {
-        return { status: 'unavailable', reason: 'exception' };
+        console.error('RAG Retrieval Exception:', err.message);
+        const count = await require('../../models/EmailHistory').countDocuments({ user: userId }).catch(() => 0);
+        return { status: 'unavailable', historyCount: count, reason: 'exception' };
       }
     })();
   }

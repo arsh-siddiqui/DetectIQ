@@ -119,6 +119,7 @@ const scanContent = asyncHandler(async (req, res) => {
       heuristicResult: { category: result.category, detectedSignals: result.detectedSignals },
       threatIntelResult: result.intelligence,
       ragResult: result.rag,
+      emailPatternComparison: result.emailPatternComparison,
       llmResult: result.groq,
       evidence: result.reasons || [],
       retrievedEmails: result.rag?.retrievedEmails || [],

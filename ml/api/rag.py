@@ -16,14 +16,25 @@ import faiss
 import numpy as np
 import threading
 
-# Lazy load to avoid slowing down startup unless RAG is actually called,
-# but we need it loaded eventually. We'll load it eagerly in a background thread or just on init.
-from sentence_transformers import SentenceTransformer
+# Lazy load to avoid slowing down startup unless RAG is actually called
+from fastembed import TextEmbedding
 
 logger = logging.getLogger("detectiq-rag")
 
-EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
+EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 VECTOR_DIMENSION = 384
+
+def normalize_embedding(vector: np.ndarray) -> np.ndarray:
+    """Explicitly normalize vector to ensure Inner Product acts as Cosine Similarity."""
+    vector = np.asarray(vector, dtype=np.float32).flatten()
+    if vector.shape[0] != VECTOR_DIMENSION:
+        raise ValueError(f"Embedding dimension mismatch: Expected {VECTOR_DIMENSION}, got {vector.shape[0]}")
+    norm = np.linalg.norm(vector)
+    if norm > 0:
+        vector = vector / norm
+    # FAISS expects 2D arrays: (batch_size, dimension)
+    return vector.reshape(1, -1)
+
 
 class RAGService:
     def __init__(self):
@@ -34,10 +45,10 @@ class RAGService:
         threading.Thread(target=self._load_async, daemon=True).start()
 
     def _load_async(self):
-        logger.info(f"Loading embedding model: {EMBEDDING_MODEL_NAME}...")
+        logger.info(f"Loading fastembed embedding model: {EMBEDDING_MODEL_NAME}...")
         try:
-            self.model = SentenceTransformer(EMBEDDING_MODEL_NAME, device='cpu')
-            logger.info("Embedding model loaded successfully on CPU.")
+            self.model = TextEmbedding(model_name=EMBEDDING_MODEL_NAME, threads=1)
+            logger.info("FastEmbed model loaded successfully on CPU.")
             self._is_loaded = True
         except Exception as e:
             logger.error(f"Failed to load embedding model: {e}")
@@ -50,8 +61,7 @@ class RAGService:
     def get_user_index(self, user_id: str) -> Dict[str, Any]:
         """Get or create a user-specific FAISS index."""
         if user_id not in self.user_indexes:
-            # Using Inner Product (cosine similarity proxy if vectors are normalized)
-            # all-MiniLM-L6-v2 outputs normalized vectors by default, so IP == Cosine.
+            # Using Inner Product (cosine similarity proxy since vectors are normalized)
             index = faiss.IndexFlatIP(VECTOR_DIMENSION)
             self.user_indexes[user_id] = {
                 "index": index,
@@ -73,10 +83,12 @@ class RAGService:
         if not text.strip():
             return False
 
-        # Generate embedding as a 2D batch tensor directly
-        vector = self.model.encode([text], normalize_embeddings=True)
-        # Ensure correct shape and type for FAISS
-        vector = np.array(vector, dtype=np.float32)
+        # FastEmbed returns a generator of numpy arrays
+        embeddings = list(self.model.embed([text]))
+        if not embeddings:
+            return False
+            
+        vector = normalize_embedding(embeddings[0])
 
         user_data = self.get_user_index(user_id)
         faiss_id = user_data["next_id"]
@@ -108,9 +120,12 @@ class RAGService:
         # Ensure we don't ask for more than exists
         k = min(top_k, user_data["index"].ntotal)
 
-        # Generate query embedding as a 2D batch tensor directly
-        vector = self.model.encode([query_text], normalize_embeddings=True)
-        vector = np.array(vector, dtype=np.float32)
+        # Generate query embedding and normalize identically
+        embeddings = list(self.model.embed([query_text]))
+        if not embeddings:
+            return []
+            
+        vector = normalize_embedding(embeddings[0])
 
         # Search
         similarities, indices = user_data["index"].search(vector, k)

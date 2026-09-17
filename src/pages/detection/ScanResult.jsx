@@ -564,12 +564,7 @@ export default function ScanResult() {
             </div>
 
             {isEmailAnalysis && (
-              <EvidenceCard
-                title="Email Pattern Comparison"
-                icon={BookOpen}
-                evidence={personalization}
-                emptyMsg="No email history available. Add legitimate emails to My Email Patterns to enable personalized detection."
-              />
+              <EmailPatternComparisonCard comparison={scan.emailPatternComparison} />
             )}
           </div>
         )}
@@ -587,6 +582,59 @@ export default function ScanResult() {
             View Scan History
           </button>
         </Link>
+      </div>
+    </div>
+  );
+}
+
+function EmailPatternComparisonCard({ comparison }) {
+  if (!comparison) return null;
+
+  return (
+    <div className="bg-background p-6 md:p-8 rounded-3xl border border-border shadow-sm">
+      <div className="flex items-center gap-4 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-accent-blue/10 text-accent-blue flex items-center justify-center">
+          <BookOpen className="w-5 h-5" />
+        </div>
+        <h3 className="text-xl font-bold text-primary">Email Pattern Comparison</h3>
+      </div>
+
+      <div className="space-y-4">
+        {comparison.status === 'no_history' && (
+          <p className="text-sm text-secondary font-medium">
+            No email history available. Add legitimate emails to My Email Patterns to enable personalized detection.
+          </p>
+        )}
+
+        {comparison.status === 'unavailable' && (
+          <p className="text-sm text-secondary font-medium text-warning">
+            Historical emails exist, but personalized comparison is temporarily unavailable.
+          </p>
+        )}
+
+        {comparison.status === 'no_match' && (
+          <p className="text-sm text-secondary font-medium">
+            Historical email patterns are available ({comparison.historyCount} emails), but no strong match was found.
+          </p>
+        )}
+
+        {comparison.status === 'available' && (
+          <div className="space-y-4">
+            <p className="text-sm text-secondary font-medium">
+              Compared against {comparison.historyCount} historical emails. Similarity found with previously saved patterns.
+            </p>
+            {comparison.senderComparison && (
+              <div className="p-4 bg-secondary/5 rounded-xl text-sm border border-border">
+                <span className="font-bold block mb-1">Sender Analysis:</span>
+                Current Sender: {comparison.senderComparison.currentSender}
+                <br />
+                {comparison.senderComparison.match 
+                  ? <span className="text-success font-medium">Matches historically safe sender pattern.</span> 
+                  : <span className="text-warning font-medium">Does not closely match previously observed institutional senders.</span>}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

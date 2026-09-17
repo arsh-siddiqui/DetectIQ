@@ -362,21 +362,57 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
         finalConfidence = Math.min(99, finalConfidence + 5);
       }
     }
+  } else if (mlEvidence?.status === 'unavailable' && mlEvidence.reason === 'exception') {
+    finalReasons.push({
+      source: 'ML_Classifier',
+      title: 'Service Offline',
+      detail: 'The machine learning classification service is currently offline or unreachable.',
+      severity: 'info',
+      type: 'System Status',
+    });
   }
 
   // =========================================================================
   // 3. RAG PERSONALIZATION
   // =========================================================================
 
-  if (ragEvidence?.status === 'available' && ragEvidence.similarityData?.length > 0) {
+  let emailPatternComparison = null;
+
+  if (ragEvidence) {
     analysisSources.push('rag');
-    const avgSim = ragEvidence.similarityData.reduce((a, c) => a + c.similarity, 0) / ragEvidence.similarityData.length;
-    const simPct = Math.round(avgSim * 100);
-    if (avgSim > 0.8 && finalRiskScore < 30) {
-      finalConfidence = Math.min(99, finalConfidence + 10);
-      finalReasons.push({ source: 'Personalization_RAG', title: 'Familiar Pattern', detail: `Highly similar (${simPct}%) to your saved legitimate patterns.`, severity: 'info' });
-    } else if (avgSim < 0.3) {
-      finalReasons.push({ source: 'Personalization_RAG', title: 'Unusual Pattern', detail: `Low similarity (${simPct}%) with your saved patterns.`, severity: 'medium' });
+    
+    // Construct the structured response
+    emailPatternComparison = {
+      available: ragEvidence.status === 'available' || ragEvidence.status === 'no_match',
+      status: ragEvidence.status || 'no_history',
+      historyCount: ragEvidence.historyCount || 0,
+      matches: ragEvidence.similarityData || [],
+      senderComparison: null,
+      domainComparison: null
+    };
+
+    if (ragEvidence.status === 'available' && ragEvidence.similarityData?.length > 0) {
+      const avgSim = ragEvidence.similarityData.reduce((a, c) => a + c.similarity, 0) / ragEvidence.similarityData.length;
+      const simPct = Math.round(avgSim * 100);
+      
+      if (avgSim > 0.8 && finalRiskScore < 30) {
+        finalConfidence = Math.min(99, finalConfidence + 10);
+        finalReasons.push({ source: 'Personalization_RAG', title: 'Familiar Pattern', detail: `Highly similar (${simPct}%) to your saved legitimate patterns.`, severity: 'info' });
+      } else if (avgSim < 0.3) {
+        finalReasons.push({ source: 'Personalization_RAG', title: 'Unusual Pattern', detail: `Low similarity (${simPct}%) with your saved patterns.`, severity: 'medium' });
+      }
+
+      // Check if we have historical sender mismatches (contextual evidence only)
+      if (ragEvidence.historicalDocs && ragEvidence.historicalDocs.length > 0 && heuristicResult) {
+        const currentSender = heuristicResult.detectedSignals?.find(s => s.toLowerCase().includes('sender')) || 'unknown';
+        const historicalSenders = ragEvidence.historicalDocs.map(d => d.sender).filter(Boolean);
+        
+        emailPatternComparison.senderComparison = {
+          currentSender,
+          historicalSenders,
+          match: historicalSenders.some(s => s.toLowerCase() === currentSender.toLowerCase())
+        };
+      }
     }
   }
 
@@ -553,6 +589,7 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
     intelligence: intelligenceBlock,
     ml:           mlOutput,
     rag:          ragEvidence,
+    emailPatternComparison,
     heuristics: {
       signalCount: (heuristicResult.detectedSignals || []).length,
       riskLevel:   heuristicResult.riskLevel,

@@ -37,7 +37,7 @@ async function createEmailHistory(userId, { sender, recipient, subject, body }) 
   const ragResult = await ragClient.embedEmail(userId, emailHistory._id, normalizedText);
   
   if (ragResult.success) {
-    emailHistory.embeddingStatus = 'completed';
+    emailHistory.embeddingStatus = 'ready';
     // The FAISS id isn't strictly necessary since we map it in Python, but we track success.
   } else {
     emailHistory.embeddingStatus = 'failed';
@@ -103,8 +103,8 @@ async function rebuildUserRAGIndex(userId) {
   for (const email of emails) {
     const res = await ragClient.embedEmail(userId, email._id, email.normalizedText);
     if (res.success) {
-      if (email.embeddingStatus !== 'completed') {
-        email.embeddingStatus = 'completed';
+      if (email.embeddingStatus !== 'ready') {
+        email.embeddingStatus = 'ready';
         await email.save();
       }
       successCount++;

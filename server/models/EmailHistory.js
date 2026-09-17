@@ -38,7 +38,7 @@ const emailHistorySchema = new mongoose.Schema(
     },
     embeddingStatus: {
       type: String,
-      enum: ['pending', 'completed', 'failed'],
+      enum: ['pending', 'completed', 'failed', 'ready'],
       default: 'pending',
     },
     isLegitimateContext: {
