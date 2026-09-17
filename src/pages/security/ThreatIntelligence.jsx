@@ -231,6 +231,7 @@ export default function ThreatIntelligence() {
             isLoading={isLoading} 
             selectedIndicatorId={selectedIndicatorId}
             totalIndicators={data.summary.total}
+            selectedCountry={filters.country}
           />
         </div>
 

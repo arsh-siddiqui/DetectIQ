@@ -82,13 +82,23 @@ exports.getThreatIntelligenceOverview = asyncHandler(async (req, res) => {
 
   // B. Markers (For the Map)
   // We match any indicator with geolocation or geolocations array
-  const mapFilter = { 
-    ...filter, 
-    $or: [
-      { 'geolocation': { $ne: null } },
-      { 'geolocations.0': { $exists: true } }
-    ]
-  };
+  const mapFilter = { ...filter };
+  const geoOrClause = [
+    { 'geolocation': { $ne: null } },
+    { 'geolocations.0': { $exists: true } }
+  ];
+  
+  if (mapFilter.$or) {
+    const existingOr = mapFilter.$or;
+    delete mapFilter.$or;
+    mapFilter.$and = [
+      { $or: existingOr },
+      { $or: geoOrClause }
+    ];
+  } else {
+    mapFilter.$or = geoOrClause;
+  }
+  
   const markers = await Indicator.find(mapFilter)
     .select('value type threatStatus geolocation geolocations city country asn isp intelligence')
     .sort({ createdAt: -1 })

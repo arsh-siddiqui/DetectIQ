@@ -13,7 +13,7 @@ const THREAT_COLORS = {
   unknown: "#6b7280",
 };
 
-export default function ThreatIntelligenceMap({ markers = [], isLoading = false, selectedIndicatorId = null, totalIndicators = null }) {
+export default function ThreatIntelligenceMap({ markers = [], isLoading = false, selectedIndicatorId = null, totalIndicators = null, selectedCountry = 'all' }) {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
   const [mapError, setMapError] = useState(false);
@@ -27,8 +27,12 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
   };
 
   const geoPoints = useMemo(() => {
-    return markers.flatMap(indicatorToGeoPoints).filter(Boolean);
-  }, [markers]);
+    let points = markers.flatMap(indicatorToGeoPoints).filter(Boolean);
+    if (selectedCountry && selectedCountry !== 'all') {
+      points = points.filter(p => p.country === selectedCountry);
+    }
+    return points;
+  }, [markers, selectedCountry]);
 
   const geoJsonData = useMemo(() => buildMapGeoJSON(geoPoints), [geoPoints]);
   const validPointsCount = geoJsonData.features.length;
