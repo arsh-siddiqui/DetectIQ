@@ -29,6 +29,8 @@ exports.getThreatIntelligenceOverview = asyncHandler(async (req, res) => {
   // 2. Threat Status Filter
   if (threatStatus && threatStatus !== 'all') {
     filter.threatStatus = threatStatus.toLowerCase();
+  } else {
+    filter.threatStatus = { $nin: ['unknown', 'unavailable', null, ""] };
   }
 
   // 3. Indicator Type Filter
