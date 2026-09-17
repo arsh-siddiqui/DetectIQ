@@ -225,6 +225,7 @@ async function checkVirusTotal(rawUrl) {
   return {
     provider: 'VirusTotal',
     status: result.status === 'available' ? 'found' : result.status,
+    threat: result.threat,
     malicious: result.threat === 'malicious',
     riskScore: result.confidence,
     severity: result.severity,

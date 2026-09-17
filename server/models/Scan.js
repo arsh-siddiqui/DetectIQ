@@ -33,7 +33,7 @@ const scanSchema = new mongoose.Schema(
     },
     classification: {
       type: String,
-      enum: ['phishing', 'legitimate', 'suspicious', 'needs_review'],
+      enum: ['phishing', 'legitimate', 'suspicious'],
       required: true,
     },
     riskScore: {

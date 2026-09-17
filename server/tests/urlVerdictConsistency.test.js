@@ -4,15 +4,15 @@
  * urlVerdictConsistency.test.js
  *
  * Tests the complete verdict/recommendation pipeline for the six key URL scenarios:
- *   A. credential URL + not_observed TI     → needs_review
- *   B. credential URL + unavailable TI      → needs_review
- *   C. credential URL + not_configured TI   → needs_review
+ *   A. credential URL + not_observed TI     → suspicious
+ *   B. credential URL + unavailable TI      → suspicious
+ *   C. credential URL + not_configured TI   → suspicious
  *   D. confirmed malicious provider         → phishing
  *   E. genuinely benign URL                 → legitimate
  *   F. AI unavailable summary language
  *
  * Plus regression cases:
- *   G. low risk + zero signals              → legitimate (not needs_review)
+ *   G. low risk + zero signals              → legitimate (not suspicious)
  *   H. medium + credential_path             → suspicious
  *   I. high + credential_path               → phishing
  */
@@ -62,11 +62,11 @@ console.log('\n=== URL VERDICT CONSISTENCY TESTS ===\n');
 // A — credential URL + not_observed
 console.log('--- A: credential URL + not_observed ---');
 
-it('A1 - credential URL + TI not_found -> classification is needs_review', () => {
+it('A1 - credential URL + TI not_found -> classification is suspicious', () => {
   const h = heuristicFromUrl('https://secure-login.account-verification.test/verify?session=8472');
   const result = fuseEvidence(h, ML_NOT_APPLICABLE, tiNotFound(), null);
-  assert.strictEqual(result.classification, 'needs_review',
-    `Expected needs_review, got "${result.classification}" (riskLevel: ${result.riskLevel})`);
+  assert.strictEqual(result.classification, 'suspicious',
+    `Expected suspicious, got "${result.classification}" (riskLevel: ${result.riskLevel})`);
 });
 
 it('A2 - credential URL + TI not_found -> riskLevel stays low', () => {
@@ -95,11 +95,11 @@ it('A4 - credential URL + TI not_found -> summary does not say "mostly legitimat
 // B — credential URL + TI unavailable
 console.log('--- B: credential URL + TI unavailable ---');
 
-it('B1 - credential URL + TI unavailable -> classification is needs_review', () => {
+it('B1 - credential URL + TI unavailable -> classification is suspicious', () => {
   const h = heuristicFromUrl('https://secure-login.account-verification.test/verify');
   const result = fuseEvidence(h, ML_NOT_APPLICABLE, TI_UNAVAILABLE, null);
-  assert.strictEqual(result.classification, 'needs_review',
-    `Expected needs_review, got "${result.classification}"`);
+  assert.strictEqual(result.classification, 'suspicious',
+    `Expected suspicious, got "${result.classification}"`);
 });
 
 it('B2 - credential URL + TI unavailable -> no "do not click"', () => {
@@ -113,11 +113,11 @@ it('B2 - credential URL + TI unavailable -> no "do not click"', () => {
 // C — credential URL + TI not_configured
 console.log('--- C: credential URL + TI not_configured ---');
 
-it('C1 - credential URL + TI not_configured -> classification is needs_review', () => {
+it('C1 - credential URL + TI not_configured -> classification is suspicious', () => {
   const h = heuristicFromUrl('https://account-verification.test/signin');
   const result = fuseEvidence(h, ML_NOT_APPLICABLE, TI_NOT_CONFIGURED, null);
-  assert.strictEqual(result.classification, 'needs_review',
-    `Expected needs_review, got "${result.classification}"`);
+  assert.strictEqual(result.classification, 'suspicious',
+    `Expected suspicious, got "${result.classification}"`);
 });
 
 // D — confirmed malicious
@@ -197,7 +197,7 @@ it('F2 - benign URL Groq unavailable: summary is non-empty', () => {
 // G — REGRESSION: low + zero signals stays legitimate
 console.log('--- G: Regression — low + no signals stays legitimate ---');
 
-it('G1 - low riskLevel + zero signals -> legitimate (not needs_review)', () => {
+it('G1 - low riskLevel + zero signals -> legitimate (not suspicious)', () => {
   const h = syntheticHeuristic('low', []);
   const result = fuseEvidence(h, ML_NOT_APPLICABLE, tiNotFound(), null);
   assert.strictEqual(result.classification, 'legitimate',
@@ -214,7 +214,7 @@ it('G2 - safe riskLevel + zero signals -> legitimate', () => {
 // H — REGRESSION: medium + credential_path stays suspicious
 console.log('--- H: Regression — medium + credential_path stays suspicious ---');
 
-it('H1 - medium riskLevel with signals -> suspicious (not needs_review)', () => {
+it('H1 - medium riskLevel with signals -> suspicious (not suspicious)', () => {
   const h = syntheticHeuristic('medium', ['credential_path', 'urgency']);
   const result = fuseEvidence(h, ML_NOT_APPLICABLE, tiNotFound(), null);
   assert.strictEqual(result.classification, 'suspicious',
@@ -224,7 +224,7 @@ it('H1 - medium riskLevel with signals -> suspicious (not needs_review)', () => 
 // I — REGRESSION: high + credential_path stays phishing
 console.log('--- I: Regression — high + credential_path stays phishing ---');
 
-it('I1 - high riskLevel with signals -> phishing (not needs_review)', () => {
+it('I1 - high riskLevel with signals -> phishing (not suspicious)', () => {
   const h = syntheticHeuristic('high', ['brand_impersonation', 'credential_path']);
   const result = fuseEvidence(h, ML_NOT_APPLICABLE, tiNotFound(), null);
   assert.strictEqual(result.classification, 'phishing',

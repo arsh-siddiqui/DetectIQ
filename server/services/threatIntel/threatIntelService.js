@@ -125,12 +125,25 @@ async function checkUrl(url) {
   // Run provider (VirusTotal if key exists, else PhishDestroy)
   let threatintel;
   if (env.VIRUSTOTAL_API_KEY) {
-    threatintel = await checkVirusTotal(url);
+    const result = await checkVirusTotal(url);
+    threatintel = {
+      provider: 'VirusTotal',
+      status: result.status === 'available' ? 'found' : result.status,
+      threat: result.severity === 'medium' || result.severity === 'high' || result.severity === 'critical' 
+        ? (result.malicious ? 'malicious' : 'suspicious') 
+        : 'clean',
+      malicious: result.malicious,
+      riskScore: result.riskScore || 0,
+      severity: result.severity || 'none',
+      detail: result.detail || 'Checked by VirusTotal.',
+      checkedAt: result.checkedAt
+    };
   } else {
     const pdResult = await checkPhishDestroy(url);
     threatintel = {
       provider: 'PhishDestroy',
       status: pdResult.status,
+      threat: pdResult.malicious ? 'malicious' : (pdResult.status === 'found' ? 'suspicious' : 'clean'),
       malicious: pdResult.malicious,
       riskScore: pdResult.riskScore,
       severity: pdResult.severity,

@@ -63,10 +63,9 @@ export default function ScanResult() {
     );
   }
 
-  const isNeedsReview = scan.classification === 'needs_review';
-  const isSafe = (scan.riskLevel === 'safe' || scan.riskLevel === 'low') && !isNeedsReview;
-  const isMedium = scan.riskLevel === 'medium' || isNeedsReview;
-  const isDanger = scan.riskLevel === 'high' || scan.riskLevel === 'critical';
+  const isDanger = scan.classification === 'phishing' || scan.riskLevel === 'high' || scan.riskLevel === 'critical';
+  const isMedium = scan.classification === 'suspicious' || scan.riskLevel === 'medium';
+  const isSafe = !isDanger && !isMedium;
 
   const riskColor = isDanger ? 'text-danger' : isMedium ? 'text-warning' : 'text-success';
   const RiskIcon = isDanger ? ShieldAlert : isMedium ? AlertTriangle : ShieldCheck;
@@ -82,7 +81,6 @@ export default function ScanResult() {
   const CLASSIFICATION_LABEL = {
     phishing: 'Phishing',
     suspicious: 'Suspicious',
-    needs_review: 'Needs Review',
     legitimate: 'Legitimate',
   };
 
