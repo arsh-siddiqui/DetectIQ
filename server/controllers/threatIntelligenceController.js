@@ -38,6 +38,9 @@ exports.getThreatIntelligenceOverview = asyncHandler(async (req, res) => {
     filter.type = indicatorType.toLowerCase();
   }
 
+  // Create a separate filter for countries aggregation (so the dropdown still shows all available countries)
+  const filterForCountries = { ...filter };
+
   // 4. Country Filter
   if (country && country !== 'all') {
     filter.$or = [
@@ -48,7 +51,9 @@ exports.getThreatIntelligenceOverview = asyncHandler(async (req, res) => {
 
   // 5. Investigation Filter
   if (investigation && investigation !== 'all') {
-    filter.investigation = new mongoose.Types.ObjectId(investigation);
+    const invId = new mongoose.Types.ObjectId(investigation);
+    filter.investigation = invId;
+    filterForCountries.investigation = invId;
   }
 
   // Define aggregations
@@ -106,9 +111,9 @@ exports.getThreatIntelligenceOverview = asyncHandler(async (req, res) => {
     .lean();
 
   // C. Top Countries
-  // Group by country only if country is present.
+  // Group by country only if country is present. Use filterForCountries to ignore the current country filter
   const countriesAgg = await Indicator.aggregate([
-    { $match: filter },
+    { $match: filterForCountries },
     { $project: { country: { $ifNull: ["$geolocation.country", { $arrayElemAt: ["$geolocations.country", 0] }] } } },
     { $match: { country: { $exists: true, $nin: [null, ""] } } },
     { $group: { _id: "$country", count: { $sum: 1 } } },
