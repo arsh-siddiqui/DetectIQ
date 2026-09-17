@@ -110,7 +110,6 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
           filter: ['has', 'point_count'],
           layout: {
             'text-field': '{point_count_abbreviated}',
-            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
             'text-size': 12,
           },
           paint: {
@@ -189,7 +188,9 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
         map.on('mouseleave', 'unclustered-point', () => { map.getCanvas().style.cursor = ''; });
 
         if (geoJsonRef.current.features.length > 0) {
-          fitLocations(true); // pass true for initial fit
+          setTimeout(() => {
+            fitLocations(true); // pass true for initial fit
+          }, 300);
         }
       });
       
@@ -214,8 +215,10 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
       if (source) {
         source.setData(geoJsonData);
         // Only fit locations if not zooming to a specific indicator
-        if (validPointsCount > 0 && !selectedIndicatorId) {
-          fitLocations();
+        if (validPointsCount > 0 && !selectedIndicatorIdRef.current) {
+          setTimeout(() => {
+            fitLocations();
+          }, 200);
         }
       }
     }
@@ -387,10 +390,18 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
 
     const bounds = new window.maplibregl.LngLatBounds();
     currentGeoJson.features.forEach(f => {
-      bounds.extend(f.geometry.coordinates);
+      if (Array.isArray(f.geometry.coordinates) && f.geometry.coordinates.length === 2) {
+        bounds.extend(f.geometry.coordinates);
+      }
     });
     
-    mapRef.current.fitBounds(bounds, { padding: 50, maxZoom: 12 });
+    if (!bounds.isEmpty()) {
+      try {
+        mapRef.current.fitBounds(bounds, { padding: 50, maxZoom: 12 });
+      } catch (err) {
+        console.warn("fitBounds failed, possibly due to zero map dimensions", err);
+      }
+    }
   };
 
   const resetView = () => {

@@ -67,6 +67,11 @@ export default function ThreatIntelligence() {
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
+    if (selectedIndicatorId) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('indicator');
+      setSearchParams(newParams);
+    }
   };
 
   const resetFilters = () => {
@@ -77,6 +82,11 @@ export default function ThreatIntelligence() {
       country: "all",
       investigation: "all",
     });
+    if (selectedIndicatorId) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('indicator');
+      setSearchParams(newParams);
+    }
   };
 
   // Derive unique countries from the fetched data's countries list for the dropdown

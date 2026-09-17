@@ -38,7 +38,10 @@ exports.getThreatIntelligenceOverview = asyncHandler(async (req, res) => {
 
   // 4. Country Filter
   if (country && country !== 'all') {
-    filter['geolocation.country'] = country;
+    filter.$or = [
+      { 'geolocation.country': country },
+      { 'geolocations.country': country }
+    ];
   }
 
   // 5. Investigation Filter
@@ -76,10 +79,16 @@ exports.getThreatIntelligenceOverview = asyncHandler(async (req, res) => {
   });
 
   // B. Markers (For the Map)
-  // Only IPs generally have geolocation in this context, but we can match any with geolocation
-  const mapFilter = { ...filter, 'geolocation': { $ne: null } };
+  // We match any indicator with geolocation or geolocations array
+  const mapFilter = { 
+    ...filter, 
+    $or: [
+      { 'geolocation': { $ne: null } },
+      { 'geolocations.0': { $exists: true } }
+    ]
+  };
   const markers = await Indicator.find(mapFilter)
-    .select('value type threatStatus geolocation city country asn isp intelligence')
+    .select('value type threatStatus geolocation geolocations city country asn isp intelligence')
     .sort({ createdAt: -1 })
     .limit(2000)
     .lean();
@@ -88,8 +97,9 @@ exports.getThreatIntelligenceOverview = asyncHandler(async (req, res) => {
   // Group by country only if country is present.
   const countriesAgg = await Indicator.aggregate([
     { $match: filter },
-    { $match: { "geolocation.country": { $exists: true, $nin: [null, ""] } } },
-    { $group: { _id: "$geolocation.country", count: { $sum: 1 } } },
+    { $project: { country: { $ifNull: ["$geolocation.country", { $arrayElemAt: ["$geolocations.country", 0] }] } } },
+    { $match: { country: { $exists: true, $nin: [null, ""] } } },
+    { $group: { _id: "$country", count: { $sum: 1 } } },
     { $sort: { count: -1 } },
     { $limit: 10 }
   ]);
@@ -108,19 +118,23 @@ exports.getThreatIntelligenceOverview = asyncHandler(async (req, res) => {
   let recentActivity = [];
   
   const recentIndicators = await Indicator.find(filter)
-    .select('_id value type threatStatus geolocation.country createdAt')
+    .select('_id value type threatStatus geolocation.country geolocations.country createdAt')
     .sort({ createdAt: -1 })
     .limit(10)
     .lean();
 
   recentIndicators.forEach(ind => {
+    let country = ind.geolocation?.country;
+    if (!country && ind.geolocations && ind.geolocations.length > 0) {
+      country = ind.geolocations[0].country;
+    }
     recentActivity.push({
       id: ind._id,
       entityType: 'indicator',
       title: ind.normalizedValue || ind.value,
       type: ind.type,
       status: ind.threatStatus,
-      country: ind.geolocation?.country || null,
+      country: country || null,
       timestamp: ind.createdAt
     });
   });
