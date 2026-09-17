@@ -271,11 +271,11 @@ test('14. OTX pulses alone → no score bump', () => {
   assert.strictEqual(r.classification, 'legitimate');
 });
 
-test('14b. OTX malicious tag → score bump', () => {
+test('14b. OTX malicious tag → no score bump anymore due to noise', () => {
   const otx = otxResult(10);
   otx.tags = ['phishing'];
   const r = fuseEvidence(baseHeuristics(0), null, buildTI({ vt: vtResult(0, 0), otx }), null, null);
-  assert.strictEqual(r.classification, 'suspicious');
+  assert.strictEqual(r.classification, 'legitimate');
 });
 
 test('16. All providers unavailable → legitimate (no false positives)', () => {

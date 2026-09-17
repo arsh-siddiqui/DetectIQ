@@ -77,7 +77,7 @@ export default function ScanResult() {
   const personalization = evidenceList.filter(e => e.source === 'Personalization_RAG');
 
   // Multi-provider intelligence from new format
-  const intel = scan.intelligence || {};
+  const intel = scan.threatIntelResult || scan.intelligence || {};
   const vtResult = intel.virusTotal || null;
   const vtDomainResult = intel.virusTotalDomain || null;
   const urlhausResult = intel.urlhaus || null;
