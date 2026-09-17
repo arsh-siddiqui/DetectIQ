@@ -467,7 +467,9 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
         <div className="bg-[#0f172a]/90 backdrop-blur-md border border-slate-800 rounded-lg px-3 py-2 shadow-xl flex items-center gap-3">
           <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Threat Status:</div>
           <div className="flex flex-row items-center gap-3 flex-wrap">
-            {Object.entries(THREAT_COLORS).map(([threat, color]) => (
+            {Object.entries(THREAT_COLORS)
+              .filter(([threat]) => !['unavailable', 'unknown'].includes(threat))
+              .map(([threat, color]) => (
               <div key={threat} className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
                 <span className="text-xs text-slate-300 capitalize font-medium">{threat}</span>
@@ -482,7 +484,7 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
           <div className="bg-[#0f172a]/90 backdrop-blur-md border border-slate-800 rounded-lg px-3 py-1.5 shadow-lg group relative cursor-help">
             <span className="text-[11px] text-slate-300 font-medium flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-              {totalIndicators ? `Showing ${validPointsCount} of ${totalIndicators} indicators` : `${validPointsCount} geolocated indicator${validPointsCount !== 1 ? "s" : ""}`}
+              {totalIndicators ? `Showing ${validPointsCount} location${validPointsCount !== 1 ? "s" : ""} from ${totalIndicators} indicator${totalIndicators !== 1 ? "s" : ""}` : `${validPointsCount} geolocated location${validPointsCount !== 1 ? "s" : ""}`}
               <Info size={12} className="text-slate-400 ml-1" />
             </span>
             {/* Tooltip to explain why counts differ */}
