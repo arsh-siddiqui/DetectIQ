@@ -126,18 +126,16 @@ export function buildMapGeoJSON(geoPoints = []) {
     coordsMap.get(key).push(p);
   });
 
-  const spiderifiedPoints = [];
+  const uniquePoints = [];
   coordsMap.forEach((points) => {
-    // Push all points exactly at their original coordinates.
-    // They will visually stack on top of each other as a single dot on the map.
-    points.forEach(p => {
-      spiderifiedPoints.push(p);
-    });
+    // User requested to treat all indicators pointing to the same geolocation as 1 indicator.
+    // So we just take the first one and drop the duplicates.
+    uniquePoints.push(points[0]);
   });
 
   return {
     type: "FeatureCollection",
-    features: spiderifiedPoints.map((p) => ({
+    features: uniquePoints.map((p) => ({
       type: "Feature",
       geometry: {
         type: "Point",
