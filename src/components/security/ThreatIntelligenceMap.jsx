@@ -42,6 +42,13 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
   // Track latest data in refs to avoid stale closures in map load event
   const geoJsonRef = useRef(geoJsonData);
   const selectedIndicatorIdRef = useRef(selectedIndicatorId);
+  const markersRef = useRef(markers);
+  const activePopupRef = useRef(null);
+  const activePopupRootRef = useRef(null);
+
+  useEffect(() => {
+    markersRef.current = markers;
+  }, [markers]);
 
   useEffect(() => {
     geoJsonRef.current = geoJsonData;
@@ -154,6 +161,25 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
       const source = mapRef.current.getSource('locations');
       if (source) {
         source.setData(geoJsonData);
+        
+        // Validate active popup
+        if (activePopupRef.current && activePopupRef.current._popupData) {
+          const { indicatorIds } = activePopupRef.current._popupData;
+          if (indicatorIds) {
+            let ids = [];
+            try {
+              ids = JSON.parse(indicatorIds || '[]');
+            } catch (e) {}
+            
+            // Check if ANY of the indicator IDs in the active popup still exist in the CURRENT filtered markers
+            const stillValid = ids.some(id => markersRef.current.some(m => (m.id || m._id) === id));
+            if (!stillValid) {
+              activePopupRef.current.remove();
+              activePopupRef.current = null;
+            }
+          }
+        }
+
         // Only fit locations if not zooming to a specific indicator
         if (validPointsCount > 0 && !selectedIndicatorIdRef.current) {
           setTimeout(() => {
@@ -204,22 +230,44 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
     }
     const popupNode = document.createElement('div');
     const root = createRoot(popupNode);
-    root.render(<ThreatMapPopup feature={feature} allIndicators={markers} />);
+    activePopupRootRef.current = root;
+    
+    // We pass a function reference that ThreatMapPopup can call if it determines it is totally empty
+    const forceClose = () => {
+      if (activePopupRef.current) {
+        activePopupRef.current.remove();
+        activePopupRef.current = null;
+      }
+    };
+    
+    root.render(<ThreatMapPopup feature={feature} allIndicators={markersRef.current} forceClose={forceClose} />);
 
     // Remove old popups if they exist
+    if (activePopupRef.current) {
+      activePopupRef.current.remove();
+    }
     const existingPopups = document.querySelectorAll('.maplibregl-popup');
     existingPopups.forEach(p => p.remove());
 
     const popup = new window.maplibregl.Popup({ 
       className: 'custom-popup-react',
-      maxWidth: '360px'
+      maxWidth: '360px',
+      anchor: 'bottom',
+      offset: [0, -10]
     })
       .setLngLat(coordinates)
       .setDOMContent(popupNode)
       .addTo(mapRef.current);
+      
+    // Store data inside popup object to validate later against filters
+    popup._popupData = { indicatorIds: props.indicatorIds };
+    activePopupRef.current = popup;
 
     // Unmount React component when popup closes to prevent memory leaks
     popup.on('close', () => {
+      if (activePopupRef.current === popup) {
+        activePopupRef.current = null;
+      }
       setTimeout(() => {
         root.unmount();
       }, 0);

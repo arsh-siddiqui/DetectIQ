@@ -14,12 +14,10 @@ const SOURCE_LABELS = {
   'received_header_ip': 'Received-header IP'
 };
 
-const ThreatMapPopup = ({ feature, allIndicators = [] }) => {
+const ThreatMapPopup = ({ feature, allIndicators = [], forceClose }) => {
   const props = feature.properties || {};
-  const indicatorCount = props.indicatorCount || 1;
-  const isGroup = indicatorCount > 1;
+  const isGroup = props.indicatorCount > 1 || (props.indicatorIds && JSON.parse(props.indicatorIds || '[]').length > 1);
 
-  // Retrieve exact underlying indicators from the current filtered list
   let exactIndicators = [];
   try {
     const ids = JSON.parse(props.indicatorIds || '[]');
@@ -27,6 +25,16 @@ const ThreatMapPopup = ({ feature, allIndicators = [] }) => {
   } catch (e) {
     console.error('Failed to parse indicatorIds', e);
   }
+
+  // If this is a grouped location and all underlying indicators have been filtered out, close it.
+  if (isGroup && exactIndicators.length === 0) {
+    if (forceClose) {
+      setTimeout(forceClose, 0);
+    }
+    return null;
+  }
+
+  const indicatorCount = isGroup ? exactIndicators.length : 1;
 
   // Location display logic
   const locationText = [props.city, props.country].filter(Boolean).join(" · ");
@@ -115,12 +123,23 @@ const ThreatMapPopup = ({ feature, allIndicators = [] }) => {
   }
 
   // Grouped Location Mode
-  const highestThreatColor = THREAT_COLORS[props.threat] || THREAT_COLORS.unknown;
-  
-  let typesCount = {};
-  try {
-    typesCount = JSON.parse(props.typesCount || '{}');
-  } catch(e) {}
+  const threatRanking = { malicious: 4, suspicious: 3, clean: 1, unknown: 0, unavailable: 0 };
+  let highestThreat = 'unknown';
+  let maxRank = -1;
+  const typesCount = {};
+
+  exactIndicators.forEach(ind => {
+    const threat = ind.threatStatus || 'unknown';
+    const rank = threatRanking[threat] !== undefined ? threatRanking[threat] : 0;
+    if (rank > maxRank) {
+      maxRank = rank;
+      highestThreat = threat;
+    }
+    const type = ind.type || 'unknown';
+    typesCount[type] = (typesCount[type] || 0) + 1;
+  });
+
+  const highestThreatColor = THREAT_COLORS[highestThreat] || THREAT_COLORS.unknown;
 
   return (
     <div className="p-2 w-[340px] text-gray-900 flex flex-col max-h-[420px] bg-white rounded-lg">
@@ -135,7 +154,7 @@ const ThreatMapPopup = ({ feature, allIndicators = [] }) => {
             {locationText || 'Unknown Location'}
           </span>
           <span className="text-[11px] text-gray-500 font-medium">
-            Highest Severity: <span style={{ color: highestThreatColor }} className="capitalize font-bold">{props.threat}</span>
+            Highest Severity: <span style={{ color: highestThreatColor }} className="capitalize font-bold">{highestThreat}</span>
           </span>
         </div>
       </div>
@@ -155,13 +174,8 @@ const ThreatMapPopup = ({ feature, allIndicators = [] }) => {
 
       {/* Scrollable Indicator List */}
       <div className="flex-1 overflow-y-auto mb-3 pr-1 space-y-1.5 custom-scrollbar min-h-[120px]">
-        {exactIndicators.length === 0 ? (
-          <div className="text-[11px] text-gray-500 italic p-2 text-center bg-gray-50 rounded">
-            Filtered or unavailable indicators
-          </div>
-        ) : (
-          exactIndicators.map(ind => {
-            const indThreatColor = THREAT_COLORS[ind.threatStatus] || THREAT_COLORS.unknown;
+        {exactIndicators.map(ind => {
+          const indThreatColor = THREAT_COLORS[ind.threatStatus] || THREAT_COLORS.unknown;
             const value = ind.value || ind.normalizedValue;
             return (
               <div key={ind._id || ind.id} className="flex items-center gap-2 p-1.5 hover:bg-gray-50 rounded transition-colors border border-transparent hover:border-gray-100">
@@ -176,8 +190,7 @@ const ThreatMapPopup = ({ feature, allIndicators = [] }) => {
                 </div>
               </div>
             );
-          })
-        )}
+          })}
       </div>
 
       {/* Group Actions */}
