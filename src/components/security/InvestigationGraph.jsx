@@ -179,7 +179,7 @@ const InvestigationGraph = ({ data }) => {
 
   return (
     <div 
-      className={`relative bg-background rounded-xl border border-border overflow-hidden flex ${isFullscreen ? 'fixed inset-4 z-50 shadow-2xl' : 'h-full min-h-[600px]'}`}
+      className={`relative bg-[#0f172a] rounded-xl border border-border overflow-hidden flex ${isFullscreen ? 'fixed inset-4 z-50 shadow-2xl' : 'h-full min-h-[600px]'}`}
       ref={containerRef}
     >
       <div className="flex-1 relative h-full">
@@ -221,14 +221,14 @@ const InvestigationGraph = ({ data }) => {
             onClick={() => {
               if (fgRef.current) fgRef.current.zoomToFit(400, 80);
             }}
-            className="p-2 bg-secondary/80 hover:bg-interactive text-primary rounded-md transition-colors text-xs font-medium border border-border backdrop-blur flex items-center gap-1"
+            className="p-2 bg-secondary/80 hover:bg-interactive text-white rounded-md transition-colors text-xs font-medium border border-border backdrop-blur flex items-center gap-1"
             title="Reset View"
           >
             Reset View
           </button>
           <button 
             onClick={toggleFullscreen}
-            className="p-2 bg-secondary/80 hover:bg-interactive text-primary rounded-md transition-colors border border-border backdrop-blur"
+            className="p-2 bg-secondary/80 hover:bg-interactive text-white rounded-md transition-colors border border-border backdrop-blur"
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
           >
             {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
@@ -237,10 +237,10 @@ const InvestigationGraph = ({ data }) => {
 
         {/* Legend */}
         <div className="absolute bottom-4 left-4 z-10 bg-card/90 backdrop-blur border border-border rounded-lg p-3 shadow-xl pointer-events-none">
-          <h3 className="text-[11px] font-bold text-muted mb-2 uppercase tracking-wider">Legend</h3>
+          <h3 className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Legend</h3>
           <div className="flex flex-col gap-1.5">
             {presentTypes.map(type => (
-              <div key={type} className="flex items-center gap-2 text-[11px] font-medium text-secondary">
+              <div key={type} className="flex items-center gap-2 text-[11px] font-medium text-slate-200">
                 <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: NODE_COLORS[type] || NODE_COLORS.default }} />
                 {TYPE_LABELS[type] || type}
               </div>
@@ -263,7 +263,7 @@ const InvestigationGraph = ({ data }) => {
             nodeLabel=""
             nodeColor={(node) => NODE_COLORS[node.type] || NODE_COLORS.default}
             nodeRelSize={6}
-            linkColor={() => 'rgba(100, 116, 139, 0.4)'}
+            linkColor={() => 'rgba(255,255,255,0.2)'}
             linkWidth={1.5}
             linkDirectionalArrowLength={3.5}
             linkDirectionalArrowRelPos={1}
