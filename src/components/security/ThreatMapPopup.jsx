@@ -14,7 +14,7 @@ const SOURCE_LABELS = {
   'received_header_ip': 'Received-header IP'
 };
 
-const ThreatMapPopup = ({ feature, allIndicators = [], forceClose }) => {
+const ThreatMapPopup = ({ feature, filteredIndicators = [], forceClose }) => {
   const props = feature.properties || {};
   const isGroup = props.indicatorCount > 1 || (props.indicatorIds && JSON.parse(props.indicatorIds || '[]').length > 1);
 
@@ -22,7 +22,7 @@ const ThreatMapPopup = ({ feature, allIndicators = [], forceClose }) => {
   try {
     const ids = JSON.parse(props.indicatorIds || '[]');
     const uniqueIndicatorIds = [...new Set(ids)];
-    const byId = new Map(allIndicators.map(indicator => [String(indicator._id || indicator.id), indicator]));
+    const byId = new Map(filteredIndicators.map(indicator => [String(indicator._id || indicator.id), indicator]));
     exactIndicators = uniqueIndicatorIds.map(id => byId.get(String(id))).filter(Boolean);
   } catch (e) {
     console.error('Failed to parse indicatorIds', e);

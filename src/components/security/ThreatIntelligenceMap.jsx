@@ -241,7 +241,7 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
       }
     };
     
-    root.render(<ThreatMapPopup feature={feature} allIndicators={markersRef.current} forceClose={forceClose} />);
+    root.render(<ThreatMapPopup feature={feature} filteredIndicators={markersRef.current} forceClose={forceClose} />);
 
     // Remove old popups if they exist
     if (activePopupRef.current) {
