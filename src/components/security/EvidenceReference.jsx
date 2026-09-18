@@ -1,10 +1,12 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { FileText } from 'lucide-react';
 import { resolveEvidenceTab, formatEvidenceLabel, isValidEvidenceId } from '../../utils/evidenceResolution';
 
 export default function EvidenceReference({ investigationId, evidenceId, label, onClickOverride }) {
   const navigate = useNavigate();
+  const { id: routeId } = useParams();
+  const actualInvestigationId = investigationId || routeId;
 
   if (!isValidEvidenceId(evidenceId)) {
     // If not a recognized ID, fallback to basic text render
@@ -24,7 +26,7 @@ export default function EvidenceReference({ investigationId, evidenceId, label, 
     const tab = resolveEvidenceTab(evidenceId);
     
     // Construct target route
-    let route = `/security/investigations/${investigationId}`;
+    let route = `/security/investigations/${actualInvestigationId}`;
     if (tab) {
       route += `/${tab}`;
     }
