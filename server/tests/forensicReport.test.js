@@ -2,22 +2,22 @@ const { generateReport, deriveLimitations } = require('../services/reports/foren
 const mongoose = require('mongoose');
 const ForensicReport = require('../models/ForensicReport');
 
-jest.mock('../services/ai/copilotService', () => ({
-  askCopilot: jest.fn()
+vi.mock('../services/ai/copilotService', () => ({
+  askCopilot: vi.fn()
 }));
 
 const { askCopilot } = require('../services/ai/copilotService');
 
 describe('forensicReportService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should generate a deterministic report without AI if AI fails', async () => {
     askCopilot.mockRejectedValue(new Error('AI failed'));
 
     // Mock ForensicReport.create to just return the payload
-    ForensicReport.create = jest.fn().mockImplementation((data) => data);
+    ForensicReport.create = vi.fn().mockImplementation((data) => data);
 
     const user = { _id: new mongoose.Types.ObjectId() };
     const investigation = { _id: new mongoose.Types.ObjectId(), sourceType: 'pasted_email', headers: {} };
@@ -38,7 +38,7 @@ describe('forensicReportService', () => {
       keyFindings: []
     });
 
-    ForensicReport.create = jest.fn().mockImplementation((data) => data);
+    ForensicReport.create = vi.fn().mockImplementation((data) => data);
 
     const user = { _id: new mongoose.Types.ObjectId() };
     const investigation = { _id: new mongoose.Types.ObjectId(), headers: {} };

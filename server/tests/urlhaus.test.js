@@ -4,15 +4,15 @@ const axios = require('axios');
 const env = require('../config/env');
 const { checkUrlhausURL } = require('../services/threatIntel/urlhausService');
 
-jest.mock('axios');
-jest.mock('../config/env', () => ({
+vi.mock('axios');
+vi.mock('../config/env', () => ({
   URLHAUS_API_KEY: 'test-api-key',
   URLHAUS_TIMEOUT_MS: '4000',
 }));
 
 describe('urlhausService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('returns skipped if URLHAUS_API_KEY is missing', async () => {

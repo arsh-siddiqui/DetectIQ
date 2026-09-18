@@ -4,9 +4,9 @@ const crypto = require("crypto");
 const { OAuth2Client } = require("google-auth-library");
 const { sendTokenCookie } = require("../utils/jwt");
 
-jest.mock("google-auth-library");
-jest.mock("../models/User");
-jest.mock("../utils/jwt");
+vi.mock("google-auth-library");
+vi.mock("../models/User");
+vi.mock("../utils/jwt");
 
 describe("Google OAuth Controller", () => {
   let req, res, clientMock;
@@ -17,20 +17,20 @@ describe("Google OAuth Controller", () => {
       cookies: {},
     };
     res = {
-      cookie: jest.fn(),
-      clearCookie: jest.fn(),
-      redirect: jest.fn(),
+      cookie: vi.fn(),
+      clearCookie: vi.fn(),
+      redirect: vi.fn(),
     };
     clientMock = {
-      generateAuthUrl: jest.fn().mockReturnValue("https://accounts.google.com/o/oauth2/v2/auth"),
-      getToken: jest.fn().mockResolvedValue({ tokens: { id_token: "mock_id_token" } }),
-      setCredentials: jest.fn(),
-      verifyIdToken: jest.fn().mockResolvedValue({
+      generateAuthUrl: vi.fn().mockReturnValue("https://accounts.google.com/o/oauth2/v2/auth"),
+      getToken: vi.fn().mockResolvedValue({ tokens: { id_token: "mock_id_token" } }),
+      setCredentials: vi.fn(),
+      verifyIdToken: vi.fn().mockResolvedValue({
         getPayload: () => ({ email: "test@example.com", name: "Test User", sub: "12345", email_verified: true })
       })
     };
     OAuth2Client.mockImplementation(() => clientMock);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("googleOAuth", () => {
@@ -78,7 +78,7 @@ describe("Google OAuth Controller", () => {
       req.query = { code: "mock_code", state: "saved_state" };
       req.cookies = { oauth_state: "saved_state" };
       
-      const mockUser = { _id: "existing_id", authProvider: "local", save: jest.fn() };
+      const mockUser = { _id: "existing_id", authProvider: "local", save: vi.fn() };
       User.findOne.mockResolvedValue(mockUser);
 
       await googleOAuthCallback(req, res);
@@ -94,7 +94,7 @@ describe("Google OAuth Controller", () => {
       req.query = { code: "mock_code", state: "saved_state" };
       req.cookies = { oauth_state: "saved_state" };
       
-      const mockUser = { _id: "existing_id", authProvider: "linked", save: jest.fn() };
+      const mockUser = { _id: "existing_id", authProvider: "linked", save: vi.fn() };
       User.findOne.mockResolvedValue(mockUser);
 
       await googleOAuthCallback(req, res);

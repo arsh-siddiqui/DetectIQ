@@ -6,21 +6,21 @@ const ragClient = require('../services/ragClient');
 const emailHistoryService = require('../services/emailHistoryService');
 const EmailHistory = require('../models/EmailHistory');
 
-jest.mock('../services/ragClient');
-jest.mock('../services/mlService', () => ({
-  classifyText: jest.fn().mockResolvedValue({ status: 'available', isPhishing: false })
+vi.mock('../services/ragClient');
+vi.mock('../services/mlService', () => ({
+  classifyText: vi.fn().mockResolvedValue({ status: 'available', isPhishing: false })
 }));
-jest.mock('../services/threatIntel/threatIntelService', () => ({
-  getThreatIntelligence: jest.fn().mockResolvedValue(null)
+vi.mock('../services/threatIntel/threatIntelService', () => ({
+  getThreatIntelligence: vi.fn().mockResolvedValue(null)
 }));
-jest.mock('../services/groqService', () => ({
-  analyzeWithGroq: jest.fn().mockResolvedValue(null)
+vi.mock('../services/groqService', () => ({
+  analyzeWithGroq: vi.fn().mockResolvedValue(null)
 }));
-jest.mock('../services/emailHistoryService', () => {
-  const actual = jest.requireActual('../services/emailHistoryService');
+vi.mock('../services/emailHistoryService', () => {
+  const actual = vi.requireActual('../services/emailHistoryService');
   return {
     ...actual,
-    rebuildUserRAGIndex: jest.fn().mockResolvedValue({ successCount: 1, failCount: 0, total: 1 })
+    rebuildUserRAGIndex: vi.fn().mockResolvedValue({ successCount: 1, failCount: 0, total: 1 })
   };
 });
 
@@ -38,13 +38,13 @@ describe('RAG Rebuild tests', () => {
 
   beforeEach(() => {
     userId = new mongoose.Types.ObjectId();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('Scanner continues and triggers rebuild on index_missing', async () => {
     // Mock ragClient to return index_missing
     ragClient.retrieveContext.mockResolvedValue({ success: false, reason: 'index_missing' });
-    const triggerSpy = jest.spyOn(emailHistoryService, 'triggerRebuild').mockImplementation(() => {});
+    const triggerSpy = vi.spyOn(emailHistoryService, 'triggerRebuild').mockImplementation(() => {});
 
     const result = await analyzeContent('hello', 'email', userId);
     
@@ -59,7 +59,7 @@ describe('RAG Rebuild tests', () => {
   });
 
   test('Concurrency lock prevents multiple rebuilds', async () => {
-    const clearSpy = jest.spyOn(ragClient, 'clearUserIndex').mockImplementation(() => new Promise(r => setTimeout(r, 100)));
+    const clearSpy = vi.spyOn(ragClient, 'clearUserIndex').mockImplementation(() => new Promise(r => setTimeout(r, 100)));
     
     emailHistoryService.triggerRebuild(userId);
     emailHistoryService.triggerRebuild(userId);

@@ -11,34 +11,34 @@ describe('Test Suite: ML and Provider Timeout Handling', () => {
   beforeEach(() => {
     // Reset mocks before each test
     mockMlService = {
-      classifyText: jest.fn()
+      classifyText: vi.fn()
     };
     mockThreatIntelService = {
-      getThreatIntelligence: jest.fn()
+      getThreatIntelligence: vi.fn()
     };
     mockRagClient = {
-      retrieveContext: jest.fn(),
-      buildRagContext: jest.fn()
+      retrieveContext: vi.fn(),
+      buildRagContext: vi.fn()
     };
     
     // Inject mocks into the require cache or override
     // Note: since scanner/index.js requires them lazily inside the function body, 
-    // we can mock them globally for jest.
+    // we can mock them globally for vi.
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('1. Email scan continues when ML is unavailable (simulated timeout)', async () => {
-    jest.mock('../services/mlService', () => ({
-      classifyText: jest.fn().mockRejectedValue(Object.assign(new Error('timeout'), { code: 'ECONNABORTED' }))
+    vi.mock('../services/mlService', () => ({
+      classifyText: vi.fn().mockRejectedValue(Object.assign(new Error('timeout'), { code: 'ECONNABORTED' }))
     }));
-    jest.mock('../services/threatIntel/threatIntelService', () => ({
-      getThreatIntelligence: jest.fn().mockResolvedValue(null)
+    vi.mock('../services/threatIntel/threatIntelService', () => ({
+      getThreatIntelligence: vi.fn().mockResolvedValue(null)
     }));
-    jest.mock('../services/ragClient', () => ({
-      retrieveContext: jest.fn().mockResolvedValue({ success: false, reason: 'timeout' })
+    vi.mock('../services/ragClient', () => ({
+      retrieveContext: vi.fn().mockResolvedValue({ success: false, reason: 'timeout' })
     }));
 
     // Clear require cache for the scanner to re-require mocked modules
@@ -53,11 +53,11 @@ describe('Test Suite: ML and Provider Timeout Handling', () => {
   });
 
   it('2. Email scan continues when one provider times out', async () => {
-    jest.mock('../services/mlService', () => ({
-      classifyText: jest.fn().mockResolvedValue({ status: 'available', label: 'phishing', probability: 0.9 })
+    vi.mock('../services/mlService', () => ({
+      classifyText: vi.fn().mockResolvedValue({ status: 'available', label: 'phishing', probability: 0.9 })
     }));
-    jest.mock('../services/threatIntel/threatIntelService', () => ({
-      getThreatIntelligence: jest.fn().mockRejectedValue(new Error('Provider timeout'))
+    vi.mock('../services/threatIntel/threatIntelService', () => ({
+      getThreatIntelligence: vi.fn().mockRejectedValue(new Error('Provider timeout'))
     }));
     
     delete require.cache[require.resolve('../services/scanner/index')];

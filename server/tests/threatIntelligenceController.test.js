@@ -2,7 +2,7 @@
 
 const request = require('supertest');
 const mongoose = require('mongoose');
-const { app } = require('../index');
+const { app } = require('../server');
 const User = require('../models/User');
 const Indicator = require('../models/Indicator');
 const EmailInvestigation = require('../models/EmailInvestigation');

@@ -2,22 +2,22 @@ const { enrichIndicatorGeolocation, isPublicIP, resolveHostnameToPublicIPs } = r
 const dns = require('dns').promises;
 const { activeProvider: geoProvider } = require('../services/intelligence/geolocationProvider');
 
-jest.mock('dns', () => ({
+vi.mock('dns', () => ({
   promises: {
-    resolve4: jest.fn(),
-    resolve6: jest.fn(),
+    resolve4: vi.fn(),
+    resolve6: vi.fn(),
   }
 }));
 
-jest.mock('../services/intelligence/geolocationProvider', () => ({
+vi.mock('../services/intelligence/geolocationProvider', () => ({
   activeProvider: {
-    geolocateIP: jest.fn()
+    geolocateIP: vi.fn()
   }
 }));
 
 describe('Indicator Geolocation Service', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('isPublicIP', () => {

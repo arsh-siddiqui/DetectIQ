@@ -4,11 +4,11 @@ const assert = require('assert');
 const axios = require('axios');
 const { checkRdapDomain } = require('../services/threatIntel/rdapService');
 
-jest.mock('axios');
+vi.mock('axios');
 
 describe('RDAP Service Tests', () => {
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('1. successful RDAP lookup', async () => {

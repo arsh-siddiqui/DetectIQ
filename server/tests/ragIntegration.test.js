@@ -10,8 +10,8 @@ const mlService = require('../services/mlService');
 // Mock req and res for the controller
 const mockRes = () => {
   const res = {};
-  res.status = jest.fn().mockReturnValue(res);
-  res.json = jest.fn().mockReturnValue(res);
+  res.status = vi.fn().mockReturnValue(res);
+  res.json = vi.fn().mockReturnValue(res);
   return res;
 };
 
@@ -33,13 +33,13 @@ describe('RAG Data Flow Integration Tests', () => {
   beforeEach(async () => {
     await User.deleteMany({});
     await EmailHistory.deleteMany({});
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     userA = await User.create({ email: 'usera@example.com', password: 'password123', name: 'User A' });
     userB = await User.create({ email: 'userb@example.com', password: 'password123', name: 'User B' });
 
     // Mock ML text classifier to always return legitimate so it doesn't interfere
-    jest.spyOn(mlService, 'classifyText').mockResolvedValue({
+    vi.spyOn(mlService, 'classifyText').mockResolvedValue({
       status: 'available',
       label: 'safe',
       probability: 0.1,
@@ -49,7 +49,7 @@ describe('RAG Data Flow Integration Tests', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('Case 1: User has zero historical emails -> no_history', async () => {
@@ -84,7 +84,7 @@ describe('RAG Data Flow Integration Tests', () => {
     }
 
     // Mock RAG to fail (e.g. Render OOM)
-    jest.spyOn(ragClient, 'retrieveContext').mockRejectedValue(new Error('connect ECONNREFUSED'));
+    vi.spyOn(ragClient, 'retrieveContext').mockRejectedValue(new Error('connect ECONNREFUSED'));
 
     const req = {
       user: userA,
@@ -116,7 +116,7 @@ describe('RAG Data Flow Integration Tests', () => {
     }
 
     // Mock RAG to return no results
-    jest.spyOn(ragClient, 'retrieveContext').mockResolvedValue({
+    vi.spyOn(ragClient, 'retrieveContext').mockResolvedValue({
       success: true,
       results: []
     });
@@ -147,12 +147,12 @@ describe('RAG Data Flow Integration Tests', () => {
       normalizedText: 'exams are coming up'
     });
 
-    jest.spyOn(ragClient, 'retrieveContext').mockResolvedValue({
+    vi.spyOn(ragClient, 'retrieveContext').mockResolvedValue({
       success: true,
       results: [{ emailId: historicalDoc._id.toString(), similarity: 0.95 }]
     });
 
-    jest.spyOn(ragClient, 'buildRagContext').mockResolvedValue({
+    vi.spyOn(ragClient, 'buildRagContext').mockResolvedValue({
       success: true,
       context: 'Context built successfully.'
     });

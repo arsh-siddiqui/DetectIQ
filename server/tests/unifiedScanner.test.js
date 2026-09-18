@@ -2,20 +2,20 @@ const request = require('supertest');
 const app = require('../server');
 const mongoose = require('mongoose');
 
-jest.mock('../services/mlService', () => ({
-  classifyText: jest.fn().mockResolvedValue({ status: 'unavailable', reason: 'exception' })
+vi.mock('../services/mlService', () => ({
+  classifyText: vi.fn().mockResolvedValue({ status: 'unavailable', reason: 'exception' })
 }));
 
-jest.mock('../services/threatIntel/threatIntelService', () => ({
-  getThreatIntelligence: jest.fn().mockResolvedValue(null)
+vi.mock('../services/threatIntel/threatIntelService', () => ({
+  getThreatIntelligence: vi.fn().mockResolvedValue(null)
 }));
 
-jest.mock('../services/groqService', () => ({
-  analyzeWithGroq: jest.fn().mockResolvedValue(null)
+vi.mock('../services/groqService', () => ({
+  analyzeWithGroq: vi.fn().mockResolvedValue(null)
 }));
 
-jest.mock('../services/ragClient', () => ({
-  retrieveContext: jest.fn().mockResolvedValue({ success: false })
+vi.mock('../services/ragClient', () => ({
+  retrieveContext: vi.fn().mockResolvedValue({ success: false })
 }));
 
 describe('Unified Multi-Channel Detection Scanner Routing', () => {

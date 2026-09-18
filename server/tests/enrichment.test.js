@@ -25,18 +25,18 @@ const { enrichIndicators, buildIndicators, cacheKey } = require('../services/int
 const { normalizeIndicator } = require('../services/intelligence/indicatorNormalizer');
 
 // Mock Mongoose model to avoid hangs
-jest.mock('../models/ThreatIntelCache', () => {
+vi.mock('../models/ThreatIntelCache', () => {
   return {
-    findOne: jest.fn().mockResolvedValue(null),
-    findOneAndUpdate: jest.fn().mockResolvedValue(null)
+    findOne: vi.fn().mockResolvedValue(null),
+    findOneAndUpdate: vi.fn().mockResolvedValue(null)
   };
 });
 
 // Mock DNS for E6
-jest.mock('dns', () => ({
+vi.mock('dns', () => ({
   promises: {
-    resolve4: jest.fn().mockResolvedValue([]),
-    resolve6: jest.fn().mockResolvedValue([])
+    resolve4: vi.fn().mockResolvedValue([]),
+    resolve6: vi.fn().mockResolvedValue([])
   }
 }));
 
