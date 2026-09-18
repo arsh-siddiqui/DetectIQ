@@ -34,6 +34,10 @@ const ProviderCoverageState = ({ provider, state }) => {
     Icon = ShieldCheck;
     color = 'text-accent-blue';
     label = 'Observed';
+  } else if (state === 'partial') {
+    Icon = ShieldAlert;
+    color = 'text-warning';
+    label = 'Partial';
   } else if (state === 'error') {
     Icon = AlertTriangle;
     color = 'text-danger';

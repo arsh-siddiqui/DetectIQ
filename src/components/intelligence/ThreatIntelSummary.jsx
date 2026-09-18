@@ -110,8 +110,8 @@ function VirusTotalCard({ vt }) {
         {/* Confidence only shown if there is a threat (as specified by user to avoid misleading '0% safe') */}
         {vt.totalEngines > 0 && vt.confidence > 0 && stateInfo.state !== 'clean' && (
           <div className="mb-4">
-             <div className="text-xs text-secondary uppercase tracking-wider mb-1">Confidence Score</div>
-             <div className="text-sm font-bold text-primary">{vt.confidence}%</div>
+             <div className="text-xs text-secondary uppercase tracking-wider mb-1">Assessment Strength</div>
+             <div className="text-sm font-bold text-primary">{vt.confidence >= 80 ? 'High' : vt.confidence >= 50 ? 'Moderate' : 'Limited'}</div>
           </div>
         )}
 
@@ -297,6 +297,9 @@ function OtxCard({ data }) {
                 </div>
               </div>
             )}
+            <div className="text-[10px] text-muted italic mt-2 leading-tight">
+              OTX observations are contextual intelligence and do not independently determine the DetectIQ verdict.
+            </div>
           </div>
         )}
 

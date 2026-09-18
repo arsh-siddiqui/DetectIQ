@@ -60,8 +60,10 @@ export default function ForensicReportView({ report }) {
               </div>
             </div>
             <div className="bg-secondary/50 p-4 rounded-lg border border-border">
-              <p className="text-muted text-xs uppercase tracking-wider mb-1">Confidence</p>
-              <p className="text-lg font-semibold font-mono text-primary">{verdict.confidence}%</p>
+              <p className="text-muted text-xs uppercase tracking-wider mb-1">Assessment Strength</p>
+              <p className="text-lg font-semibold font-mono text-primary">
+                {verdict.confidence >= 80 ? 'High' : verdict.confidence >= 50 ? 'Moderate' : 'Limited'}
+              </p>
             </div>
           </div>
         </section>

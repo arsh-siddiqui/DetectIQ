@@ -241,9 +241,11 @@ export default function ScanResult() {
             </div>
             <div className="flex-1 md:flex-none bg-card/80 backdrop-blur-md p-6 rounded-2xl border border-border shadow-sm flex flex-col items-center justify-center min-w-[160px]">
               <div className="text-xs font-bold text-muted uppercase tracking-wider mb-1">
-                {scan.ml?.status === 'available' ? 'AI Confidence' : 'Detection Confidence'}
+                Assessment Strength
               </div>
-              <div className="text-4xl font-heading font-black tracking-tight text-primary">{confidenceDisplay}<span className="text-xl text-muted font-bold">%</span></div>
+              <div className="text-3xl font-heading font-black tracking-tight text-primary">
+                {confidenceDisplay >= 80 ? 'High' : confidenceDisplay >= 50 ? 'Moderate' : 'Limited'}
+              </div>
             </div>
           </div>
         </div>

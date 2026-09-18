@@ -188,7 +188,7 @@ const InvestigationList = () => {
                                 <Cpu size={14} className="text-muted" />
                               )}
                               <span className="text-xs capitalize text-secondary">
-                                {inv.enrichmentStatus}
+                                {inv.enrichmentStatus === 'skipped' ? 'Enrichment Skipped' : inv.enrichmentStatus}
                               </span>
                             </div>
                           </td>

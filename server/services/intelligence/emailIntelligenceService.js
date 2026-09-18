@@ -191,9 +191,10 @@ function calculateProviderState(indicators, applicableTypes, providerKey, isGeo 
   }
 
   if (hasNotConfigured) return 'not_configured';
+  if (hasObserved && (hasError || hasTimeout)) return 'partial';
+  if (hasObserved) return 'observed';
   if (hasTimeout) return 'unavailable';
   if (hasError) return 'error';
-  if (hasObserved) return 'observed';
   
   return 'not_observed';
 }
