@@ -1,11 +1,10 @@
-const { generateReport, deriveLimitations } = require('../services/reports/forensicReportService');
-const mongoose = require('mongoose');
-const ForensicReport = require('../models/ForensicReport');
-
 vi.mock('../services/ai/copilotService', () => ({
   askCopilot: vi.fn()
 }));
 
+const { generateReport, deriveLimitations } = require('../services/reports/forensicReportService');
+const mongoose = require('mongoose');
+const ForensicReport = require('../models/ForensicReport');
 const { askCopilot } = require('../services/ai/copilotService');
 
 describe('forensicReportService', () => {
@@ -15,8 +14,6 @@ describe('forensicReportService', () => {
 
   it('should generate a deterministic report without AI if AI fails', async () => {
     askCopilot.mockRejectedValue(new Error('AI failed'));
-
-    // Mock ForensicReport.create to just return the payload
     ForensicReport.create = vi.fn().mockImplementation((data) => data);
 
     const user = { _id: new mongoose.Types.ObjectId() };
@@ -24,7 +21,7 @@ describe('forensicReportService', () => {
     const scan = { classification: 'phishing', riskLevel: 'high' };
 
     const report = await generateReport(user, investigation, scan, [], [], {});
-    
+
     expect(report.aiStatus).toBe('failed');
     expect(report.deterministicSummary.verdict.classification).toBe('phishing');
     expect(report.limitations).toContain('Full SMTP routing information was unavailable because this investigation was created from pasted content.');
@@ -37,7 +34,6 @@ describe('forensicReportService', () => {
       summary: 'AI Summary',
       keyFindings: []
     });
-
     ForensicReport.create = vi.fn().mockImplementation((data) => data);
 
     const user = { _id: new mongoose.Types.ObjectId() };
@@ -45,7 +41,7 @@ describe('forensicReportService', () => {
     const scan = {};
 
     const report = await generateReport(user, investigation, scan, [], [], {});
-    
+
     expect(report.aiStatus).toBe('available');
     expect(report.aiFindings.summary).toBe('AI Summary');
   });

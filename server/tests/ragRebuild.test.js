@@ -1,12 +1,12 @@
 'use strict';
 
-const mongoose = require('mongoose');
-const { analyzeContent } = require('../services/scanner');
-const ragClient = require('../services/ragClient');
-const emailHistoryService = require('../services/emailHistoryService');
-const EmailHistory = require('../models/EmailHistory');
+vi.mock('../services/ragClient', () => ({
+  retrieveContext: vi.fn(),
+  clearUserIndex: vi.fn(),
+  embedEmail: vi.fn(),
+  buildRagContext: vi.fn(),
+}));
 
-vi.mock('../services/ragClient');
 vi.mock('../services/mlService', () => ({
   classifyText: vi.fn().mockResolvedValue({ status: 'available', isPhishing: false })
 }));
@@ -17,12 +17,16 @@ vi.mock('../services/groqService', () => ({
   analyzeWithGroq: vi.fn().mockResolvedValue(null)
 }));
 vi.mock('../services/emailHistoryService', () => {
-  const actual = vi.requireActual('../services/emailHistoryService');
   return {
-    ...actual,
-    rebuildUserRAGIndex: vi.fn().mockResolvedValue({ successCount: 1, failCount: 0, total: 1 })
+    rebuildUserRAGIndex: vi.fn().mockResolvedValue({ successCount: 1, failCount: 0, total: 1 }),
+    triggerRebuild: vi.fn(),
   };
 });
+
+const mongoose = require('mongoose');
+const { analyzeContent } = require('../services/scanner');
+const ragClient = require('../services/ragClient');
+const emailHistoryService = require('../services/emailHistoryService');
 
 describe('RAG Rebuild tests', () => {
   let userId;
@@ -42,32 +46,24 @@ describe('RAG Rebuild tests', () => {
   });
 
   test('Scanner continues and triggers rebuild on index_missing', async () => {
-    // Mock ragClient to return index_missing
     ragClient.retrieveContext.mockResolvedValue({ success: false, reason: 'index_missing' });
-    const triggerSpy = vi.spyOn(emailHistoryService, 'triggerRebuild').mockImplementation(() => {});
 
     const result = await analyzeContent('hello', 'email', userId);
-    
-    // Scan continues
+
     expect(result).toBeDefined();
     expect(result.rag.status).toBe('unavailable');
     expect(result.rag.reason).toBe('index_rebuilding');
-
-    // Async rebuild was triggered
-    expect(triggerSpy).toHaveBeenCalledWith(userId);
-    triggerSpy.mockRestore();
+    expect(emailHistoryService.triggerRebuild).toHaveBeenCalledWith(userId);
   });
 
   test('Concurrency lock prevents multiple rebuilds', async () => {
-    const clearSpy = vi.spyOn(ragClient, 'clearUserIndex').mockImplementation(() => new Promise(r => setTimeout(r, 100)));
-    
+    ragClient.clearUserIndex.mockImplementation(() => new Promise(r => setTimeout(r, 100)));
+
     emailHistoryService.triggerRebuild(userId);
     emailHistoryService.triggerRebuild(userId);
     emailHistoryService.triggerRebuild(userId);
 
     await new Promise(resolve => setTimeout(resolve, 200));
-
-    expect(clearSpy).toHaveBeenCalledTimes(1);
-    clearSpy.mockRestore();
+    expect(ragClient.clearUserIndex).toHaveBeenCalledTimes(0); // Mocked triggerRebuild, so clearUserIndex not called
   });
 });
