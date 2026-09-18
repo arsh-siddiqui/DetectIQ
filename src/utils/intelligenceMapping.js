@@ -131,11 +131,25 @@ export function buildMapGeoJSON(geoPoints = []) {
   coordsMap.forEach((points) => {
     if (points.length === 1) {
       uniquePoints.push({ ...points[0], indicatorCount: 1, indicatorsList: [points[0]] });
+    } else {
+      const threatRanking = { malicious: 4, suspicious: 3, clean: 1, unknown: 0, unavailable: 0 };
+      let highestThreat = 'unknown';
+      let maxRank = -1;
+      
+      points.forEach(p => {
+        const rank = threatRanking[p.threat] !== undefined ? threatRanking[p.threat] : 0;
+        if (rank > maxRank) {
+          maxRank = rank;
+          highestThreat = p.threat;
+        }
+      });
+
       const uniqueIndicatorIds = [...new Set(points.map(p => p.id).filter(Boolean))];
       
       const mergedPoint = {
         ...points[0], 
         id: uniqueIndicatorIds.join(','),
+        threat: highestThreat,
         indicatorCount: uniqueIndicatorIds.length,
         indicatorIds: uniqueIndicatorIds
       };
