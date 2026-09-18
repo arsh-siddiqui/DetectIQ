@@ -14,7 +14,7 @@ const SOURCE_LABELS = {
   'received_header_ip': 'Received-header IP'
 };
 
-const ThreatMapPopup = ({ feature, filteredIndicators = [], forceClose }) => {
+const ThreatMapPopup = ({ feature, filteredIndicators = [], forceClose, onViewIndicators }) => {
   const props = feature.properties || {};
   const isGroup = props.indicatorCount > 1 || (props.indicatorIds && JSON.parse(props.indicatorIds || '[]').length > 1);
 
@@ -198,7 +198,9 @@ const ThreatMapPopup = ({ feature, filteredIndicators = [], forceClose }) => {
       {/* Group Actions */}
       <div className="mt-auto pt-2 border-t border-gray-100 flex-shrink-0">
         <button onClick={() => {
-          // If we want to implement a custom filter action or jump to a specific investigation
+          if (onViewIndicators) {
+            onViewIndicators(exactIndicators.map(i => i._id || i.id));
+          }
         }} className="w-full flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-gray-800 text-white py-1.5 px-3 rounded transition-colors text-[11px] font-bold shadow-sm">
           View Indicators
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>

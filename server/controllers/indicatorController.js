@@ -21,6 +21,18 @@ exports.getIndicators = asyncHandler(async (req, res) => {
     // Basic search on normalizedValue
     filter.normalizedValue = { $regex: req.query.search.toLowerCase(), $options: 'i' };
   }
+  
+  if (req.query.ids) {
+    const mongoose = require('mongoose');
+    const idsArray = req.query.ids.split(',');
+    const validIds = [...new Set(idsArray)].filter(id => mongoose.Types.ObjectId.isValid(id.trim()));
+    if (validIds.length > 0) {
+      filter._id = { $in: validIds };
+    } else {
+      // If none of the requested IDs are valid, return empty result to prevent exposing all indicators
+      return res.json({ total: 0, page: 1, pages: 1, indicators: [] });
+    }
+  }
 
   const total = await Indicator.countDocuments(filter);
 

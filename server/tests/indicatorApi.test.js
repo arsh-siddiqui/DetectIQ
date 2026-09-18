@@ -132,4 +132,43 @@ describe('Indicator API Tests', () => {
     expect(res.body.message).toBe('Indicator not found.');
   });
 
+  it('6. Exact ID Filtering (ids parameter)', async () => {
+    const res = await request(app)
+      .get(`/api/security/indicators?ids=${indA1._id},${indA2._id}`)
+      .set('Authorization', authA);
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(2);
+    expect(res.body.indicators.map(i => i.normalizedValue).sort()).toEqual(['1.2.3.4', 'evil.com'].sort());
+  });
+
+  it('7. Exact ID Filtering with duplicates and invalid IDs', async () => {
+    // Should filter out duplicate indA1._id and invalid strings
+    const res = await request(app)
+      .get(`/api/security/indicators?ids=${indA1._id},${indA1._id},invalid123,${indA2._id}`)
+      .set('Authorization', authA);
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(2);
+  });
+
+  it('8. Exact ID Filtering cross-user isolation', async () => {
+    // User A requests User A's indicator AND User B's indicator
+    const res = await request(app)
+      .get(`/api/security/indicators?ids=${indA1._id},${indB1._id}`)
+      .set('Authorization', authA);
+    
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(1); // Only User A's indicator should be returned
+    expect(res.body.indicators[0].normalizedValue).toBe('evil.com');
+  });
+
+  it('9. Exact ID Filtering returns empty if all IDs are invalid', async () => {
+    const res = await request(app)
+      .get(`/api/security/indicators?ids=invalid1,invalid2`)
+      .set('Authorization', authA);
+    
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(0);
+    expect(res.body.indicators.length).toBe(0);
+  });
+
 });

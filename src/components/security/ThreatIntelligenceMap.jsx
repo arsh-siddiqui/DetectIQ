@@ -3,6 +3,7 @@ import React, { useRef, useEffect, useState, useMemo } from "react";
 
 import { Shield, Info, Map as MapIcon, RotateCcw, AlertTriangle, Maximize2, Minimize2, ZoomIn, ZoomOut, Expand } from "lucide-react";
 import { createRoot } from "react-dom/client";
+import { useNavigate } from "react-router-dom";
 
 import { indicatorToGeoPoints, buildMapGeoJSON } from "../../utils/intelligenceMapping";
 import ThreatMapPopup from "./ThreatMapPopup";
@@ -20,6 +21,7 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
   const mapRef = useRef(null);
   const [mapError, setMapError] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const navigate = useNavigate();
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -240,8 +242,21 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
         activePopupRef.current = null;
       }
     };
+
+    const handleViewIndicators = (ids) => {
+      if (ids && ids.length > 0) {
+        navigate(`/security/indicators?ids=${encodeURIComponent(ids.join(','))}`);
+      }
+    };
     
-    root.render(<ThreatMapPopup feature={feature} filteredIndicators={markersRef.current} forceClose={forceClose} />);
+    root.render(
+      <ThreatMapPopup 
+        feature={feature} 
+        filteredIndicators={markersRef.current} 
+        forceClose={forceClose} 
+        onViewIndicators={handleViewIndicators} 
+      />
+    );
 
     // Remove old popups if they exist
     if (activePopupRef.current) {

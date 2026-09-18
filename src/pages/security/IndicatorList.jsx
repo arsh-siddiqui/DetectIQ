@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Search, MapPin, AlertTriangle, ShieldCheck, HelpCircle, ChevronLeft, ChevronRight, Activity } from 'lucide-react';
+import { Search, MapPin, AlertTriangle, ShieldCheck, HelpCircle, ChevronLeft, ChevronRight, Activity, XCircle } from 'lucide-react';
 import * as securityService from '../../services/securityService';
 import { normalizeVTState } from '../../utils/intelligenceMapping';
 
 const IndicatorList = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const idsParam = searchParams.get('ids');
+  
   const [indicators, setIndicators] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -15,9 +18,16 @@ const IndicatorList = () => {
   const [filters, setFilters] = useState({
     type: '',
     threat: '',
-    search: ''
+    search: '',
+    ids: idsParam || ''
   });
   const [searchInput, setSearchInput] = useState('');
+
+  // Sync ids parameter to filter state if URL changes
+  useEffect(() => {
+    setFilters(prev => ({ ...prev, ids: idsParam || '' }));
+    setPage(1);
+  }, [idsParam]);
 
   const fetchIndicators = async (currentPage = 1, currentFilters = filters) => {
     try {
@@ -169,6 +179,27 @@ const IndicatorList = () => {
               </select>
             </div>
           </div>
+
+          {filters.ids && (
+            <div className="bg-accent-violet/10 border border-accent-violet/20 rounded-lg p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MapPin className="text-accent-violet" size={16} />
+                <span className="text-sm font-medium text-primary">
+                  Showing {indicators.length} indicators from the selected map location
+                </span>
+              </div>
+              <button 
+                onClick={() => {
+                  searchParams.delete('ids');
+                  setSearchParams(searchParams);
+                }}
+                className="flex items-center gap-1.5 text-xs font-bold text-accent-violet hover:text-white hover:bg-accent-violet px-2.5 py-1.5 rounded transition-colors"
+              >
+                <XCircle size={14} />
+                Clear Location Filter
+              </button>
+            </div>
+          )}
 
           <div className="bg-card rounded-xl border border-border shadow-soft overflow-hidden">
             {error ? (
