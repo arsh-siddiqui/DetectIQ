@@ -66,9 +66,10 @@ export function indicatorToGeoPoints(indicator) {
 
     return {
       id: indicator.id || indicator._id || null,
-      ip: geo.sourceValue || indicator.value,
+      ip: geo.ip || geo.sourceValue || indicator.value,
       type: indicator.type || 'unknown',
-      sourceType: geo.sourceType || 'direct_ip',
+      locationSource: geo.locationSource || geo.sourceType || 'direct_ip',
+      provider: geo.provider || null,
       latitude,
       longitude,
       country: geo.country || null,
@@ -158,7 +159,7 @@ export function buildMapGeoJSON(geoPoints = []) {
         type: displayType,
         indicatorCount: points.length,
         typesCount: typesCount,
-        indicatorsList: points
+        indicatorIds: points.map(p => p.id).filter(Boolean)
       };
       
       uniquePoints.push(mergedPoint);
@@ -186,7 +187,7 @@ export function buildMapGeoJSON(geoPoints = []) {
         vtStatus: p.vtStatus || '',
         indicatorCount: p.indicatorCount || 1,
         typesCount: p.typesCount ? JSON.stringify(p.typesCount) : '{}',
-        indicatorsList: p.indicatorsList ? JSON.stringify(p.indicatorsList.slice(0, 10)) : '[]'
+        indicatorIds: p.indicatorIds ? JSON.stringify(p.indicatorIds) : JSON.stringify(p.id ? [p.id] : [])
       },
     })),
   };

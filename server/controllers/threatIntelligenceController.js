@@ -26,211 +26,36 @@ exports.getThreatIntelligenceOverview = asyncHandler(async (req, res) => {
     filter.createdAt = { $gte: pastDate };
   }
 
-  // 2. Threat Status Filter
-  if (threatStatus && threatStatus !== 'all') {
-    filter.threatStatus = threatStatus.toLowerCase();
-  } else {
-    filter.threatStatus = { $nin: ['unknown', 'unavailable', null, ""] };
-  }
-
-  // 3. Indicator Type Filter
-  if (indicatorType && indicatorType !== 'all') {
-    filter.type = indicatorType.toLowerCase();
-  }
-
-  // Create a separate filter for countries aggregation (so the dropdown still shows all available countries)
-  const filterForCountries = { ...filter };
-
-  // 4. Country Filter
-  if (country && country !== 'all') {
-    filter.$or = [
-      { 'geolocation.country': country },
-      { 'geolocations.country': country }
-    ];
-  }
-
-  // 5. Investigation Filter
+  // 2. Investigation Filter
   if (investigation && investigation !== 'all') {
     const invId = new mongoose.Types.ObjectId(investigation);
     filter.investigation = invId;
-    filterForCountries.investigation = invId;
   }
 
-  // Define aggregations
-
-  // A. Summary (Total, Malicious, Suspicious, Clean)
-  const summaryAgg = await Indicator.aggregate([
-    { $match: filter },
-    {
-      $group: {
-        _id: "$threatStatus",
-        count: { $sum: 1 }
-      }
-    }
-  ]);
-
-  let summary = {
-    total: 0,
-    malicious: 0,
-    suspicious: 0,
-    clean: 0,
-    unknown: 0
-  };
-
-  summaryAgg.forEach(item => {
-    summary.total += item.count;
-    if (item._id === 'malicious') summary.malicious = item.count;
-    else if (item._id === 'suspicious') summary.suspicious = item.count;
-    else if (item._id === 'clean') summary.clean = item.count;
-    else summary.unknown += item.count;
-  });
-
-  // B. Markers (For the Map)
-  // We match any indicator with geolocation or geolocations array
-  const mapFilter = { ...filter };
-  const geoOrClause = [
-    { 'geolocation': { $ne: null } },
-    { 'geolocations.0': { $exists: true } }
-  ];
-  
-  if (mapFilter.$or) {
-    const existingOr = mapFilter.$or;
-    delete mapFilter.$or;
-    mapFilter.$and = [
-      { $or: existingOr },
-      { $or: geoOrClause }
-    ];
-  } else {
-    mapFilter.$or = geoOrClause;
-  }
-  
-  const markers = await Indicator.find(mapFilter)
-    .select('value type threatStatus geolocation geolocations city country asn isp intelligence')
+  // Fetch Raw Indicators
+  // We fetch up to 2000 indicators so the frontend can compute all stats dynamically
+  const indicators = await Indicator.find(filter)
+    .select('_id value normalizedValue type threatStatus geolocation geolocations city country asn isp intelligence investigation createdAt')
     .sort({ createdAt: -1 })
     .limit(2000)
     .lean();
 
-  // C. Top Countries
-  // Group by country only if country is present. Use filterForCountries to ignore the current country filter
-  const countriesAgg = await Indicator.aggregate([
-    { $match: filterForCountries },
-    { $project: { country: { $ifNull: ["$geolocation.country", { $arrayElemAt: ["$geolocations.country", 0] }] } } },
-    { $match: { country: { $exists: true, $nin: [null, ""] } } },
-    { $group: { _id: "$country", count: { $sum: 1 } } },
-    { $sort: { count: -1 } },
-    { $limit: 10 }
-  ]);
+  const limitReached = indicators.length === 2000;
 
-  // D. Indicator Types
-  const typesAgg = await Indicator.aggregate([
-    { $match: filter },
-    { $group: { _id: "$type", count: { $sum: 1 } } }
-  ]);
+  // Fetch Recent Investigations for the same time window
+  let invFilter = { user: req.user._id };
+  if (timeRange && filter.createdAt) invFilter.createdAt = filter.createdAt;
+  if (investigation && investigation !== 'all') invFilter._id = new mongoose.Types.ObjectId(investigation);
 
-  // E. Recent Activity
-  // We want to combine recent indicators and recent investigations (if applicable)
-  // If we are filtering by indicatorType or country, it mostly applies to indicators.
-  // For simplicity, we fetch recent indicators matching the filter, and recent investigations if no indicator-specific filters are applied.
-  
-  let recentActivity = [];
-  
-  const recentIndicators = await Indicator.find(filter)
-    .select('_id value type threatStatus geolocation.country geolocations.country createdAt')
+  const recentInvestigations = await EmailInvestigation.find(invFilter)
+    .select('_id headers.subject headers.from sourceType status createdAt')
     .sort({ createdAt: -1 })
-    .limit(10)
+    .limit(50)
     .lean();
 
-  recentIndicators.forEach(ind => {
-    let country = ind.geolocation?.country;
-    if (!country && ind.geolocations && ind.geolocations.length > 0) {
-      country = ind.geolocations[0].country;
-    }
-    recentActivity.push({
-      id: ind._id,
-      entityType: 'indicator',
-      title: ind.normalizedValue || ind.value,
-      type: ind.type,
-      status: ind.threatStatus,
-      country: country || null,
-      timestamp: ind.createdAt
-    });
-  });
-
-  // Only fetch recent investigations if there's no country or indicatorType filter
-  if ((!indicatorType || indicatorType === 'all') && (!country || country === 'all')) {
-    let invFilter = { user: req.user._id };
-    if (timeRange && filter.createdAt) invFilter.createdAt = filter.createdAt;
-    if (investigation && investigation !== 'all') invFilter._id = new mongoose.Types.ObjectId(investigation);
-
-    const recentInvestigations = await EmailInvestigation.find(invFilter)
-      .select('_id headers.subject sourceType status createdAt')
-      .sort({ createdAt: -1 })
-      .limit(10)
-      .lean();
-
-    recentInvestigations.forEach(inv => {
-      let title = inv.headers?.subject;
-      if (!title) {
-         // Try from sender if no subject
-         const sender = inv.headers?.from;
-         if (sender) {
-             title = `From: ${sender}`;
-         } else {
-             title = 'Untitled investigation';
-         }
-      }
-
-      recentActivity.push({
-        id: inv._id,
-        entityType: 'investigation',
-        title: title,
-        type: 'Investigation',
-        status: inv.status,
-        country: null,
-        timestamp: inv.createdAt
-      });
-    });
-  }
-
-  // Sort combined activity by timestamp descending
-  recentActivity.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  recentActivity = recentActivity.slice(0, 20);
-
-  // F. Trends (Group by day for the line chart)
-  // Only if timeRange is at least 7 days, else group by hour.
-  // For simplicity, group by Day (YYYY-MM-DD)
-  const trendsAgg = await Indicator.aggregate([
-    { $match: filter },
-    {
-      $group: {
-        _id: {
-          $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
-        },
-        malicious: { $sum: { $cond: [{ $eq: ["$threatStatus", "malicious"] }, 1, 0] } },
-        suspicious: { $sum: { $cond: [{ $eq: ["$threatStatus", "suspicious"] }, 1, 0] } },
-        clean: { $sum: { $cond: [{ $eq: ["$threatStatus", "clean"] }, 1, 0] } },
-        unknown: { $sum: { $cond: [{ $in: ["$threatStatus", [null, "", "unknown"]] }, 1, 0] } }
-      }
-    },
-    { $sort: { _id: 1 } },
-    { $limit: 30 }
-  ]);
-
-  // Transform trends to match expected chart format
-  const trends = trendsAgg.map(t => ({
-    date: t._id,
-    malicious: t.malicious,
-    suspicious: t.suspicious,
-    clean: t.clean,
-    unknown: t.unknown
-  }));
-
   res.json({
-    summary,
-    markers,
-    countries: countriesAgg.map(c => ({ name: c._id, count: c.count })),
-    indicatorTypes: typesAgg.map(t => ({ name: t._id, count: t.count })),
-    recentActivity,
-    trends
+    indicators,
+    recentInvestigations,
+    limitReached
   });
 });

@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAppData } from "../../context/AppDataContext";
 import { useSearchParams } from "react-router-dom";
 import apiClient from "../../services/apiClient";
-import { Globe, RefreshCw, FilterX, ArrowLeft } from "lucide-react";
+import { Globe, RefreshCw, FilterX, ArrowLeft, AlertTriangle } from "lucide-react";
 
 import ThreatIntelligenceMap from "../../components/security/ThreatIntelligenceMap";
 import ThreatSummaryCards from "../../components/security/ThreatSummaryCards";
@@ -25,17 +25,148 @@ export default function ThreatIntelligence() {
   
   // Data State
   const [data, setData] = useState({
-    summary: { total: 0, malicious: 0, suspicious: 0, clean: 0, unknown: 0 },
-    markers: [],
-    countries: [],
-    recentActivity: [],
-    trends: [],
-    indicatorTypes: []
+    indicators: [],
+    recentInvestigations: [],
+    limitReached: false
   });
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
+
+  // Compute available countries across the entire unfiltered dataset (so dropdown doesn't lose options)
+  const availableCountries = useMemo(() => {
+    const countrySet = new Set();
+    data.indicators.forEach(ind => {
+      let c = ind.geolocation?.country;
+      if (!c && ind.geolocations?.length) c = ind.geolocations[0].country;
+      if (c) countrySet.add(c);
+    });
+    return Array.from(countrySet).sort();
+  }, [data.indicators]);
+
+  // SINGLE FILTERED DATASET: Apply status, type, and country filters on the client
+  const filteredIndicators = useMemo(() => {
+    return data.indicators.filter(ind => {
+      // Threat Status
+      if (filters.threatStatus !== 'all') {
+        if (ind.threatStatus !== filters.threatStatus) return false;
+      } else {
+        if (!ind.threatStatus || ind.threatStatus === 'unknown' || ind.threatStatus === 'unavailable') return false;
+      }
+
+      // Indicator Type
+      if (filters.indicatorType !== 'all' && ind.type !== filters.indicatorType) {
+        return false;
+      }
+
+      // Country
+      if (filters.country !== 'all') {
+        const c1 = ind.geolocation?.country;
+        const c2 = ind.geolocations?.[0]?.country;
+        if (c1 !== filters.country && c2 !== filters.country) return false;
+      }
+
+      return true;
+    });
+  }, [data.indicators, filters]);
+
+  // Derived Summary KPIs
+  const summary = useMemo(() => {
+    let s = { total: filteredIndicators.length, malicious: 0, suspicious: 0, clean: 0, unknown: 0 };
+    filteredIndicators.forEach(ind => {
+      if (ind.threatStatus === 'malicious') s.malicious++;
+      else if (ind.threatStatus === 'suspicious') s.suspicious++;
+      else if (ind.threatStatus === 'clean') s.clean++;
+      else s.unknown++;
+    });
+    return s;
+  }, [filteredIndicators]);
+
+  // Derived Top Countries
+  const topCountries = useMemo(() => {
+    const counts = {};
+    filteredIndicators.forEach(ind => {
+      let c = ind.geolocation?.country;
+      if (!c && ind.geolocations?.length) c = ind.geolocations[0].country;
+      if (c) {
+        counts[c] = (counts[c] || 0) + 1;
+      }
+    });
+    return Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+  }, [filteredIndicators]);
+
+  // Derived Indicator Types
+  const indicatorTypes = useMemo(() => {
+    const counts = {};
+    filteredIndicators.forEach(ind => {
+      const type = ind.type;
+      counts[type] = (counts[type] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, count]) => ({ name, count }));
+  }, [filteredIndicators]);
+
+  // Derived Recent Activity (Indicators + Investigations)
+  const recentActivity = useMemo(() => {
+    let activity = [];
+    
+    // Top 10 indicators by date from the filtered set
+    const recentInds = [...filteredIndicators].slice(0, 10);
+    recentInds.forEach(ind => {
+      let c = ind.geolocation?.country;
+      if (!c && ind.geolocations?.length) c = ind.geolocations[0].country;
+      activity.push({
+        id: ind._id,
+        entityType: 'indicator',
+        title: ind.normalizedValue || ind.value,
+        type: ind.type,
+        status: ind.threatStatus,
+        country: c || null,
+        timestamp: ind.createdAt
+      });
+    });
+
+    // Investigations (only if no specific country/type filters are actively hiding them)
+    if (filters.indicatorType === 'all' && filters.country === 'all') {
+      data.recentInvestigations.forEach(inv => {
+        let title = inv.headers?.subject || (inv.headers?.from ? `From: ${inv.headers.from}` : 'Untitled investigation');
+        activity.push({
+          id: inv._id,
+          entityType: 'investigation',
+          title: title,
+          type: 'Investigation',
+          status: inv.status,
+          country: null,
+          timestamp: inv.createdAt
+        });
+      });
+    }
+
+    return activity.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 20);
+  }, [filteredIndicators, data.recentInvestigations, filters]);
+
+  // Derived Trends
+  const trends = useMemo(() => {
+    const dates = {};
+    filteredIndicators.forEach(ind => {
+      if (!ind.createdAt) return;
+      const dateStr = new Date(ind.createdAt).toISOString().split('T')[0];
+      if (!dates[dateStr]) {
+        dates[dateStr] = { malicious: 0, suspicious: 0, clean: 0, unknown: 0 };
+      }
+      if (ind.threatStatus === 'malicious') dates[dateStr].malicious++;
+      else if (ind.threatStatus === 'suspicious') dates[dateStr].suspicious++;
+      else if (ind.threatStatus === 'clean') dates[dateStr].clean++;
+      else dates[dateStr].unknown++;
+    });
+    return Object.entries(dates)
+      .map(([date, counts]) => ({ date, ...counts }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-30);
+  }, [filteredIndicators]);
 
   // Fetch Data
   const fetchOverview = useCallback(async () => {
@@ -44,9 +175,6 @@ export default function ThreatIntelligence() {
     try {
       const params = new URLSearchParams();
       if (filters.timeRange !== "all") params.append("timeRange", filters.timeRange);
-      if (filters.threatStatus !== "all") params.append("threatStatus", filters.threatStatus);
-      if (filters.indicatorType !== "all") params.append("indicatorType", filters.indicatorType);
-      if (filters.country !== "all") params.append("country", filters.country);
       if (filters.investigation !== "all") params.append("investigation", filters.investigation);
 
       const res = await apiClient.get(`/security/threat-intelligence/overview?${params.toString()}`);
@@ -89,9 +217,7 @@ export default function ThreatIntelligence() {
     }
   };
 
-  // Derive unique countries from the fetched data's countries list for the dropdown
-  // Realistically we'd want a separate endpoint for ALL user countries, but this is a good approximation
-  const availableCountries = data.countries?.map(c => c.name).sort() || [];
+
 
   return (
     <div className="w-full max-w-[1600px] mx-auto pb-10">
@@ -146,6 +272,20 @@ export default function ThreatIntelligence() {
         <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
           <span className="text-sm font-medium">{error}</span>
           <button onClick={fetchOverview} className="text-sm font-bold underline hover:text-red-400">Retry</button>
+        </div>
+      )}
+
+      {data.limitReached && (
+        <div className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-4 py-3 rounded-lg mb-6 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <p className="font-bold">Dataset Limit Reached</p>
+            <p className="opacity-90">
+              The API returned the maximum of 2000 recent indicators for this time range. 
+              Filtering and analytics below are strictly applied to this dataset to prevent silent truncation. 
+              To view all indicators, use a shorter time window or the Indicators tab.
+            </p>
+          </div>
         </div>
       )}
 
@@ -219,18 +359,18 @@ export default function ThreatIntelligence() {
         {/* Left Panel: KPI Cards */}
         <div className="lg:col-span-3 h-auto lg:h-full overflow-hidden">
           <ThreatSummaryCards 
-            summary={data.summary} 
-            countries={data.countries} 
+            summary={summary} 
+            countries={topCountries} 
             isLoading={isLoading} 
           />
         </div>
 
         <div className="lg:col-span-6 h-[400px] lg:h-full relative flex flex-col overflow-hidden rounded-2xl">
           <ThreatIntelligenceMap 
-            markers={data.markers} 
+            markers={filteredIndicators} 
             isLoading={isLoading} 
             selectedIndicatorId={selectedIndicatorId}
-            totalIndicators={data.summary.total}
+            totalIndicators={summary.total}
             selectedCountry={filters.country}
           />
         </div>
@@ -238,7 +378,7 @@ export default function ThreatIntelligence() {
         {/* Right Panel: Recent Activity */}
         <div className="lg:col-span-3 h-[400px] lg:h-full bg-card border border-border rounded-xl overflow-hidden flex flex-col">
           <RecentThreatActivity 
-            activities={data.recentActivity} 
+            activities={recentActivity} 
             isLoading={isLoading} 
           />
         </div>
@@ -246,9 +386,9 @@ export default function ThreatIntelligence() {
 
       {/* Bottom Analytics */}
       <ThreatAnalytics 
-        trends={data.trends} 
-        indicatorTypes={data.indicatorTypes} 
-        summary={data.summary}
+        trends={trends} 
+        indicatorTypes={indicatorTypes} 
+        summary={summary}
         isLoading={isLoading} 
       />
       

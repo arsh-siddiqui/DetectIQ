@@ -54,16 +54,23 @@ const indicatorSchema = new mongoose.Schema(
       default: null,
     },
     geolocations: [{
-      sourceType: { type: String, enum: ['direct_ip', 'resolved_ip', 'received_header_ip'] },
-      sourceValue: String,
+      ip: String,
+      provider: String,
+      locationSource: { type: String, enum: ['direct_ip', 'resolved_ip', 'received_header_ip'] },
       country: String,
       region: String,
       city: String,
       latitude: Number,
       longitude: Number,
+      organization: String,
       asn: String,
       isp: String,
-      checkedAt: Date
+      checkedAt: Date,
+      status: String,
+      fromCache: Boolean,
+      // Backward compatibility fields
+      sourceType: String,
+      sourceValue: String
     }],
     tags: [String],
   },

@@ -80,6 +80,20 @@ describe('Suite', () => {
     assert.strictEqual(result.longitude, null, 'Must not invent coordinates');
   });
 
+  it('GEO4b — Invalid coordinates return null', () => {
+    const raw1 = { status: 'success', lat: 100, lon: 0 }; // lat > 90
+    const raw2 = { status: 'success', lat: 0, lon: 200 }; // lon > 180
+    const raw3 = { status: 'success', lat: -100, lon: 0 }; // lat < -90
+    
+    const result1 = normalizeIpApiResponse('1.2.3.4', raw1);
+    assert.strictEqual(result1.latitude, null);
+    assert.strictEqual(result1.longitude, null);
+
+    const result2 = normalizeIpApiResponse('1.2.3.4', raw2);
+    assert.strictEqual(result2.latitude, null);
+    assert.strictEqual(result2.longitude, null);
+  });
+
   it('GEO5 — ASN extracted correctly from "as" field', () => {
     const raw = { status: 'success', as: 'AS15169 Google LLC', lat: 1, lon: 2 };
     const result = normalizeIpApiResponse('8.8.8.8', raw);

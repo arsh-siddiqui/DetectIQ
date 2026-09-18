@@ -1,9 +1,11 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
 
 
-import { Shield, Info, Map as MapIcon, RotateCcw, AlertTriangle, Maximize2, Minimize2 } from "lucide-react";
+import { Shield, Info, Map as MapIcon, RotateCcw, AlertTriangle, Maximize2, Minimize2, ZoomIn, ZoomOut, Expand } from "lucide-react";
+import { createRoot } from "react-dom/client";
 
 import { indicatorToGeoPoints, buildMapGeoJSON } from "../../utils/intelligenceMapping";
+import ThreatMapPopup from "./ThreatMapPopup";
 
 const THREAT_COLORS = {
   malicious: "#ef4444",
@@ -77,7 +79,6 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
         resizeObserver.observe(mapContainer.current);
       }
 
-      map.addControl(new window.maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
       map.addControl(new window.maplibregl.AttributionControl({ customAttribution: 'OpenStreetMap contributors' }), 'bottom-left');
 
       map.on('error', (e) => {
@@ -201,128 +202,28 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
     while (Math.abs(mapRef.current.getCenter().lng - coordinates[0]) > 180) {
       coordinates[0] += mapRef.current.getCenter().lng > coordinates[0] ? 360 : -360;
     }
-    
-    const locationText = [props.city, props.country].filter(Boolean).join(" · ");
-    const threatColor = THREAT_COLORS[props.threat] || THREAT_COLORS.unknown;
-
-    const sourceLabelMap = {
-      'direct_ip': 'Direct IP',
-      'resolved_ip': 'DNS-resolved IP',
-      'received_header_ip': 'Received-header IP'
-    };
-    const sourceText = sourceLabelMap[props.sourceType] || props.sourceType || 'Direct IP';
-    const indicatorCount = props.indicatorCount || 1;
-    let typesCountHtml = '';
-    
-    if (indicatorCount > 1 && props.typesCount) {
-      try {
-        const parsedCounts = JSON.parse(props.typesCount);
-        typesCountHtml = Object.entries(parsedCounts)
-          .map(([type, count]) => `<span class="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[9px] uppercase">${count} ${type}</span>`)
-          .join(' ');
-      } catch (e) {}
-    }
-
-    const popupHtml = `
-      <div class="p-1 min-w-[240px] text-gray-900 flex flex-col h-full">
-        <div class="flex flex-col gap-1 mb-3 pb-3 border-b border-gray-200">
-          <div class="flex items-center gap-2">
-            <div class="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm" style="background-color: ${threatColor}"></div>
-            <span class="font-mono text-[15px] font-bold truncate max-w-[200px]" title="${props.ip}">${indicatorCount > 1 ? `${indicatorCount} Indicators` : props.ip}</span>
-          </div>
-          <div class="text-[10px] uppercase font-bold text-gray-500 tracking-wider flex items-center justify-between">
-            <div class="flex items-center gap-1">
-              <span>${props.type}</span>
-              ${typesCountHtml ? `<div class="flex gap-1 ml-1">${typesCountHtml}</div>` : ''}
-            </div>
-            <span style="color: ${threatColor}" class="capitalize">${props.threat}</span>
-          </div>
-        </div>
-        
-        <div class="space-y-2 text-[11px] text-gray-600 mb-4">
-          ${locationText ? `<div class="font-medium text-gray-800 flex items-center gap-1.5"><span class="text-gray-400">📍</span> ${locationText}</div>` : ''}
-          ${indicatorCount === 1 ? `<div class="text-gray-500 italic">Source: ${sourceText}</div>` : `<div class="text-gray-500 italic">Grouped location</div>`}
-          ${props.asn || props.isp ? `
-            <div class="flex flex-col gap-0.5 bg-gray-50 p-2 rounded border border-gray-100">
-              ${props.isp ? `<div class="truncate text-gray-800 font-medium" title="${props.isp}">${props.isp}</div>` : ''}
-              ${props.asn ? `<div class="text-gray-500">${props.asn}</div>` : ''}
-            </div>
-          ` : ''}
-          ${props.abuseIpDbStatus === 'available' && props.abuseReports > 0 ? `
-            <div class="mt-2 flex flex-col gap-0.5 bg-red-50 p-2 rounded border border-red-100">
-              <div class="text-[10px] font-bold text-red-800 uppercase tracking-wider">AbuseIPDB</div>
-              <div class="flex justify-between items-center text-red-700 font-medium">
-                <span>Confidence: ${props.abuseConfidenceScore}%</span>
-                <span>Reports: ${props.abuseReports}</span>
-              </div>
-            </div>
-          ` : ''}
-          ${props.urlhausStatus === 'available' ? `
-            <div class="mt-2 flex flex-col gap-0.5 ${props.urlhausThreat === 'malicious' ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'} p-2 rounded border">
-              <div class="text-[10px] font-bold ${props.urlhausThreat === 'malicious' ? 'text-red-800' : 'text-gray-600'} uppercase tracking-wider">URLhaus</div>
-              <div class="flex justify-between items-center ${props.urlhausThreat === 'malicious' ? 'text-red-700' : 'text-gray-600'} font-medium">
-                <span>${props.urlhausThreat === 'malicious' ? 'Malicious URL' : 'Available'}</span>
-              </div>
-            </div>
-          ` : ''}
-          ${props.otxStatus === 'available' && props.otxPulseCount > 0 ? `
-            <div class="mt-2 flex flex-col gap-0.5 bg-orange-50 border-orange-100 p-2 rounded border">
-              <div class="text-[10px] font-bold text-orange-800 uppercase tracking-wider">AlienVault OTX</div>
-              <div class="flex justify-between items-center text-orange-700 font-medium">
-                <span>Observed in ${props.otxPulseCount} pulse${props.otxPulseCount > 1 ? 's' : ''}</span>
-              </div>
-            </div>
-          ` : ''}
-        </div>
-        
-        <div class="mt-auto pt-2 border-t border-gray-200 flex items-center gap-2">
-          ${indicatorCount === 1 ? `
-            <button id="copy-indicator-btn-${props.id}" class="flex-1 flex items-center justify-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 py-1.5 px-2 rounded transition-colors text-xs font-bold">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-              Copy
-            </button>
-            <a href="/security/indicators/${props.id}" class="flex-[2] flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white py-1.5 px-2 rounded transition-colors text-xs font-bold">
-              View Indicator 
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-            </a>
-          ` : `
-            <div class="flex-1 text-center text-xs text-gray-500 italic">
-              See left panel for indicators
-            </div>
-          `}
-        </div>
-      </div>
-    `;
+    const popupNode = document.createElement('div');
+    const root = createRoot(popupNode);
+    root.render(<ThreatMapPopup feature={feature} allIndicators={markers} />);
 
     // Remove old popups if they exist
     const existingPopups = document.querySelectorAll('.maplibregl-popup');
     existingPopups.forEach(p => p.remove());
 
-    new window.maplibregl.Popup({ className: 'custom-popup' })
+    const popup = new window.maplibregl.Popup({ 
+      className: 'custom-popup-react',
+      maxWidth: '360px'
+    })
       .setLngLat(coordinates)
-      .setHTML(popupHtml)
+      .setDOMContent(popupNode)
       .addTo(mapRef.current);
 
-    // Bind event listeners
-    setTimeout(() => {
-      const copyBtn = document.getElementById(`copy-indicator-btn-${props.id}`);
-      if (copyBtn) {
-        copyBtn.addEventListener('click', () => {
-          navigator.clipboard.writeText(props.ip);
-          const originalHtml = copyBtn.innerHTML;
-          copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><polyline points="20 6 9 17 4 12"></polyline></svg> <span class="text-green-700">Copied</span>`;
-          copyBtn.classList.remove('bg-gray-100', 'text-gray-700');
-          copyBtn.classList.add('bg-green-100', 'border-green-200');
-          setTimeout(() => {
-            if (document.body.contains(copyBtn)) {
-              copyBtn.innerHTML = originalHtml;
-              copyBtn.classList.add('bg-gray-100', 'text-gray-700');
-              copyBtn.classList.remove('bg-green-100', 'border-green-200');
-            }
-          }, 2000);
-        });
-      }
-    }, 0);
+    // Unmount React component when popup closes to prevent memory leaks
+    popup.on('close', () => {
+      setTimeout(() => {
+        root.unmount();
+      }, 0);
+    });
   };
 
   const fitLocations = (initial = false) => {
@@ -368,6 +269,13 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
     }
   };
 
+  const handleZoom = (inOut) => {
+    if (mapRef.current) {
+      const currentZoom = mapRef.current.getZoom();
+      mapRef.current.easeTo({ zoom: inOut === 'in' ? currentZoom + 1 : currentZoom - 1 });
+    }
+  };
+
   if (mapError) {
     return (
       <div className="w-full h-full min-h-[520px] rounded-2xl overflow-hidden border border-border bg-[#0d1117] flex flex-col items-center justify-center relative shadow-inner">
@@ -397,27 +305,41 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
 
       <div ref={mapContainer} className="absolute inset-0 z-0" />
       
-      <div className="absolute top-16 right-4 z-10 flex flex-col gap-2">
+      <div className="absolute top-16 right-4 z-10 flex flex-col gap-1.5">
         <button 
-          onClick={toggleFullscreen}
-          className="bg-[#1e293b]/90 border border-slate-700 p-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-colors shadow-lg backdrop-blur"
-          title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+          onClick={() => handleZoom('in')}
+          className="bg-[#1e293b]/90 border border-slate-700 p-2 rounded text-slate-300 hover:text-white hover:bg-slate-700 transition-colors shadow-lg backdrop-blur"
+          title="Zoom In"
         >
-          {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          <ZoomIn size={16} />
+        </button>
+        <button 
+          onClick={() => handleZoom('out')}
+          className="bg-[#1e293b]/90 border border-slate-700 p-2 rounded text-slate-300 hover:text-white hover:bg-slate-700 transition-colors shadow-lg backdrop-blur"
+          title="Zoom Out"
+        >
+          <ZoomOut size={16} />
         </button>
         <button 
           onClick={() => fitLocations()}
-          className="bg-[#1e293b]/90 border border-slate-700 p-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-colors shadow-lg backdrop-blur"
+          className="bg-[#1e293b]/90 border border-slate-700 p-2 rounded text-slate-300 hover:text-white hover:bg-slate-700 transition-colors shadow-lg backdrop-blur"
           title="Fit Locations"
         >
-          <MapIcon size={16} />
+          <Expand size={16} />
         </button>
         <button 
           onClick={resetView}
-          className="bg-[#1e293b]/90 border border-slate-700 p-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-colors shadow-lg backdrop-blur"
+          className="bg-[#1e293b]/90 border border-slate-700 p-2 rounded text-slate-300 hover:text-white hover:bg-slate-700 transition-colors shadow-lg backdrop-blur"
           title="Reset View"
         >
           <RotateCcw size={16} />
+        </button>
+        <button 
+          onClick={toggleFullscreen}
+          className="bg-[#1e293b]/90 border border-slate-700 p-2 rounded text-slate-300 hover:text-white hover:bg-slate-700 transition-colors shadow-lg backdrop-blur mt-2"
+          title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+        >
+          {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
         </button>
       </div>
 
@@ -425,9 +347,7 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
         <div className="bg-[#0f172a]/90 backdrop-blur-md border border-slate-800 rounded-lg px-3 py-2 shadow-xl flex items-center gap-3">
           <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Threat Status:</div>
           <div className="flex flex-row items-center gap-3 flex-wrap">
-            {Object.entries(THREAT_COLORS)
-              .filter(([threat]) => !['unavailable', 'unknown'].includes(threat))
-              .map(([threat, color]) => (
+            {Object.entries(THREAT_COLORS).map(([threat, color]) => (
               <div key={threat} className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
                 <span className="text-xs text-slate-300 capitalize font-medium">{threat}</span>

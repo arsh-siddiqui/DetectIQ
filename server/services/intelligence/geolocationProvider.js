@@ -49,6 +49,21 @@ function normalizeIpApiResponse(ip, data) {
   const asnMatch = data.as ? data.as.match(/^(AS\d+)/) : null;
   const asn = asnMatch ? asnMatch[1] : null;
 
+  // Validate coordinates
+  let lat = typeof data.lat === 'number' ? data.lat : null;
+  let lon = typeof data.lon === 'number' ? data.lon : null;
+
+  if (lat !== null && lon !== null) {
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      lat = null;
+      lon = null;
+    }
+  } else {
+    // If one is missing, invalidate both to prevent partial rendering
+    lat = null;
+    lon = null;
+  }
+
   return {
     ip,
     country: data.country || null,
@@ -57,8 +72,8 @@ function normalizeIpApiResponse(ip, data) {
     regionCode: data.region || null,
     city: data.city || null,
     zip: data.zip || null,
-    latitude: typeof data.lat === 'number' ? data.lat : null,
-    longitude: typeof data.lon === 'number' ? data.lon : null,
+    latitude: lat,
+    longitude: lon,
     timezone: data.timezone || null,
     asn,
     organization: data.org || null,

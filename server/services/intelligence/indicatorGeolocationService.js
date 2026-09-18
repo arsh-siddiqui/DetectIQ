@@ -55,16 +55,24 @@ async function geolocateIPs(ips, sourceType) {
       const geo = await geoProvider.geolocateIP(ip);
       if (geo && geo.status === 'success') {
         results.push({
-          sourceType,
-          sourceValue: ip,
+          ip: ip,
+          provider: geo.source,
+          locationSource: sourceType,
           country: geo.country || null,
           region: geo.region || null,
           city: geo.city || null,
           latitude: geo.latitude,
           longitude: geo.longitude,
+          organization: geo.organization || null,
           asn: geo.asn || null,
           isp: geo.isp || null,
-          checkedAt: new Date()
+          checkedAt: geo.checkedAt || new Date(),
+          status: 'success',
+          fromCache: false,
+          
+          // Backward compatibility
+          sourceType: sourceType,
+          sourceValue: ip,
         });
       }
     } catch (err) {
