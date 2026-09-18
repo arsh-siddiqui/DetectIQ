@@ -131,35 +131,13 @@ export function buildMapGeoJSON(geoPoints = []) {
   coordsMap.forEach((points) => {
     if (points.length === 1) {
       uniquePoints.push({ ...points[0], indicatorCount: 1, indicatorsList: [points[0]] });
-    } else {
-      const threatRanking = { malicious: 4, suspicious: 3, clean: 1, unknown: 0, unavailable: 0 };
-      
-      let highestThreat = 'unknown';
-      let maxRank = -1;
-      
-      const typesSet = new Set();
-      const typesCount = {};
-      
-      points.forEach(p => {
-        const rank = threatRanking[p.threat] !== undefined ? threatRanking[p.threat] : 0;
-        if (rank > maxRank) {
-          maxRank = rank;
-          highestThreat = p.threat;
-        }
-        typesSet.add(p.type);
-        typesCount[p.type] = (typesCount[p.type] || 0) + 1;
-      });
-      
-      const displayType = typesSet.size === 1 ? Array.from(typesSet)[0] : 'Mixed';
+      const uniqueIndicatorIds = [...new Set(points.map(p => p.id).filter(Boolean))];
       
       const mergedPoint = {
         ...points[0], 
-        id: points.map(p => p.id).join(','),
-        threat: highestThreat,
-        type: displayType,
-        indicatorCount: points.length,
-        typesCount: typesCount,
-        indicatorIds: points.map(p => p.id).filter(Boolean)
+        id: uniqueIndicatorIds.join(','),
+        indicatorCount: uniqueIndicatorIds.length,
+        indicatorIds: uniqueIndicatorIds
       };
       
       uniquePoints.push(mergedPoint);
@@ -186,7 +164,6 @@ export function buildMapGeoJSON(geoPoints = []) {
         threat: p.threat,
         vtStatus: p.vtStatus || '',
         indicatorCount: p.indicatorCount || 1,
-        typesCount: p.typesCount ? JSON.stringify(p.typesCount) : '{}',
         indicatorIds: p.indicatorIds ? JSON.stringify(p.indicatorIds) : JSON.stringify(p.id ? [p.id] : [])
       },
     })),

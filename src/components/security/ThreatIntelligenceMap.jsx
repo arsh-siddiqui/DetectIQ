@@ -171,9 +171,10 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
               ids = JSON.parse(indicatorIds || '[]');
             } catch (e) {}
             
-            // Check if ANY of the indicator IDs in the active popup still exist in the CURRENT filtered markers
-            const stillValid = ids.some(id => markersRef.current.some(m => (m.id || m._id) === id));
-            if (!stillValid) {
+            // Check if ALL of the indicator IDs in the active popup still exist in the CURRENT filtered markers
+            // If even one is missing (meaning the filter removed it), we close the popup to prevent stale data display.
+            const allValid = ids.every(id => markersRef.current.some(m => (m.id || m._id) === id));
+            if (!allValid) {
               activePopupRef.current.remove();
               activePopupRef.current = null;
             }

@@ -21,7 +21,9 @@ const ThreatMapPopup = ({ feature, allIndicators = [], forceClose }) => {
   let exactIndicators = [];
   try {
     const ids = JSON.parse(props.indicatorIds || '[]');
-    exactIndicators = ids.map(id => allIndicators.find(ind => (ind.id || ind._id) === id)).filter(Boolean);
+    const uniqueIndicatorIds = [...new Set(ids)];
+    const byId = new Map(allIndicators.map(indicator => [String(indicator._id || indicator.id), indicator]));
+    exactIndicators = uniqueIndicatorIds.map(id => byId.get(String(id))).filter(Boolean);
   } catch (e) {
     console.error('Failed to parse indicatorIds', e);
   }
