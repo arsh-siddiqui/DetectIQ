@@ -221,7 +221,7 @@ export default function InvestigationCopilot({ investigationId, investigation, o
         </div>
         <div>
           <h3 className="font-semibold text-primary">Investigation Copilot</h3>
-          <p className="text-xs text-muted">Grounded by DetectIQ Evidence</p>
+          <p className="text-xs text-muted font-medium uppercase tracking-wider mt-0.5">AI-Assisted Analysis · Grounded by DetectIQ Evidence</p>
         </div>
       </div>
 

@@ -41,10 +41,10 @@ const InvestigationTimeline = ({ timeline }) => {
                   </time>
                 </div>
                 
-                <p className="text-sm text-muted">{event.description}</p>
+                <p className="text-sm text-muted overflow-wrap-anywhere">{event.description}</p>
                 
                 {event.source && (
-                  <span className="inline-block mt-2 px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider bg-secondary text-secondary border border-border">
+                  <span className="inline-block mt-2 px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider bg-secondary text-secondary border border-border overflow-wrap-anywhere">
                     {event.source}
                   </span>
                 )}

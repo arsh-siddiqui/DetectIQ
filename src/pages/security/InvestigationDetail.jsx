@@ -97,31 +97,64 @@ const OverviewTab = ({ inv }) => {
               </div>
               <div className="bg-secondary/50 p-3 rounded-lg text-center">
                 <div className="text-[10px] text-muted uppercase mb-1">DMARC</div>
-                <div className={`text-sm font-bold ${inv.analystSummary?.dmarcStatus === 'pass' ? 'text-success' : inv.analystSummary?.dmarcStatus === 'fail' ? 'text-danger' : 'text-secondary'}`}>{inv.analystSummary?.dmarcStatus}</div>
+                <div className={`text-sm font-bold ${inv.analystSummary?.dmarcStatus === 'pass' ? 'text-success' : inv.analystSummary?.dmarcStatus === 'fail' ? 'text-danger' : 'text-secondary'}`}>{inv.analystSummary?.dmarcStatus || 'N/A'}</div>
               </div>
             </div>
+            
+            {/* Authentication Context */}
+            {['phishing', 'suspicious'].includes(inv.scan?.classification?.toLowerCase()) && 
+             ['pass'].some(status => [inv.analystSummary?.spfStatus, inv.analystSummary?.dkimStatus, inv.analystSummary?.dmarcStatus].includes(status)) && (
+              <div className="mt-4 p-3 rounded bg-warning/10 border border-warning/20 text-xs text-warning leading-relaxed">
+                <span className="font-semibold block mb-1">Context:</span>
+                Authentication passed. This confirms message authentication but does not by itself establish that the content is trustworthy. Other evidence contributed to the final assessment.
+              </div>
+            )}
           </div>
         </div>
       </Section>
 
       <Section title="Identity & Context" icon={FileText}>
         <div className="space-y-4 text-sm bg-secondary/30 p-4 rounded-lg">
-          <div>
-            <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Sender (From)</div>
-            <div className="text-primary font-mono text-sm break-words">{inv.headers?.from || 'Unknown'}</div>
-          </div>
-          <div>
-            <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Recipient (To)</div>
-            <div className="text-secondary font-mono text-sm break-words">{inv.headers?.to || 'Unknown'}</div>
-          </div>
-          <div>
-            <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Subject</div>
-            <div className="text-primary font-medium break-words">{inv.headers?.subject || '(No Subject)'}</div>
-          </div>
+          {inv.headers?.from && (
+            <div>
+              <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Sender (From)</div>
+              <div className="text-primary font-mono text-sm break-words overflow-wrap-anywhere">{inv.headers.from}</div>
+            </div>
+          )}
+          {inv.headers?.to && (
+            <div>
+              <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Recipient (To)</div>
+              <div className="text-secondary font-mono text-sm break-words overflow-wrap-anywhere">{inv.headers.to}</div>
+            </div>
+          )}
+          {inv.headers?.subject && (
+            <div>
+              <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Subject</div>
+              <div className="text-primary font-medium">{inv.headers.subject}</div>
+            </div>
+          )}
           {inv.headers?.replyTo && (
             <div>
               <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Reply-To</div>
-              <div className="text-secondary font-mono text-sm break-words">{inv.headers?.replyTo}</div>
+              <div className="text-secondary font-mono text-sm break-words overflow-wrap-anywhere">{inv.headers.replyTo}</div>
+            </div>
+          )}
+          {inv.headers?.messageId && (
+            <div>
+              <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Message-ID</div>
+              <div className="text-secondary font-mono text-sm break-words overflow-wrap-anywhere">{inv.headers.messageId}</div>
+            </div>
+          )}
+          {inv.sourceType && (
+            <div>
+              <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Source Type</div>
+              <div className="text-secondary text-sm uppercase">{inv.sourceType.replace('_', ' ')}</div>
+            </div>
+          )}
+          {inv.analysisDepth && (
+            <div>
+              <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Analysis Depth</div>
+              <div className="text-secondary text-sm capitalize">{inv.analysisDepth}</div>
             </div>
           )}
         </div>
@@ -141,10 +174,10 @@ const EvidenceTab = ({ inv }) => {
             </div>
             {inv.headers?.received?.length > 0 && (
               <div>
-                <div className="text-xs text-muted mb-2">Received Routing Hops</div>
-                <div className="space-y-2">
+                <div className="text-xs text-muted mb-2 uppercase tracking-wider font-semibold">Received Routing Hops</div>
+                <div className="space-y-2 max-h-64 overflow-y-auto overflow-x-auto hide-scrollbar border border-border rounded bg-secondary/20 p-2">
                   {inv.headers.received.map((hop, idx) => (
-                    <div key={idx} className="text-[11px] p-2 rounded bg-secondary/50 font-mono text-secondary break-words border border-border">
+                    <div key={idx} className="text-[11px] p-2 rounded bg-secondary/50 font-mono text-secondary whitespace-pre-wrap">
                       {hop.raw}
                     </div>
                   ))}
@@ -171,15 +204,17 @@ const EvidenceTab = ({ inv }) => {
              )}
              
              {inv.extracted?.urls?.length > 0 && (
-               <div>
-                 <span className="text-muted text-xs font-bold uppercase block mb-2">URLs:</span>
-                 <ul className="space-y-1 list-disc list-inside text-xs font-mono text-secondary break-words">
-                   {inv.extracted.urls.map((url, idx) => (
-                     <li key={idx}>{url}</li>
-                   ))}
-                 </ul>
-               </div>
-             )}
+                <div>
+                  <span className="text-muted text-xs font-bold uppercase block mb-2">URLs:</span>
+                  <div className="space-y-1.5 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                    {inv.extracted.urls.map((url, idx) => (
+                      <div key={idx} className="text-[11px] font-mono text-secondary bg-secondary/30 p-2 rounded border border-border overflow-wrap-anywhere">
+                        {url}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
            </div>
          ) : (
            <p className="text-sm text-muted">No URLs or IP addresses extracted.</p>
@@ -197,8 +232,8 @@ const EvidenceTab = ({ inv }) => {
                   <span className="bg-secondary/50 px-2 py-0.5 rounded">{att.contentType}</span>
                 </div>
                 {att.sha256 && (
-                  <div className="text-[11px] font-mono text-secondary break-words pt-2 border-t border-border mt-2">
-                    <span className="text-muted font-semibold mr-2">SHA-256:</span>
+                  <div className="text-[11px] font-mono text-secondary overflow-wrap-anywhere pt-2 border-t border-border mt-2">
+                    <span className="text-muted font-semibold mr-2 uppercase tracking-wider text-[10px]">SHA-256:</span>
                     {att.sha256}
                   </div>
                 )}
@@ -424,10 +459,10 @@ const InvestigationDetail = () => {
               <ArrowLeft size={20} />
             </button>
             <div className="flex-1 min-w-0">
-              <h1 className="text-3xl font-bold text-primary truncate">
+              <h1 className="text-2xl md:text-3xl font-bold text-primary break-words">
                 {inv.headers?.subject || '(No Subject)'}
               </h1>
-              <div className="flex items-center gap-4 text-sm text-secondary mt-1">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-secondary mt-2">
                 <span className="flex items-center gap-1"><Clock size={14} /> {format(new Date(inv.createdAt), 'MMM d, yyyy HH:mm')}</span>
                 <span className="uppercase">{inv.sourceType.replace('_', ' ')}</span>
                 <span className="uppercase text-accent-violet font-medium">Depth: {inv.analysisDepth}</span>
