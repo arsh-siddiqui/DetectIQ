@@ -170,3 +170,12 @@ body { transition: background-color 200ms ease, color 200ms ease; }
 .dark .border-accent-blue\/30 { border-color: rgba(59, 130, 246, 0.32) !important; }
 
 
+@keyframes highlight-pulse {
+  0% { background-color: rgba(99, 102, 241, 0.4); box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.5); }
+  100% { background-color: transparent; box-shadow: 0 0 0 0px transparent; }
+}
+.highlight-evidence {
+  animation: highlight-pulse 2s ease-out forwards;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+}

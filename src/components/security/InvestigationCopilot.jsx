@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, AlertCircle, Search, HelpCircle, Loader2, FileText } from 'lucide-react';
 import * as copilotService from '../../services/copilotService';
+import EvidenceReference from './EvidenceReference';
 
 const SUGGESTED_QUESTIONS = [
   "Why is this email considered risky?",
@@ -122,15 +123,7 @@ export default function InvestigationCopilot({ investigationId, investigation, o
     return (
       <div className="flex flex-wrap gap-1.5 mt-2.5">
         {ids.map(id => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => onCitationClick && onCitationClick(id)}
-            className="text-[11px] font-medium text-accent-violet bg-accent-violet/10 hover:bg-accent-violet/20 px-2 py-0.5 rounded border border-accent-violet/20 transition-colors flex items-center gap-1 cursor-pointer"
-          >
-            <FileText size={11} />
-            {formatEvidenceLabel(id)}
-          </button>
+          <EvidenceReference key={id} investigationId={investigationId} evidenceId={id} />
         ))}
       </div>
     );

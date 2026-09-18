@@ -1,5 +1,6 @@
 import { FileText, Info, Shield } from 'lucide-react';
 import { format } from 'date-fns';
+import EvidenceReference from './EvidenceReference';
 
 export default function ForensicReportView({ report }) {
   if (!report) return null;
@@ -166,21 +167,9 @@ export default function ForensicReportView({ report }) {
                         </div>
                         {finding.evidenceIds?.length > 0 && (
                           <div className="mt-3 pt-3 border-t border-border/50 flex flex-wrap gap-2">
-                            {finding.evidenceIds.map(id => {
-                              let label = `Evidence · ${id}`;
-                              if (id === 'E_VERDICT') label = 'Evidence · Detection Verdict';
-                              else if (id === 'E_AUTH') label = 'Evidence · Authentication';
-                              else if (id.startsWith('E_IND_')) {
-                                const num = id.split('_')[2];
-                                label = `Evidence #${num}`;
-                              }
-                              return (
-                                <span key={id} className="text-[11px] font-medium text-accent-violet bg-accent-violet/10 px-2 py-1 rounded border border-accent-violet/20 flex items-center gap-1">
-                                  <FileText size={12} />
-                                  {label}
-                                </span>
-                              );
-                            })}
+                            {finding.evidenceIds.map(id => (
+                              <EvidenceReference key={id} investigationId={report.investigationId} evidenceId={id} />
+                            ))}
                           </div>
                         )}
                       </div>

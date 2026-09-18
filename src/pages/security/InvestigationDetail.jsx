@@ -14,6 +14,7 @@ import ForensicReportView from '../../components/security/ForensicReportView';
 import ForensicIntelligencePanel from '../../components/intelligence/ForensicIntelligencePanel';
 import EmailIntelligencePanel from '../../components/intelligence/EmailIntelligencePanel';
 import * as copilotService from '../../services/copilotService';
+import useEvidenceScroller from '../../hooks/useEvidenceScroller';
 
 const Section = ({ title, icon: Icon, children, defaultOpen = true }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -38,8 +39,9 @@ const OverviewTab = ({ inv }) => {
   return (
     <div className="w-full space-y-6">
       {inv.scan && (
-        <Section title="Detection Verdict" icon={ShieldAlert}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div id="evidence-E_VERDICT">
+          <Section title="Detection Verdict" icon={ShieldAlert}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-secondary/50 p-4 rounded-lg">
               <div className="text-xs text-muted uppercase tracking-wider mb-1">Verdict</div>
               <div className="text-xl font-semibold text-primary capitalize">{inv.scan.classification}</div>
@@ -62,6 +64,7 @@ const OverviewTab = ({ inv }) => {
             </div>
           </div>
         </Section>
+        </div>
       )}
 
       <Section title="Analyst Summary" icon={Activity}>
@@ -84,7 +87,7 @@ const OverviewTab = ({ inv }) => {
               <span className="text-lg font-semibold text-danger">{inv.analystSummary?.flaggedIndicatorCount}</span>
             </div>
           </div>
-          <div>
+          <div id="evidence-E_AUTH">
             <h4 className="text-xs uppercase tracking-wider text-muted mb-4">Authentication</h4>
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-secondary/50 p-3 rounded-lg text-center">
@@ -113,8 +116,9 @@ const OverviewTab = ({ inv }) => {
         </div>
       </Section>
 
-      <Section title="Identity & Context" icon={FileText}>
-        <div className="space-y-4 text-sm bg-secondary/30 p-4 rounded-lg">
+      <div id="evidence-E_EMAIL_ID">
+        <Section title="Identity & Context" icon={FileText}>
+          <div className="space-y-4 text-sm bg-secondary/30 p-4 rounded-lg">
           {inv.headers?.from && (
             <div>
               <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Sender (From)</div>
@@ -159,6 +163,7 @@ const OverviewTab = ({ inv }) => {
           )}
         </div>
       </Section>
+      </div>
     </div>
   );
 };
@@ -173,7 +178,7 @@ const EvidenceTab = ({ inv }) => {
               <div className="text-secondary break-words font-mono text-xs bg-secondary/50 p-2 rounded">{inv.headers?.messageId || 'None'}</div>
             </div>
             {inv.headers?.received?.length > 0 && (
-              <div>
+              <div id="evidence-E_ROUTE">
                 <div className="text-xs text-muted mb-2 uppercase tracking-wider font-semibold">Received Routing Hops</div>
                 <div className="space-y-2 max-h-64 overflow-y-auto overflow-x-auto hide-scrollbar border border-border rounded bg-secondary/20 p-2">
                   {inv.headers.received.map((hop, idx) => (
@@ -195,7 +200,7 @@ const EvidenceTab = ({ inv }) => {
                  <span className="text-muted text-xs font-bold uppercase block mb-2">IP Addresses:</span>
                  <div className="flex flex-wrap gap-2">
                    {inv.extracted.ipAddresses.map((ipObj, idx) => (
-                     <span key={idx} className={`px-2 py-1 rounded text-xs font-mono font-bold ${ipObj.type === 'private' ? 'bg-secondary text-secondary' : 'bg-accent-blue/20 text-accent-blue'}`}>
+                     <span key={idx} id={`evidence-E_IND_${ipObj.ip}`} className={`px-2 py-1 rounded text-xs font-mono font-bold ${ipObj.type === 'private' ? 'bg-secondary text-secondary' : 'bg-accent-blue/20 text-accent-blue'}`}>
                        {ipObj.ip} ({ipObj.type})
                      </span>
                    ))}
@@ -208,7 +213,7 @@ const EvidenceTab = ({ inv }) => {
                   <span className="text-muted text-xs font-bold uppercase block mb-2">URLs:</span>
                   <div className="space-y-1.5 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                     {inv.extracted.urls.map((url, idx) => (
-                      <div key={idx} className="text-[11px] font-mono text-secondary bg-secondary/30 p-2 rounded border border-border overflow-wrap-anywhere">
+                      <div key={idx} id={`evidence-E_IND_${idx + 1}`} className="text-[11px] font-mono text-secondary bg-secondary/30 p-2 rounded border border-border overflow-wrap-anywhere">
                         {url}
                       </div>
                     ))}
@@ -225,7 +230,7 @@ const EvidenceTab = ({ inv }) => {
         {inv.attachments && inv.attachments.length > 0 ? (
           <div className="space-y-3">
             {inv.attachments.map((att, idx) => (
-              <div key={idx} className="p-3 rounded-lg bg-secondary/30 border border-border space-y-2">
+              <div key={idx} id={`evidence-E_ATT_${idx + 1}`} className="p-3 rounded-lg bg-secondary/30 border border-border space-y-2">
                 <div className="text-sm font-semibold text-primary truncate">{att.filename || 'Unnamed'}</div>
                 <div className="text-xs text-muted flex gap-4">
                   <span className="bg-secondary/50 px-2 py-0.5 rounded">{(att.sizeBytes / 1024).toFixed(1)} KB</span>
@@ -398,6 +403,7 @@ const TABS = [
 const InvestigationDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  useEvidenceScroller();
   const [inv, setInv] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
