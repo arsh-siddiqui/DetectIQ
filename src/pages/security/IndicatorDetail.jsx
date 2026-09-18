@@ -183,26 +183,45 @@ const IndicatorDetail = () => {
 
               <Section title="Related Investigations" icon={Search}>
                 {ind.relatedInvestigations && ind.relatedInvestigations.length > 0 ? (
-                  <div className="space-y-2">
-                    {ind.relatedInvestigations.map((inv) => (
+                  <div className="space-y-3">
+                    {ind.relatedInvestigations.map((inv) => {
+                      let reason = 'Indicator associated with this investigation';
+                      if (ind.type === 'ip') reason = 'IP observed in investigation network traffic or headers';
+                      if (ind.type === 'domain') reason = 'Domain observed in investigation links or sender identity';
+                      if (ind.type === 'url') reason = 'URL observed in investigation content';
+                      if (ind.type === 'email') reason = 'Email address observed in investigation participants';
+                      if (ind.type === 'hash') reason = 'File hash observed in investigation attachments';
+                      
+                      return (
                       <div 
                         key={inv.id} 
                         onClick={() => navigate(`/security/investigations/${inv.id}`)}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg bg-secondary/30 hover:bg-interactive cursor-pointer transition-colors"
+                        className="flex flex-col justify-between p-3.5 rounded-lg bg-secondary/30 hover:bg-interactive cursor-pointer transition-colors border border-transparent hover:border-border group"
                       >
-                        <div>
-                          <div className="text-sm font-medium text-primary group-hover:text-accent-violet">
-                            {inv.subject || '(No Subject)'}
+                        <div className="w-full">
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                            <div>
+                              <div className="text-sm font-medium text-primary group-hover:text-accent-violet">
+                                {inv.subject || '(No Subject)'}
+                              </div>
+                              <div className="text-xs text-muted capitalize mt-1 flex items-center gap-2">
+                                <span className="bg-secondary/80 px-1.5 py-0.5 rounded text-[10px] font-semibold text-primary">{inv.sourceType?.replace('_', ' ')}</span>
+                              </div>
+                            </div>
+                            <div className="text-xs text-secondary whitespace-nowrap flex items-center gap-1 shrink-0 mt-0.5 bg-card px-2 py-1 rounded shadow-sm border border-border">
+                              <Clock size={12} /> {format(new Date(inv.createdAt), 'MMM d, yyyy')}
+                            </div>
                           </div>
-                          <div className="text-xs text-muted capitalize mt-1">
-                            {inv.sourceType?.replace('_', ' ')}
+                          
+                          <div className="mt-3 pt-3 border-t border-border/60">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] uppercase font-bold tracking-wider text-muted bg-secondary/50 px-1.5 py-0.5 rounded">Reason</span>
+                              <span className="text-[11px] text-secondary">{reason}</span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-xs text-secondary mt-2 sm:mt-0 whitespace-nowrap flex items-center gap-1">
-                          <Clock size={12} /> {format(new Date(inv.createdAt), 'MMM d, yyyy')}
                         </div>
                       </div>
-                    ))}
+                    )})}
                   </div>
                 ) : (
                   <div className="text-muted text-sm py-4">No related investigations found.</div>
@@ -225,11 +244,13 @@ const IndicatorDetail = () => {
                     let sourceLabel = 'Direct IP';
                     if (validGeo.sourceType === 'resolved_ip') sourceLabel = 'DNS-resolved IP';
                     if (validGeo.sourceType === 'received_header_ip') sourceLabel = 'Received-header IP';
+                    
+                    const provider = validGeo.provider || 'ip-api.com';
 
                     return (
                       <div className="space-y-4">
                         <div className="text-sm font-medium text-primary bg-secondary/30 px-3 py-2 rounded border border-border inline-flex items-center gap-2">
-                          <span className="text-muted">Source:</span> {sourceLabel}
+                          <span className="text-muted">Source:</span> {sourceLabel} &middot; {provider}
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
