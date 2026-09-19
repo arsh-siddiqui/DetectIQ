@@ -38,11 +38,16 @@ function mlResult(label, probability) {
   return { status: 'available', label, probability, modelName: 'Test Model', modelVersion: '1.0.0' };
 }
 
-function tiResult(phishdestroyFound = false, riskScore = 85, severity = 'critical') {
+function tiResult(threatFound = false) {
+  if (threatFound) {
+    return {
+      urlhaus: { status: 'available', threat: 'malicious', urlStatus: 'active', tags: ['phishing'] },
+      virusTotal: { status: 'available', maliciousVotes: 5, suspiciousVotes: 0, totalEngines: 90, threat: 'malicious' },
+    };
+  }
   return {
-    threatintel: phishdestroyFound
-      ? { provider: 'phishdestroy', status: 'found', malicious: true, riskScore, severity }
-      : { provider: 'phishdestroy', status: 'not_found', malicious: false },
+    urlhaus: { status: 'not_observed' },
+    virusTotal: { status: 'available', maliciousVotes: 0, suspiciousVotes: 0, totalEngines: 90 },
   };
 }
 
@@ -80,22 +85,22 @@ it('CASE 2 — Low heuristic + ML phishing 0.90 + TI not_found → Medium or Hig
   );
 });
 
-it('CASE 3 — Medium heuristic + PhishDestroy threat → High', () => {
+it('CASE 3 — Medium heuristic + Threat Intel match → High', () => {
   const result = fuseEvidence(
     heuristic('medium', 50),
     null,
-    tiResult(true, 85, 'critical'),
+    tiResult(true),
     null
   );
   assert.ok(result.riskLevel === 'high' || result.riskLevel === 'critical', `Expected high or critical, got ${result.riskLevel}`);
-  // Risk score should be elevated significantly
-  assert.ok(result.riskScore >= 85, `Expected riskScore >= 85, got ${result.riskScore}`);
+  assert.ok(result.riskScore >= 65, `Expected riskScore >= 65, got ${result.riskScore}`);
 });
 
-it('CASE 4 — PhishDestroy error → Scanner continues using available evidence', () => {
+it('CASE 4 — Threat Intel error → Scanner continues using available evidence', () => {
   const h = heuristic('medium', 50);
   const threatIntel = {
-    threatintel: { provider: 'phishdestroy', status: 'error', malicious: false }
+    virusTotal: { status: 'error' },
+    urlhaus: { status: 'error' }
   };
   const result = fuseEvidence(
     h,
@@ -104,7 +109,7 @@ it('CASE 4 — PhishDestroy error → Scanner continues using available evidence
     null
   );
   assert.ok(result.riskLevel === 'high' || result.riskLevel === 'critical', `Expected high or critical (due to ML), got ${result.riskLevel}`);
-  assert.ok(!result.analysisSources.includes('phishdestroy'), 'phishdestroy should not be in analysisSources when error');
+  assert.ok(!result.analysisSources.includes('virustotal_url'), 'virustotal should not be in analysisSources when error');
 });
 
 it('CASE 5 — All external services unavailable → heuristic result preserved', () => {
@@ -115,7 +120,6 @@ it('CASE 5 — All external services unavailable → heuristic result preserved'
     null,
     null
   );
-  // Risk level should remain based on heuristics
   assert.strictEqual(result.riskLevel, h.riskLevel, 'Heuristic risk level should be preserved');
   assert.strictEqual(result.riskScore, h.riskScore, 'Heuristic risk score should be preserved');
   assert.ok(result.analysisSources.includes('heuristics'), 'heuristics must be in analysisSources');
@@ -164,17 +168,17 @@ it('EF3 — riskLevel is always one of valid levels', () => {
   }
 });
 
-it('EF4 — PhishDestroy threat → category mentions PhishDestroy', () => {
+it('EF4 — Threat Intel match → category updates to Malicious', () => {
   const result = fuseEvidence(
     heuristic('low'),
     null,
     tiResult(true),
     null
   );
-  assert.ok(result.category.toLowerCase().includes('phishdestroy'),
-    `Category should mention PhishDestroy, got: ${result.category}`);
-  assert.ok(result.analysisSources.includes('threatintel'),
-    'threatintel must be in analysisSources');
+  assert.ok(result.category.toLowerCase().includes('malicious'),
+    `Category should mention Malicious, got: ${result.category}`);
+  assert.ok(result.analysisSources.includes('virustotal_url'),
+    'virustotal_url must be in analysisSources');
 });
 
 it('EF5 — ML safe + low heuristic → stays Safe when TI is clean', () => {
@@ -184,7 +188,6 @@ it('EF5 — ML safe + low heuristic → stays Safe when TI is clean', () => {
     tiResult(false),
     null
   );
-  // With very low heuristic score and ML strongly safe, should be Safe
   assert.ok(
     result.riskLevel === 'safe' || result.riskLevel === 'low',
     `Expected safe or low, got ${result.riskLevel}`
@@ -209,12 +212,11 @@ it('EF6 — Groq result refines summary when TI is clean', () => {
     groq
   );
   assert.ok(result.analysisSources.includes('groq'), 'groq must be in analysisSources');
-  // Summary should be from Groq (no TI override)
   assert.strictEqual(result.summary, 'Groq summary text');
   assert.strictEqual(result.category, 'Groq Category');
 });
 
-it('EF7 — PhishDestroy threat overrides Groq category', () => {
+it('EF7 — Threat Intel threat overrides Groq category', () => {
   const groq = {
     riskLevel: 'low',
     category: 'Normal Email',
@@ -230,8 +232,7 @@ it('EF7 — PhishDestroy threat overrides Groq category', () => {
     null,
     groq
   );
-  // PhishDestroy confirmed threat should override Groq's "Normal Email" category
-  assert.ok(result.category.toLowerCase().includes('phishdestroy'),
+  assert.ok(result.category.toLowerCase().includes('malicious'),
     `TI should override Groq category; got: ${result.category}`);
   assert.ok(result.riskLevel === 'high' || result.riskLevel === 'critical');
 });

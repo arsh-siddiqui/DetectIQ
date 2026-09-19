@@ -63,19 +63,19 @@ it('TI2 — No threat: PhishDestroy returns not_found', () => {
   assert.strictEqual(result.malicious, false);
 });
 
-it('TI3 — Domain normalisation handles edge cases', () => {
-  const { normalizeDomain } = require('../services/threatIntel/threatIntelService');
-  assert.strictEqual(
-    normalizeDomain('https://www.example.com/login?x=1#fragment'),
-    'example.com'
-  );
-  assert.strictEqual(
-    normalizeDomain('HTTPS://EXAMPLE.COM/path'),
-    'example.com'
-  );
-  const noProto = normalizeDomain('example.com');
-  assert.strictEqual(noProto, 'example.com', 'Should normalise domain without protocol');
-  const subdomain = normalizeDomain('test.sub.example.co.uk');
+it('TI3 — URL canonicalization and domain extraction handles edge cases', () => {
+  const { canonicalizeUrl, extractRegistrableDomain } = require('../services/threatIntel/threatIntelService');
+  
+  const c1 = canonicalizeUrl('https://www.example.com/login?x=1#fragment');
+  assert.strictEqual(extractRegistrableDomain(new URL(c1.url).hostname), 'example.com');
+
+  const c2 = canonicalizeUrl('HTTPS://EXAMPLE.COM/path');
+  assert.strictEqual(extractRegistrableDomain(new URL(c2.url).hostname), 'example.com');
+
+  const c3 = canonicalizeUrl('example.com');
+  assert.strictEqual(extractRegistrableDomain(new URL(c3.url).hostname), 'example.com', 'Should normalise domain without protocol');
+
+  const subdomain = extractRegistrableDomain('test.sub.example.co.uk');
   assert.strictEqual(subdomain, 'test.sub.example.co.uk');
 });
 
@@ -86,10 +86,11 @@ it('TI4 — Provider failure: PhishDestroy error does not crash, returns error s
 });
 
 it('TI5 — URL hash generation is deterministic (SHA-256)', () => {
-  const { urlCacheKey, normalizeDomain } = require('../services/threatIntel/threatIntelService');
+  const { urlCacheKey, canonicalizeUrl } = require('../services/threatIntel/threatIntelService');
   const url = 'https://www.example.com/login?x=1';
-  const hash1 = urlCacheKey(normalizeDomain(url));
-  const hash2 = urlCacheKey(normalizeDomain(url));
+  const cUrl = canonicalizeUrl(url).url;
+  const hash1 = urlCacheKey(cUrl);
+  const hash2 = urlCacheKey(cUrl);
   assert.strictEqual(hash1, hash2, 'Same domain must produce same hash');
   assert.strictEqual(hash1.length, 64, 'SHA-256 hex should be 64 chars');
 });

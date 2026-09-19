@@ -1,22 +1,17 @@
 const request = require('supertest');
-const app = require('../server');
 const mongoose = require('mongoose');
 
-vi.mock('../services/mlService', () => ({
-  classifyText: vi.fn().mockResolvedValue({ status: 'unavailable', reason: 'exception' })
-}));
+const mlService = require('../services/mlService');
+const threatIntelService = require('../services/threatIntel/threatIntelService');
+const groqService = require('../services/groqService');
+const ragClient = require('../services/ragClient');
 
-vi.mock('../services/threatIntel/threatIntelService', () => ({
-  getThreatIntelligence: vi.fn().mockResolvedValue(null)
-}));
+vi.spyOn(mlService, 'classifyText').mockResolvedValue({ status: 'unavailable', reason: 'exception' });
+vi.spyOn(threatIntelService, 'getThreatIntelligence').mockResolvedValue(null);
+vi.spyOn(groqService, 'analyzeWithGroq').mockResolvedValue(null);
+vi.spyOn(ragClient, 'retrieveContext').mockResolvedValue({ success: false });
 
-vi.mock('../services/groqService', () => ({
-  analyzeWithGroq: vi.fn().mockResolvedValue(null)
-}));
-
-vi.mock('../services/ragClient', () => ({
-  retrieveContext: vi.fn().mockResolvedValue({ success: false })
-}));
+const app = require('../server');
 
 describe('Unified Multi-Channel Detection Scanner Routing', () => {
 

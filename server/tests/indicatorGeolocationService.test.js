@@ -2,22 +2,14 @@ const { enrichIndicatorGeolocation, isPublicIP, resolveHostnameToPublicIPs } = r
 const dns = require('dns').promises;
 const { activeProvider: geoProvider } = require('../services/intelligence/geolocationProvider');
 
-vi.mock('dns', () => ({
-  promises: {
-    resolve4: vi.fn(),
-    resolve6: vi.fn(),
-  }
-}));
-
-vi.mock('../services/intelligence/geolocationProvider', () => ({
-  activeProvider: {
-    geolocateIP: vi.fn()
-  }
-}));
+// We will use vi.spyOn for these in beforeEach
 
 describe('Indicator Geolocation Service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(dns, 'resolve4').mockImplementation(() => Promise.resolve([]));
+    vi.spyOn(dns, 'resolve6').mockImplementation(() => Promise.resolve([]));
+    vi.spyOn(geoProvider, 'geolocateIP').mockImplementation(() => Promise.resolve({}));
   });
 
   describe('isPublicIP', () => {

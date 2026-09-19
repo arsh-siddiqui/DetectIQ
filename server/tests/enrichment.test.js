@@ -24,13 +24,9 @@ const assert = require('assert');
 const { enrichIndicators, buildIndicators, cacheKey } = require('../services/intelligence/enrichmentService');
 const { normalizeIndicator } = require('../services/intelligence/indicatorNormalizer');
 
-// Mock Mongoose model to avoid hangs
-vi.mock('../models/ThreatIntelCache', () => {
-  return {
-    findOne: vi.fn().mockResolvedValue(null),
-    findOneAndUpdate: vi.fn().mockResolvedValue(null)
-  };
-});
+const ThreatIntelCache = require('../models/ThreatIntelCache');
+vi.spyOn(ThreatIntelCache, 'findOne').mockImplementation(() => Promise.resolve(null));
+vi.spyOn(ThreatIntelCache, 'findOneAndUpdate').mockImplementation(() => Promise.resolve(null));
 
 // Mock DNS for E6
 vi.mock('dns', () => ({
@@ -39,6 +35,9 @@ vi.mock('dns', () => ({
     resolve6: vi.fn().mockResolvedValue([])
   }
 }));
+
+const axios = require('axios');
+vi.spyOn(axios, 'get').mockResolvedValue({ data: {} });
 
 describe('Suite', () => {
   console.log('\n=== ENRICHMENT TESTS ===\n');

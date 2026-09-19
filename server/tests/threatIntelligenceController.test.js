@@ -2,29 +2,31 @@
 
 const request = require('supertest');
 const mongoose = require('mongoose');
-const { app } = require('../server');
+const app = require('../server');
 const User = require('../models/User');
 const Indicator = require('../models/Indicator');
 const EmailInvestigation = require('../models/EmailInvestigation');
-const { generateToken } = require('../utils/jwt');
+const { signToken } = require('../utils/jwt');
 
 describe('Threat Intelligence Controller Logic', () => {
   let token;
   let user;
 
   beforeAll(async () => {
+    await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/detectiq_test');
     user = await User.create({
       name: 'Test Analyst',
       email: 'analyst@test.com',
       password: 'password123',
     });
-    token = generateToken(user._id);
+    token = signToken(user._id);
   });
 
   afterAll(async () => {
     await User.deleteMany({});
     await Indicator.deleteMany({});
     await EmailInvestigation.deleteMany({});
+    await mongoose.connection.close();
   });
 
   beforeEach(async () => {
@@ -34,10 +36,10 @@ describe('Threat Intelligence Controller Logic', () => {
 
   it('1. KPI Semantics: unavailable/not-observed does not count as clean', async () => {
     await Indicator.create([
-      { user: user._id, type: 'ip', value: '1.1.1.1', threatStatus: 'clean' },
-      { user: user._id, type: 'ip', value: '2.2.2.2', threatStatus: 'unknown' },
-      { user: user._id, type: 'ip', value: '3.3.3.3', threatStatus: 'unavailable' },
-      { user: user._id, type: 'ip', value: '4.4.4.4', threatStatus: 'not_observed' },
+      { user: user._id, type: 'ip', value: '1.1.1.1', normalizedValue: '1.1.1.1', threatStatus: 'clean' },
+      { user: user._id, type: 'ip', value: '2.2.2.2', normalizedValue: '2.2.2.2', threatStatus: 'unknown' },
+      { user: user._id, type: 'ip', value: '3.3.3.3', normalizedValue: '3.3.3.3', threatStatus: 'unknown' },
+      { user: user._id, type: 'ip', value: '4.4.4.4', normalizedValue: '4.4.4.4', threatStatus: 'unknown' },
     ]);
 
     const res = await request(app)
@@ -67,6 +69,7 @@ describe('Threat Intelligence Controller Logic', () => {
         user: user._id, 
         type: 'ip', 
         value: '5.5.5.5', 
+        normalizedValue: '5.5.5.5',
         threatStatus: 'malicious',
         geolocation: { country: 'Canada', latitude: 45, longitude: -75 } 
       },
@@ -74,6 +77,7 @@ describe('Threat Intelligence Controller Logic', () => {
         user: user._id, 
         type: 'ip', 
         value: '6.6.6.6', 
+        normalizedValue: '6.6.6.6',
         threatStatus: 'suspicious',
         geolocation: { country: 'Canada' } // No lat/lon
       }
@@ -100,13 +104,15 @@ describe('Threat Intelligence Controller Logic', () => {
         user: user._id,
         status: 'completed',
         headers: { subject: 'Urgent Wire Transfer', from: 'boss@scam.com' },
-        sourceType: 'pasted_email'
+        sourceType: 'pasted_email',
+        analysisDepth: 'content_only'
       },
       {
         user: user._id,
         status: 'completed',
         headers: { from: 'unknown@scam.com' }, // No subject
-        sourceType: 'upload'
+        sourceType: 'eml_upload',
+        analysisDepth: 'content_only'
       }
     ]);
 

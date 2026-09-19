@@ -4,15 +4,13 @@ const axios = require('axios');
 const env = require('../config/env');
 const { checkOtxIndicator } = require('../services/threatIntel/otxService');
 
-vi.mock('axios');
-vi.mock('../config/env', () => ({
-  OTX_API_KEY: 'test-api-key',
-  OTX_TIMEOUT_MS: '5000',
-}));
+env.OTX_API_KEY = 'test-otx-key';
+env.OTX_TIMEOUT_MS = '5000';
 
 describe('otxService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(axios, 'get').mockImplementation(() => Promise.resolve({}));
   });
 
   it('returns skipped if OTX_API_KEY is missing', async () => {

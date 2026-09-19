@@ -123,7 +123,7 @@ function analyzeUrl(urlString, options = {}) {
   for (const brand of BRANDS) {
     if (hostname.includes(brand) && !hostParts.includes(brand)) {
       signals.push({
-        type: 'brand_substring',
+        type: 'brand_impersonation',
         severity: 'medium',
         title: 'Brand Name Embedded in Domain',
         explanation: `The domain contains the brand name "${brand}" embedded within other text, which can indicate impersonation.`,

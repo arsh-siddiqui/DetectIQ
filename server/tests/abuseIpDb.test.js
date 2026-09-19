@@ -4,15 +4,13 @@ const axios = require('axios');
 const env = require('../config/env');
 const { checkAbuseIpDbIP } = require('../services/threatIntel/abuseIpDbService');
 
-vi.mock('axios');
-vi.mock('../config/env', () => ({
-  ABUSEIPDB_API_KEY: 'test-api-key',
-  ABUSEIPDB_TIMEOUT_MS: '4000',
-}));
+env.ABUSEIPDB_API_KEY = 'test-api-key';
+env.ABUSEIPDB_TIMEOUT_MS = '4000';
 
 describe('abuseIpDbService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(axios, 'get').mockImplementation(() => Promise.resolve({}));
   });
 
   it('returns skipped if ABUSEIPDB_API_KEY is missing', async () => {

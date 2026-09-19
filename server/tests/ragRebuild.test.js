@@ -1,32 +1,27 @@
 'use strict';
 
-vi.mock('../services/ragClient', () => ({
-  retrieveContext: vi.fn(),
-  clearUserIndex: vi.fn(),
-  embedEmail: vi.fn(),
-  buildRagContext: vi.fn(),
-}));
+const ragClient = require('../services/ragClient');
+const mlService = require('../services/mlService');
+const threatIntelService = require('../services/threatIntel/threatIntelService');
+const groqService = require('../services/groqService');
+const emailHistoryService = require('../services/emailHistoryService');
 
-vi.mock('../services/mlService', () => ({
-  classifyText: vi.fn().mockResolvedValue({ status: 'available', isPhishing: false })
-}));
-vi.mock('../services/threatIntel/threatIntelService', () => ({
-  getThreatIntelligence: vi.fn().mockResolvedValue(null)
-}));
-vi.mock('../services/groqService', () => ({
-  analyzeWithGroq: vi.fn().mockResolvedValue(null)
-}));
-vi.mock('../services/emailHistoryService', () => {
-  return {
-    rebuildUserRAGIndex: vi.fn().mockResolvedValue({ successCount: 1, failCount: 0, total: 1 }),
-    triggerRebuild: vi.fn(),
-  };
-});
+vi.spyOn(ragClient, 'retrieveContext').mockImplementation(() => Promise.resolve());
+vi.spyOn(ragClient, 'clearUserIndex').mockImplementation(() => Promise.resolve());
+vi.spyOn(ragClient, 'embedEmail').mockImplementation(() => Promise.resolve());
+vi.spyOn(ragClient, 'buildRagContext').mockImplementation(() => Promise.resolve());
 
+vi.spyOn(mlService, 'classifyText').mockResolvedValue({ status: 'available', isPhishing: false });
+vi.spyOn(threatIntelService, 'getThreatIntelligence').mockResolvedValue(null);
+vi.spyOn(groqService, 'analyzeWithGroq').mockResolvedValue(null);
+vi.spyOn(emailHistoryService, 'rebuildUserRAGIndex').mockResolvedValue({ successCount: 1, failCount: 0, total: 1 });
+vi.spyOn(emailHistoryService, 'triggerRebuild').mockImplementation(() => {});
+
+const EmailHistory = require('../models/EmailHistory');
 const mongoose = require('mongoose');
 const { analyzeContent } = require('../services/scanner');
-const ragClient = require('../services/ragClient');
-const emailHistoryService = require('../services/emailHistoryService');
+
+vi.spyOn(EmailHistory, 'countDocuments').mockResolvedValue(1);
 
 describe('RAG Rebuild tests', () => {
   let userId;

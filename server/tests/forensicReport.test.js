@@ -1,11 +1,10 @@
-vi.mock('../services/ai/copilotService', () => ({
-  askCopilot: vi.fn()
-}));
-
-const { generateReport, deriveLimitations } = require('../services/reports/forensicReportService');
 const mongoose = require('mongoose');
 const ForensicReport = require('../models/ForensicReport');
-const { askCopilot } = require('../services/ai/copilotService');
+const copilotService = require('../services/ai/copilotService');
+
+vi.spyOn(copilotService, 'askCopilot');
+
+const { generateReport, deriveLimitations } = require('../services/reports/forensicReportService');
 
 describe('forensicReportService', () => {
   beforeEach(() => {
@@ -13,7 +12,7 @@ describe('forensicReportService', () => {
   });
 
   it('should generate a deterministic report without AI if AI fails', async () => {
-    askCopilot.mockRejectedValue(new Error('AI failed'));
+    copilotService.askCopilot.mockRejectedValueOnce(new Error('AI failed'));
     ForensicReport.create = vi.fn().mockImplementation((data) => data);
 
     const user = { _id: new mongoose.Types.ObjectId() };
@@ -30,7 +29,7 @@ describe('forensicReportService', () => {
   });
 
   it('should include AI findings if AI succeeds', async () => {
-    askCopilot.mockResolvedValue({
+    copilotService.askCopilot.mockResolvedValue({
       summary: 'AI Summary',
       keyFindings: []
     });
