@@ -36,11 +36,11 @@ async function seedDB() {
     console.log("[Seed] Connected to MongoDB.");
 
     // Seed Demo Users
-    const adminPassword = await bcrypt.hash("ChangeMe123!", 10);
-    const userPassword = await bcrypt.hash("ChangeMe123!", 10);
+    const adminPassword = await bcrypt.hash("password123", 10);
+    const userPassword = await bcrypt.hash("password123", 10);
 
     const admin = await User.findOneAndUpdate(
-      { email: "admin@detectiq.local" },
+      { email: "admin@detect.com" },
       {
         name: "Admin User",
         password: adminPassword,
