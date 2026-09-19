@@ -17,8 +17,8 @@ const env = {
 
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
 
-  ADMIN_SEED_EMAIL: process.env.ADMIN_SEED_EMAIL || 'admin@detectiq.app',
-  ADMIN_SEED_PASSWORD: process.env.ADMIN_SEED_PASSWORD || 'ChangeMe123!',
+  ADMIN_SEED_EMAIL: process.env.ADMIN_SEED_EMAIL || 'admin@detect.com',
+  ADMIN_SEED_PASSWORD: process.env.ADMIN_SEED_PASSWORD || 'password123',
 
   // ---------------------------------------------------------------------------
   // Threat Intelligence
