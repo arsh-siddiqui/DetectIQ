@@ -19,9 +19,11 @@ const emptyUser = { name: "", email: "", accountRole: "Student", status: "Active
 
 // Colors for the pie chart
 const riskColors = {
-  High: "#EF4444",
-  Medium: "#F59E0B",
-  Low: "#10B981"
+  critical: "#EF4444",
+  high: "#F97316",
+  medium: "#F59E0B",
+  low: "#3B82F6",
+  safe: "#10B981"
 };
 
 export default function AdminDashboard() {
@@ -204,16 +206,24 @@ export default function AdminDashboard() {
         <Card className="lg:col-span-2 p-6">
           <h3 className="font-bold text-ink mb-4">Growth Overview</h3>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "#94A3B8" }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "#94A3B8" }} />
-                <RTooltip contentStyle={{ borderRadius: 12, border: "1px solid #F1F5F9", fontSize: 12 }} />
-                <Line type="monotone" dataKey="users" stroke="#2563EB" strokeWidth={2.5} dot={false} name="Users" animationDuration={1200} />
-                <Line type="monotone" dataKey="scans" stroke="#14B8A6" strokeWidth={2.5} dot={false} name="Scans" animationDuration={1200} />
-              </LineChart>
-            </ResponsiveContainer>
+            {monthlyData.length < 2 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center p-4 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                <Icons.Activity className="w-8 h-8 text-ink-faint mb-2" />
+                <p className="text-sm font-semibold text-ink-light">Limited data available</p>
+                <p className="text-xs text-ink-faint mt-1 max-w-[250px]">Growth trends will appear as more activity is recorded.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                  <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "#94A3B8" }} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "#94A3B8" }} />
+                  <RTooltip contentStyle={{ borderRadius: 12, border: "1px solid #F1F5F9", fontSize: 12 }} />
+                  <Line type="monotone" dataKey="users" stroke="#2563EB" strokeWidth={2.5} dot={false} name="Users" animationDuration={1200} />
+                  <Line type="monotone" dataKey="scans" stroke="#14B8A6" strokeWidth={2.5} dot={false} name="Scans" animationDuration={1200} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </Card>
 
