@@ -115,13 +115,22 @@ async function analyzeContent(content, scanType = 'url', userId = null) {
         }
 
         const retrieveRes = await ragClient.retrieveContext(userId, content, 5);
-        if (!retrieveRes.success && retrieveRes.reason === 'index_missing') {
-          const { triggerRebuild } = require('../emailHistoryService');
-          triggerRebuild(userId);
-          return { status: 'unavailable', historyCount, reason: 'index_rebuilding' };
+
+        // Bug fix: ANY retrieve failure (not just index_missing) must return 'unavailable'.
+        // Previously, non-index_missing failures (e.g. ECONNREFUSED when Python is down)
+        // silently fell through to 'no_match', showing misleading "no match found" UI.
+        if (!retrieveRes.success) {
+          if (retrieveRes.reason === 'index_missing') {
+            const { triggerRebuild } = require('../emailHistoryService');
+            triggerRebuild(userId);
+            return { status: 'unavailable', historyCount, reason: 'index_rebuilding' };
+          }
+          // All other failures (service down, timeout, etc.) → unavailable
+          console.error('[RAG] retrieveContext failed:', retrieveRes.reason);
+          return { status: 'unavailable', historyCount, reason: retrieveRes.reason || 'retrieve_failed' };
         }
         
-        if (retrieveRes.success && retrieveRes.results && retrieveRes.results.length > 0) {
+        if (retrieveRes.results && retrieveRes.results.length > 0) {
           // Fetch full bodies from Mongo
           const emailIds = retrieveRes.results.map(r => r.emailId);
           const historicalEmails = await EmailHistory.find({ _id: { $in: emailIds } });
@@ -139,9 +148,13 @@ async function analyzeContent(content, scanType = 'url', userId = null) {
               historicalDocs: historicalEmails
             };
           }
+          // Bug fix: buildRagContext failed after a successful retrieve → degraded unavailable,
+          // not no_match. The user has history and FAISS worked; just context formatting failed.
+          console.error('[RAG] buildRagContext failed after successful retrieve.');
+          return { status: 'unavailable', historyCount, reason: 'context_build_failed', similarityData: retrieveRes.results };
         }
-        // If we got here, retrieval succeeded but returned 0 matches, or buildRagContext failed
-        return { status: 'no_match', historyCount, similarityData: retrieveRes.results || [] };
+        // Retrieve succeeded but FAISS returned 0 results → genuine no_match
+        return { status: 'no_match', historyCount, similarityData: [] };
       } catch (err) {
         console.error('RAG Retrieval Exception:', err.message);
         const count = await require('../../models/EmailHistory').countDocuments({ user: userId }).catch(() => 0);

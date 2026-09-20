@@ -82,6 +82,11 @@ app.use(errorHandler);
 async function start() {
   await connectDB(); // does not throw — logs and continues if Mongo is unreachable
 
+  // Rebuild all users' FAISS indexes in the background after Python service is ready.
+  // Handles the case where Render restarts the Python service (wiping in-memory FAISS).
+  const { startRagRebuild } = require('./services/ragStartupService');
+  startRagRebuild();
+
   const server = app.listen(env.PORT, "0.0.0.0", () => {
     // eslint-disable-next-line no-console
     console.log(`[detectiq] API listening on http://0.0.0.0:${env.PORT} (${env.NODE_ENV})`);
