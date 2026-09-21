@@ -165,10 +165,7 @@ async function analyzeContent(content, scanType = 'url', userId = null) {
 
   const [mlEvidence, threatIntel, ragEvidence] = await Promise.all([mlTask, tiTask, ragTask]);
 
-  // 4. Evidence Fusion
-  const fusedResult = fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, groqResult, content);
-
-  // 5. Groq contextual analysis
+  // 4. Groq contextual analysis
   let groqResult = null;
   try {
     groqResult = await getGroqService().analyzeWithGroq(
@@ -183,10 +180,9 @@ async function analyzeContent(content, scanType = 'url', userId = null) {
     groqResult = null;
   }
 
-  // Re-fuse with Groq result
-  let finalResult = fusedResult;
+  // 5. Evidence Fusion (fuse all layers into single verdict)
+  const finalResult = fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, groqResult, content);
   if (groqResult) {
-    finalResult = fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, groqResult);
     finalResult.groq = groqResult;
   }
 
