@@ -412,14 +412,34 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
       };
     });
 
-    // Extract current sender from raw input text if From: header is present
+    // Extract current sender from raw input text (bulletproof multi-format matching)
     let parsedSender = null;
     if (rawContent && typeof rawContent === 'string') {
-      const fromMatch = rawContent.match(/^From:\s*(.+)$/im);
+      // 1. Match From: header anywhere in rawContent
+      const fromMatch = rawContent.match(/(?:^|\n)\s*From:\s*([^\r\n]+)/i);
       if (fromMatch) {
         let rawFrom = fromMatch[1].trim();
         const emailMatch = rawFrom.match(/<([^>]+)>/) || rawFrom.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
         parsedSender = emailMatch ? emailMatch[1] : rawFrom;
+      }
+
+      // 2. Match Sender: header if From: not present
+      if (!parsedSender) {
+        const senderMatch = rawContent.match(/(?:^|\n)\s*Sender:\s*([^\r\n]+)/i);
+        if (senderMatch) {
+          let rawS = senderMatch[1].trim();
+          const emailMatch = rawS.match(/<([^>]+)>/) || rawS.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+          parsedSender = emailMatch ? emailMatch[1] : rawS;
+        }
+      }
+
+      // 3. Match any email address in the first line if no header label is present
+      if (!parsedSender) {
+        const firstLine = rawContent.split('\n')[0] || '';
+        const emailMatch = firstLine.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+        if (emailMatch) {
+          parsedSender = emailMatch[1];
+        }
       }
     }
 
