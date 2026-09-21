@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FileSearch, Trash2, ShieldCheck, Loader2, Plus, AlertCircle, Info } from "lucide-react";
+import { FileSearch, Trash2, ShieldCheck, Loader2, Plus, AlertCircle, Info, Eye, X, BookOpen } from "lucide-react";
 import { getEmailHistory, deleteEmailHistory, addEmailHistory } from "../../services/emailHistoryService";
 import Button from "../../components/ui/Button";
 
@@ -9,6 +9,7 @@ export default function MyEmailPatterns() {
   const [error, setError] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [adding, setAdding] = useState(false);
+  const [selectedEmail, setSelectedEmail] = useState(null);
 
   useEffect(() => {
     loadEmails();
@@ -50,13 +51,16 @@ export default function MyEmailPatterns() {
   const handleDelete = async (id) => {
     try {
       await deleteEmailHistory(id);
+      if (selectedEmail?._id === id) {
+        setSelectedEmail(null);
+      }
       loadEmails();
     } catch (err) {
       setError("Failed to delete email pattern.");
     }
   };
 
-  const readyEmbeddings = emails.length; // Mock representation
+  const readyEmbeddings = emails.length;
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden animate-in fade-in duration-500">
@@ -120,13 +124,13 @@ export default function MyEmailPatterns() {
                   </div>
                   <h2 className="text-lg font-bold text-primary">Add Legitimate Email</h2>
                 </div>
-                <p className="text-sm text-secondary font-medium mb-4 flex-shrink-0">Paste the body of a known safe email below to add it to your baseline.</p>
+                <p className="text-sm text-secondary font-medium mb-4 flex-shrink-0">Paste the headers and body of a known safe email below to add it to your baseline.</p>
                 
                 <textarea
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   disabled={adding}
-                  placeholder="Paste email content here..."
+                  placeholder="From: security@company.com&#10;Subject: Quarterly Security Update&#10;&#10;Dear Team, please review..."
                   className="w-full flex-1 bg-background border border-border rounded-2xl p-5 text-sm font-medium text-primary focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue transition-all resize-none min-h-[140px]"
                 />
                 
@@ -168,29 +172,119 @@ export default function MyEmailPatterns() {
             ) : (
               <div className="space-y-4">
                 {emails.map((email) => (
-                  <div key={email._id} className="bg-background p-5 rounded-2xl border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-accent-blue/30 transition-all group">
+                  <div 
+                    key={email._id} 
+                    className="bg-background p-5 rounded-2xl border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-accent-blue/50 cursor-pointer transition-all group shadow-sm"
+                    onClick={() => setSelectedEmail(email)}
+                  >
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-bold text-primary mb-1 truncate">{email.subject}</div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[11px] font-bold text-success bg-success/10 px-2 py-0.5 rounded border border-success/20">Embedded</span>
-                        <span className="text-xs font-medium text-secondary">Body hidden for privacy</span>
-                        <span className="text-xs font-semibold text-muted ml-auto sm:ml-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-bold text-primary truncate">{email.subject || '(No Subject)'}</span>
+                        <span className="text-[11px] font-bold text-success bg-success/10 px-2 py-0.5 rounded border border-success/20 shrink-0">Embedded</span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-secondary font-medium">
+                        <div><span className="text-muted font-semibold">Sender:</span> {email.sender || 'Unknown'}</div>
+                        {email.recipient && <div><span className="text-muted font-semibold">To:</span> {email.recipient}</div>}
+                        <div className="text-muted ml-auto sm:ml-0">
                           {new Date(email.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </span>
+                        </div>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDelete(email._id)}
-                      className="p-2 text-muted hover:text-danger hover:bg-danger/10 rounded-lg transition-colors flex-shrink-0 self-end sm:self-auto opacity-100 sm:opacity-0 group-hover:opacity-100"
-                      title="Delete Pattern"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                    
+                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => setSelectedEmail(email)}
+                        className="px-4 py-2 bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5"
+                      >
+                        <Eye className="w-4 h-4" /> View Pattern
+                      </button>
+                      <button
+                        onClick={() => handleDelete(email._id)}
+                        className="p-2 text-muted hover:text-danger hover:bg-danger/10 rounded-xl transition-colors"
+                        title="Delete Pattern"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
+
+          {/* View Pattern Modal */}
+          {selectedEmail && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+              <div className="bg-card border border-border rounded-3xl max-w-2xl w-full p-6 md:p-8 shadow-elevated relative max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200">
+                <button
+                  onClick={() => setSelectedEmail(null)}
+                  className="absolute top-6 right-6 p-2 rounded-xl text-muted hover:text-primary hover:bg-secondary transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-accent-blue/10 text-accent-blue flex items-center justify-center">
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-primary">Saved Email Pattern</h2>
+                    <span className="text-xs font-semibold text-success bg-success/10 px-2 py-0.5 rounded border border-success/20 inline-block mt-0.5">
+                      RAG Vector Embedded
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-4 mb-6 text-sm bg-background p-4 rounded-2xl border border-border">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <span className="text-xs font-bold text-muted uppercase">Subject</span>
+                      <div className="font-bold text-primary">{selectedEmail.subject || '(No Subject)'}</div>
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-muted uppercase">Sender</span>
+                      <div className="font-bold text-primary font-mono text-xs">{selectedEmail.sender || 'Unknown'}</div>
+                    </div>
+                    {selectedEmail.recipient && (
+                      <div>
+                        <span className="text-xs font-bold text-muted uppercase">Recipient</span>
+                        <div className="font-medium text-secondary font-mono text-xs">{selectedEmail.recipient}</div>
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-xs font-bold text-muted uppercase">Date Added</span>
+                      <div className="font-medium text-secondary">
+                        {new Date(selectedEmail.createdAt).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-hidden flex flex-col mb-6">
+                  <span className="text-xs font-bold text-muted uppercase tracking-wider mb-2">Pattern Content (Body)</span>
+                  <div className="flex-1 bg-background border border-border rounded-2xl p-5 overflow-y-auto font-mono text-xs leading-relaxed text-primary whitespace-pre-wrap max-h-60 shadow-inner">
+                    {selectedEmail.body || selectedEmail.normalizedText || 'No content.'}
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center gap-4 pt-2 border-t border-border">
+                  <button
+                    onClick={() => handleDelete(selectedEmail._id)}
+                    className="px-5 py-2.5 bg-danger/10 text-danger hover:bg-danger/20 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5"
+                  >
+                    <Trash2 className="w-4 h-4" /> Delete Pattern
+                  </button>
+                  <button
+                    onClick={() => setSelectedEmail(null)}
+                    className="px-6 py-2.5 bg-primary text-background hover:opacity-90 rounded-xl text-xs font-bold transition-all"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </div>

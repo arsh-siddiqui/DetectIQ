@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ShieldAlert, ShieldCheck, AlertTriangle, Loader2, Info, Search, Cpu, BookOpen, Brain, ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
+import { ShieldAlert, ShieldCheck, AlertTriangle, Loader2, Info, Search, Cpu, BookOpen, Brain, ChevronDown, ChevronUp, CheckCircle, Eye, X } from "lucide-react";
 import { getScanResult, personalizeScan } from "../../services/detectionService";
 import Button from "../../components/ui/Button";
 
@@ -590,6 +590,8 @@ export default function ScanResult() {
 }
 
 function EmailPatternComparisonCard({ comparison }) {
+  const [selectedMatch, setSelectedMatch] = useState(null);
+
   if (!comparison) return null;
 
   return (
@@ -661,9 +663,15 @@ function EmailPatternComparisonCard({ comparison }) {
                 <div className="text-xs font-bold text-muted uppercase tracking-wider">Top Matched Baseline Patterns</div>
                 <div className="space-y-2">
                   {comparison.matches.map((m, idx) => (
-                    <div key={idx} className="p-4 bg-card border border-border rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm shadow-sm">
+                    <div 
+                      key={idx} 
+                      className="p-4 bg-card border border-border rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm shadow-sm hover:border-accent-blue/50 cursor-pointer transition-all group"
+                      onClick={() => setSelectedMatch(m)}
+                    >
                       <div className="space-y-0.5">
-                        <div className="font-bold text-primary">{m.subject || '(No Subject)'}</div>
+                        <div className="font-bold text-primary group-hover:text-accent-blue transition-colors">
+                          {m.subject || '(No Subject)'}
+                        </div>
                         <div className="text-xs text-muted">
                           Sender: <span className="font-medium text-secondary">{m.sender || 'Unknown Sender'}</span>
                         </div>
@@ -676,6 +684,9 @@ function EmailPatternComparisonCard({ comparison }) {
                         }`}>
                           {m.similarityPct || Math.round((m.similarity || 0) * 100)}% Similarity Match
                         </span>
+                        <button className="p-1.5 text-muted hover:text-accent-blue rounded-lg transition-colors">
+                          <Eye className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -685,6 +696,69 @@ function EmailPatternComparisonCard({ comparison }) {
           </div>
         )}
       </div>
+
+      {/* Matched Email Modal */}
+      {selectedMatch && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setSelectedMatch(null)}>
+          <div className="bg-card border border-border rounded-3xl max-w-xl w-full p-6 md:p-8 shadow-elevated relative max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setSelectedMatch(null)}
+              className="absolute top-6 right-6 p-2 rounded-xl text-muted hover:text-primary hover:bg-secondary transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-accent-blue/10 text-accent-blue flex items-center justify-center">
+                <BookOpen className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-primary">Matched Baseline Email</h2>
+                <span className="text-xs font-bold text-accent-blue bg-accent-blue/10 px-2 py-0.5 rounded border border-accent-blue/20 inline-block mt-0.5">
+                  {selectedMatch.similarityPct || Math.round((selectedMatch.similarity || 0) * 100)}% Similarity Score
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-3 mb-6 text-sm bg-background p-4 rounded-2xl border border-border">
+              <div>
+                <span className="text-xs font-bold text-muted uppercase">Subject</span>
+                <div className="font-bold text-primary">{selectedMatch.subject || '(No Subject)'}</div>
+              </div>
+              <div>
+                <span className="text-xs font-bold text-muted uppercase">Sender</span>
+                <div className="font-bold text-primary font-mono text-xs">{selectedMatch.sender || 'Unknown Sender'}</div>
+              </div>
+              {selectedMatch.createdAt && (
+                <div>
+                  <span className="text-xs font-bold text-muted uppercase">Date Added</span>
+                  <div className="font-medium text-secondary text-xs">
+                    {new Date(selectedMatch.createdAt).toLocaleString()}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {selectedMatch.body && (
+              <div className="flex-1 overflow-hidden flex flex-col mb-6">
+                <span className="text-xs font-bold text-muted uppercase tracking-wider mb-2">Saved Email Content</span>
+                <div className="flex-1 bg-background border border-border rounded-2xl p-5 overflow-y-auto font-mono text-xs leading-relaxed text-primary whitespace-pre-wrap max-h-56 shadow-inner">
+                  {selectedMatch.body}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2 border-t border-border">
+              <button
+                onClick={() => setSelectedMatch(null)}
+                className="px-6 py-2.5 bg-primary text-background hover:opacity-90 rounded-xl text-xs font-bold transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
