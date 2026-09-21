@@ -16,7 +16,7 @@ function parseEmailHeaders(text) {
     const fromMatch = text.match(/^From:\s*(.+)$/im);
     if (fromMatch) {
       const rawFrom = fromMatch[1].trim();
-      const emailMatch = rawFrom.match(/<([^>]+)>/);
+      const emailMatch = rawFrom.match(/<([^>]+)>/) || rawFrom.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
       sender = emailMatch ? emailMatch[1] : rawFrom;
     }
 
@@ -28,7 +28,7 @@ function parseEmailHeaders(text) {
     const toMatch = text.match(/^To:\s*(.+)$/im);
     if (toMatch) {
       const rawTo = toMatch[1].trim();
-      const emailMatch = rawTo.match(/<([^>]+)>/);
+      const emailMatch = rawTo.match(/<([^>]+)>/) || rawTo.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
       recipient = emailMatch ? emailMatch[1] : rawTo;
     }
 
@@ -61,7 +61,7 @@ async function createEmailHistory(userId, { sender, recipient, subject, body }) 
 
   // Auto-parse headers if sender or subject is missing/generic
   const parsed = parseEmailHeaders(body);
-  const finalSender = (sender && sender !== 'unknown@example.com' && sender !== 'Unknown') ? sender : (parsed.sender || 'Pasted Email Baseline');
+  const finalSender = (sender && sender !== 'unknown@example.com' && sender !== 'Unknown' && sender !== 'Unknown Sender') ? sender : (parsed.sender || 'Pasted Email Baseline');
   const finalSubject = (subject && subject !== 'Saved Email Pattern' && subject !== 'Added from Scan' && subject !== '(No Subject)') ? subject : (parsed.subject || 'Legitimate Email Baseline');
   const finalRecipient = (recipient && recipient !== 'me@example.com' && recipient !== 'Me') ? recipient : (parsed.recipient || 'Me');
 
@@ -96,14 +96,39 @@ async function createEmailHistory(userId, { sender, recipient, subject, body }) 
 
 /**
  * Retrieves paginated email history for a specific user.
- * Includes body so user can view/open saved email patterns.
+ * Includes body so user can view/open saved email patterns and auto-repairs legacy records.
  */
 async function getEmailHistoryList(userId, limit = 50, skip = 0) {
-  return EmailHistory.find({ user: userId })
+  const emails = await EmailHistory.find({ user: userId })
     .select('_id sender recipient subject body createdAt embeddingStatus isLegitimateContext')
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
+
+  // Auto-repair existing legacy MongoDB records created before header parsing was added
+  for (const email of emails) {
+    if ((!email.sender || email.sender === 'Unknown' || email.sender === 'unknown@example.com' || email.sender === 'Unknown Sender') && email.body) {
+      const parsed = parseEmailHeaders(email.body);
+      let updated = false;
+      if (parsed.sender && parsed.sender !== email.sender) {
+        email.sender = parsed.sender;
+        updated = true;
+      }
+      if (parsed.subject && (!email.subject || email.subject === 'Added from Scan' || email.subject === 'Saved Email Pattern')) {
+        email.subject = parsed.subject;
+        updated = true;
+      }
+      if (parsed.recipient && (!email.recipient || email.recipient === 'Me' || email.recipient === 'me@example.com')) {
+        email.recipient = parsed.recipient;
+        updated = true;
+      }
+      if (updated) {
+        await email.save().catch(() => null);
+      }
+    }
+  }
+
+  return emails;
 }
 
 /**

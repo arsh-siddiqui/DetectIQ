@@ -183,14 +183,11 @@ const personalizeScan = asyncHandler(async (req, res) => {
     throw new Error('Email content is missing from this scan.');
   }
 
-  const emailHistoryService = require('../services/emailHistoryService');
-  
-  // Create an email pattern. We might not have sender/recipient split perfectly,
-  // but emailHistoryService accepts what we give it.
+  // Create an email pattern using auto-parsed headers from bodyContent
   const result = await emailHistoryService.createEmailHistory(req.user._id, { 
-    sender: 'Unknown', 
-    recipient: 'Me', 
-    subject: 'Added from Scan', 
+    sender: '', 
+    recipient: '', 
+    subject: '', 
     body: bodyContent 
   });
   

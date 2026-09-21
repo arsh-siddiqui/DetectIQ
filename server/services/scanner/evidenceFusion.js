@@ -383,12 +383,31 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
     
     const formattedMatches = (ragEvidence.similarityData || []).map(s => {
       const doc = (ragEvidence.historicalDocs || []).find(d => String(d._id) === String(s.emailId));
+      let docSender = doc?.sender;
+      let docSubject = doc?.subject;
+      let docBody = doc?.body;
+
+      // Dynamic fallback header parsing if stored as Unknown
+      if ((!docSender || docSender === 'Unknown' || docSender === 'Unknown Sender') && docBody) {
+        const fromM = docBody.match(/^From:\s*(.+)$/im);
+        if (fromM) {
+          const rawF = fromM[1].trim();
+          const eM = rawF.match(/<([^>]+)>/) || rawF.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+          docSender = eM ? eM[1] : rawF;
+        }
+      }
+      if ((!docSubject || docSubject === 'Added from Scan' || docSubject === 'Saved Email Pattern') && docBody) {
+        const subM = docBody.match(/^Subject:\s*(.+)$/im);
+        if (subM) docSubject = subM[1].trim();
+      }
+
       return {
         emailId: s.emailId,
         similarity: s.similarity,
         similarityPct: Math.round((s.similarity || 0) * 100),
-        subject: doc?.subject || '(No Subject)',
-        sender: doc?.sender || 'Unknown Sender',
+        subject: docSubject || '(No Subject)',
+        sender: docSender || 'Unknown Sender',
+        body: docBody || '',
         createdAt: doc?.createdAt
       };
     });
@@ -399,12 +418,12 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
       const fromMatch = rawContent.match(/^From:\s*(.+)$/im);
       if (fromMatch) {
         let rawFrom = fromMatch[1].trim();
-        const emailInsideBrackets = rawFrom.match(/<([^>]+)>/);
-        parsedSender = emailInsideBrackets ? emailInsideBrackets[1] : rawFrom;
+        const emailMatch = rawFrom.match(/<([^>]+)>/) || rawFrom.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+        parsedSender = emailMatch ? emailMatch[1] : rawFrom;
       }
     }
 
-    const historicalSenders = (ragEvidence.historicalDocs || []).map(d => d.sender).filter(Boolean);
+    const historicalSenders = formattedMatches.map(m => m.sender).filter(s => s && s !== 'Unknown Sender' && s !== 'Unknown');
     let senderComp = null;
 
     if (parsedSender) {
