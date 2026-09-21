@@ -166,7 +166,7 @@ async function analyzeContent(content, scanType = 'url', userId = null) {
   const [mlEvidence, threatIntel, ragEvidence] = await Promise.all([mlTask, tiTask, ragTask]);
 
   // 4. Evidence Fusion
-  const fusedResult = fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, null);
+  const fusedResult = fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, groqResult, content);
 
   // 5. Groq contextual analysis
   let groqResult = null;

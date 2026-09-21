@@ -598,7 +598,10 @@ function EmailPatternComparisonCard({ comparison }) {
         <div className="w-10 h-10 rounded-xl bg-accent-blue/10 text-accent-blue flex items-center justify-center">
           <BookOpen className="w-5 h-5" />
         </div>
-        <h3 className="text-xl font-bold text-primary">Email Pattern Comparison</h3>
+        <div>
+          <h3 className="text-xl font-bold text-primary">Email Pattern Comparison</h3>
+          <p className="text-xs text-muted font-medium">Personalized RAG baseline matching</p>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -616,23 +619,67 @@ function EmailPatternComparisonCard({ comparison }) {
 
         {comparison.status === 'no_match' && (
           <p className="text-sm text-secondary font-medium">
-            Historical email patterns are available ({comparison.historyCount} emails), but no strong match was found.
+            Compared against {comparison.historyCount} historical emails in your baseline, but no strong vector match was found.
           </p>
         )}
 
         {comparison.status === 'available' && (
           <div className="space-y-4">
             <p className="text-sm text-secondary font-medium">
-              Compared against {comparison.historyCount} historical emails. Similarity found with previously saved patterns.
+              Compared against {comparison.historyCount} historical emails in your personalized baseline.
             </p>
+
+            {/* Sender Analysis */}
             {comparison.senderComparison && (
-              <div className="p-4 bg-secondary/5 rounded-xl text-sm border border-border">
-                <span className="font-bold block mb-1">Sender Analysis:</span>
-                Current Sender: {comparison.senderComparison.currentSender}
-                <br />
-                {comparison.senderComparison.match 
-                  ? <span className="text-success font-medium">Matches historically safe sender pattern.</span> 
-                  : <span className="text-warning font-medium">Does not closely match previously observed institutional senders.</span>}
+              <div className="p-4 bg-card rounded-2xl text-sm border border-border space-y-1">
+                <div className="font-bold text-primary">Sender Analysis</div>
+                <div className="text-secondary">
+                  <span className="font-semibold text-muted">Current Sender:</span>{" "}
+                  <span className="font-mono text-primary font-bold">{comparison.senderComparison.currentSender}</span>
+                </div>
+                <div>
+                  {comparison.senderComparison.match === true ? (
+                    <span className="text-success font-semibold flex items-center gap-1.5 mt-1">
+                      <CheckCircle className="w-4 h-4 inline shrink-0" /> Matches historically safe sender pattern.
+                    </span>
+                  ) : comparison.senderComparison.match === false ? (
+                    <span className="text-warning font-semibold flex items-center gap-1.5 mt-1">
+                      <AlertTriangle className="w-4 h-4 inline shrink-0" /> {comparison.senderComparison.detail}
+                    </span>
+                  ) : (
+                    <span className="text-muted font-medium text-xs block mt-1">
+                      {comparison.senderComparison.detail}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Matched Historical Baseline Emails */}
+            {comparison.matches && comparison.matches.length > 0 && (
+              <div className="space-y-3 pt-2">
+                <div className="text-xs font-bold text-muted uppercase tracking-wider">Top Matched Baseline Patterns</div>
+                <div className="space-y-2">
+                  {comparison.matches.map((m, idx) => (
+                    <div key={idx} className="p-4 bg-card border border-border rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm shadow-sm">
+                      <div className="space-y-0.5">
+                        <div className="font-bold text-primary">{m.subject || '(No Subject)'}</div>
+                        <div className="text-xs text-muted">
+                          Sender: <span className="font-medium text-secondary">{m.sender || 'Unknown Sender'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`px-3 py-1 rounded-xl text-xs font-bold border ${
+                          (m.similarityPct || Math.round((m.similarity || 0) * 100)) >= 70
+                            ? 'bg-success/10 text-success border-success/20'
+                            : 'bg-accent-blue/10 text-accent-blue border-accent-blue/20'
+                        }`}>
+                          {m.similarityPct || Math.round((m.similarity || 0) * 100)}% Similarity Match
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

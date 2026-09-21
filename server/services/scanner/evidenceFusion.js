@@ -118,7 +118,7 @@ function otxEvidenceStrength(otxResult) {
  * @param {Object|null} groqResult       from groqService
  * @returns {Object}  Final authoritative assessment
  */
-function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, groqResult) {
+function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, groqResult, rawContent = '') {
   const analysisSources = ['heuristics'];
   let finalRiskScore    = heuristicResult.riskScore  || 0;
   let finalConfidence   = heuristicResult.confidence || 0;
@@ -381,13 +381,57 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
   if (ragEvidence) {
     analysisSources.push('rag');
     
-    // Construct the structured response
+    const formattedMatches = (ragEvidence.similarityData || []).map(s => {
+      const doc = (ragEvidence.historicalDocs || []).find(d => String(d._id) === String(s.emailId));
+      return {
+        emailId: s.emailId,
+        similarity: s.similarity,
+        similarityPct: Math.round((s.similarity || 0) * 100),
+        subject: doc?.subject || '(No Subject)',
+        sender: doc?.sender || 'Unknown Sender',
+        createdAt: doc?.createdAt
+      };
+    });
+
+    // Extract current sender from raw input text if From: header is present
+    let parsedSender = null;
+    if (rawContent && typeof rawContent === 'string') {
+      const fromMatch = rawContent.match(/^From:\s*(.+)$/im);
+      if (fromMatch) {
+        let rawFrom = fromMatch[1].trim();
+        const emailInsideBrackets = rawFrom.match(/<([^>]+)>/);
+        parsedSender = emailInsideBrackets ? emailInsideBrackets[1] : rawFrom;
+      }
+    }
+
+    const historicalSenders = (ragEvidence.historicalDocs || []).map(d => d.sender).filter(Boolean);
+    let senderComp = null;
+
+    if (parsedSender) {
+      const isMatch = historicalSenders.some(s => s.toLowerCase() === parsedSender.toLowerCase());
+      senderComp = {
+        currentSender: parsedSender,
+        historicalSenders,
+        match: isMatch,
+        hasSenderHeader: true,
+        detail: isMatch ? 'Matches historically safe sender pattern.' : 'Does not closely match previously observed institutional senders.'
+      };
+    } else {
+      senderComp = {
+        currentSender: 'Not specified in header',
+        historicalSenders,
+        match: null,
+        hasSenderHeader: false,
+        detail: 'No "From:" header line was found in the scanned text. (Paste email headers for sender analysis).'
+      };
+    }
+
     emailPatternComparison = {
       available: ragEvidence.status === 'available' || ragEvidence.status === 'no_match',
       status: ragEvidence.status || 'no_history',
       historyCount: ragEvidence.historyCount || 0,
-      matches: ragEvidence.similarityData || [],
-      senderComparison: null,
+      matches: formattedMatches,
+      senderComparison: senderComp,
       domainComparison: null
     };
 
@@ -400,18 +444,6 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
         finalReasons.push({ source: 'Personalization_RAG', title: 'Familiar Pattern', detail: `Highly similar (${simPct}%) to your saved legitimate patterns.`, severity: 'info' });
       } else if (avgSim < 0.3) {
         finalReasons.push({ source: 'Personalization_RAG', title: 'Unusual Pattern', detail: `Low similarity (${simPct}%) with your saved patterns.`, severity: 'medium' });
-      }
-
-      // Check if we have historical sender mismatches (contextual evidence only)
-      if (ragEvidence.historicalDocs && ragEvidence.historicalDocs.length > 0 && heuristicResult) {
-        const currentSender = heuristicResult.detectedSignals?.find(s => s.toLowerCase().includes('sender')) || 'unknown';
-        const historicalSenders = ragEvidence.historicalDocs.map(d => d.sender).filter(Boolean);
-        
-        emailPatternComparison.senderComparison = {
-          currentSender,
-          historicalSenders,
-          match: historicalSenders.some(s => s.toLowerCase() === currentSender.toLowerCase())
-        };
       }
     }
   }
