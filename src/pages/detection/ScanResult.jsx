@@ -639,21 +639,11 @@ function EmailPatternComparisonCard({ comparison }) {
                   <span className="font-semibold text-muted">Current Sender:</span>{" "}
                   <span className="font-mono text-primary font-bold">{comparison.senderComparison.currentSender}</span>
                 </div>
-                <div>
-                  {comparison.senderComparison.match === true ? (
-                    <span className="text-success font-semibold flex items-center gap-1.5 mt-1">
-                      <CheckCircle className="w-4 h-4 inline shrink-0" /> Matches historically safe sender pattern.
-                    </span>
-                  ) : comparison.senderComparison.match === false ? (
-                    <span className="text-warning font-semibold flex items-center gap-1.5 mt-1">
-                      <AlertTriangle className="w-4 h-4 inline shrink-0" /> {comparison.senderComparison.detail}
-                    </span>
-                  ) : (
-                    <span className="text-muted font-medium text-xs block mt-1">
-                      {comparison.senderComparison.detail}
-                    </span>
-                  )}
-                </div>
+                {comparison.senderComparison.match === true && (
+                  <div className="text-success font-semibold flex items-center gap-1.5 mt-1">
+                    <CheckCircle className="w-4 h-4 inline shrink-0" /> Matches historically safe sender pattern.
+                  </div>
+                )}
               </div>
             )}
 
