@@ -423,15 +423,19 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
 
       {validPointsCount > 0 && (
         <div className="absolute bottom-4 right-4 z-10">
-          <div className="bg-[#0f172a]/90 backdrop-blur-md border border-slate-800 rounded-lg px-3 py-1.5 shadow-lg group relative cursor-help">
-            <span className="text-[11px] text-slate-300 font-medium flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-              {totalIndicators ? `Showing ${validPointsCount} location${validPointsCount !== 1 ? "s" : ""} from ${totalIndicators} indicator${totalIndicators !== 1 ? "s" : ""}` : `${validPointsCount} geolocated location${validPointsCount !== 1 ? "s" : ""}`}
-              <Info size={12} className="text-slate-400 ml-1" />
+          <div className="bg-[#0f172a]/95 backdrop-blur-md border border-slate-700 rounded-xl px-3.5 py-2 shadow-xl group relative cursor-help">
+            <span className="text-xs text-slate-200 font-bold flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+              {totalIndicators ? `Showing ${validPointsCount} location pin${validPointsCount !== 1 ? "s" : ""} (${totalIndicators} total indicators)` : `${validPointsCount} geolocated location${validPointsCount !== 1 ? "s" : ""}`}
+              <Info size={14} className="text-slate-400 ml-0.5" />
             </span>
-            {/* Tooltip to explain why counts differ */}
-            <div className="absolute bottom-full right-0 mb-2 w-64 p-2 bg-[#1e293b] border border-slate-700 rounded-lg text-xs text-slate-300 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all pointer-events-none z-50">
-              Only indicators with a valid physical location (IPs and resolved Domains) can be plotted on the map. Hashes, email addresses, and private IPs do not have geographic coordinates.
+            {/* Tooltip explaining count difference */}
+            <div className="absolute bottom-full right-0 mb-2 w-72 p-3 bg-[#1e293b] border border-slate-600 rounded-xl text-xs text-slate-200 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all pointer-events-none z-50 leading-relaxed">
+              <div className="font-bold text-white mb-1">Why do location pins differ from total indicators?</div>
+              <ul className="space-y-1 text-[11px] text-slate-300 list-disc pl-3">
+                <li><b>Non-Mappable Types:</b> Email addresses, file hashes, and private/internal IPs do not have physical GPS coordinates.</li>
+                <li><b>Pin Aggregation:</b> Indicators sharing the same exact city or datacenter are grouped into 1 pin to prevent overlapping icons.</li>
+              </ul>
             </div>
           </div>
         </div>
