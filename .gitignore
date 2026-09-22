@@ -9,6 +9,8 @@ ml/.env
 .env.local
 *.cjs
 lint_output.txt
+lint.json
+lovable/
 server/jest-results*.json
 server/test-results.txt
 server/test_report.js

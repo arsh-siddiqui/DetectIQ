@@ -1,0 +1,30 @@
+From: "Somaiya Library" <library@somaiya.edu>
+To: student@somaiya.edu
+Subject: Library Book Return Reminder - November 2026
+Date: Mon, 21 Sep 2026 10:00:00 +0000
+Message-ID: <20260921100000.123981@somaiya.edu>
+Reply-To: library@somaiya.edu
+Return-Path: <library@somaiya.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Received: from mail.somaiya.edu (mail.somaiya.edu [209.85.220.41])
+	by mx.somaiya.edu (Postfix) with ESMTP id C91823710B
+	for <student@somaiya.edu>; Mon, 21 Sep 2026 10:00:02 +0000
+Authentication-Results: mx.somaiya.edu;
+	spf=pass (sender IP 209.85.220.41, domain somaiya.edu) smtp.mailfrom=library@somaiya.edu;
+	dkim=pass header.d=somaiya.edu;
+	dmarc=pass (p=none) header.from=somaiya.edu
+
+Dear Student,
+
+This is a gentle reminder that the following book(s) borrowed from Somaiya Central Library are due for return:
+
+- "Introduction to Algorithms" by Cormen et al. - Due: November 5, 2026
+- "Computer Networks" by Tanenbaum - Due: November 8, 2026
+
+Please return or renew these items online through the student portal to avoid late fees.
+
+Warm regards,
+Somaiya Central Library
+https://somaiya.edu/library

@@ -1,0 +1,36 @@
+From: "Chief Financial Officer" <cfo@corporate-finance-dept.org>
+To: accounts@university.edu
+Subject: URGENT: Wire Transfer Request #8921 - Confidential
+Date: Mon, 21 Sep 2026 15:10:00 +0000
+Message-ID: <20260921151000.771239@corporate-finance-dept.org>
+Reply-To: cfo-urgent@protonmail.com
+Return-Path: <bounce@corporate-finance-dept.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Received: from mx.university.edu (mx.university.edu [198.51.100.12])
+	by mail.university.edu (Postfix) with ESMTP id F81723102A
+	for <accounts@university.edu>; Mon, 21 Sep 2026 15:10:05 +0000
+Received: from relay.fastmail-server.net (relay.fastmail-server.net [185.220.102.8])
+	by mx.university.edu (gateway-2.university.edu [172.217.14.206]) with ESMTP id 98127391
+	for <accounts@university.edu>; Mon, 21 Sep 2026 15:10:03 +0000
+Received: from node-east.cloud-vps.org (node-east.cloud-vps.org [142.250.190.46])
+	by relay.fastmail-server.net with ESMTP id 12873109
+	for <accounts@university.edu>; Mon, 21 Sep 2026 15:10:01 +0000
+Authentication-Results: mx.university.edu;
+	spf=softfail (sender IP 185.220.102.8) smtp.mailfrom=bounce@corporate-finance-dept.org;
+	dkim=none;
+	dmarc=fail (p=quarantine) header.from=corporate-finance-dept.org
+
+Hi Accounts Team,
+
+Please process an urgent international wire transfer of $14,500 today for the ongoing server infrastructure upgrade project.
+
+Vendor Payment Link & Invoice Details:
+http://corporate-finance-dept.org/invoice-payment
+
+Note: This transaction is confidential and time-sensitive. Please do not call to confirm as I am in meetings all afternoon; reply directly to this email if you need assistance.
+
+Best regards,
+Chief Financial Officer
+Corporate Finance Department

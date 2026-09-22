@@ -1,0 +1,40 @@
+From: "PayPal Fraud Prevention" <security-update@paypal-verify-account.com>
+To: victim@institution.edu
+Subject: URGENT: Suspicious Login Detected - Action Required Immediately
+Date: Mon, 21 Sep 2026 14:22:10 +0000
+Message-ID: <20260921142210.982173@paypal-verify-account.com>
+Reply-To: support@paypal-verify-account.com
+Return-Path: <bounce@paypal-verify-account.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [185.220.101.5]
+Received: from mx.institution.edu (mx.institution.edu [198.51.100.45])
+	by mail.institution.edu (Postfix) with ESMTP id D91823719A
+	for <victim@institution.edu>; Mon, 21 Sep 2026 14:22:15 +0000
+Received: from mail-relay.fake-host.net (mail-relay.fake-host.net [185.220.101.5])
+	by mx.institution.edu (gateway-1.institution.edu [209.85.220.41]) with ESMTP id 8192731A
+	for <victim@institution.edu>; Mon, 21 Sep 2026 14:22:12 +0000
+Received: from outbound.bullet-host.org (outbound.bullet-host.org [193.142.146.210])
+	by mail-relay.fake-host.net (Postfix) with ESMTP id 41928731
+	for <victim@institution.edu>; Mon, 21 Sep 2026 14:22:11 +0000
+Authentication-Results: mx.institution.edu;
+	spf=fail (sender IP 185.220.101.5, domain paypal-verify-account.com) smtp.mailfrom=bounce@paypal-verify-account.com;
+	dkim=fail header.d=paypal-verify-account.com;
+	dmarc=fail (p=reject) header.from=paypal-verify-account.com
+
+Dear Valued Customer,
+
+We detected an unauthorized login attempt to your PayPal account from an unrecognized device in Moscow, Russia (IP: 185.220.101.5).
+
+Your account access has been temporarily restricted for your protection.
+
+To restore your full account access and avoid permanent suspension within 24 hours, please verify your credentials immediately:
+
+http://paypal-verify-account.com/login?token=98127391238
+
+If you did not attempt this login, click the link above immediately to secure your account.
+
+Sincerely,
+PayPal Security & Risk Operations
+https://www.paypal.com/security
