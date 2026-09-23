@@ -44,6 +44,7 @@ function calculateRisk(signals) {
     threat:            { score: 50, confidence: 30 }, // High when combined with urgency
     // Strong but contextual URL signals
     brand_impersonation: { score: 50, confidence: 30 },
+    embedded_domain_in_path: { score: 65, confidence: 35 },
     typosquatting:       { score: 65, confidence: 35 },
     ip_hostname:         { score: 50, confidence: 30 },
   };

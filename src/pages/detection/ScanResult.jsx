@@ -169,13 +169,60 @@ export default function ScanResult() {
     ? scan.recommendations.map(formatUrlText)
     : scan.recommendations;
 
-  const finalLlmAnalysisStr = isUrlAnalysis 
+  const isThreat = isDanger || isMedium;
+
+  // Candidate LLM reasons
+  const rawLlmReasons = scan.llmResult?.reasons || scan.groq?.reasons;
+  const formattedLlmReasons = Array.isArray(rawLlmReasons)
+    ? rawLlmReasons.map(r => typeof r === 'string' ? (isUrlAnalysis ? formatUrlText(r) : r) : (r.detail || r.title || '')).filter(Boolean)
+    : [];
+
+  // When this is a threat (Suspicious or Phishing), purge contradictory "safe" strings
+  const validThreatLlmReasons = isThreat
+    ? formattedLlmReasons.filter(r => {
+        const lower = r.toLowerCase();
+        return !lower.includes('no significant phishing') &&
+               !lower.includes('no phishing indicators') &&
+               !lower.includes('no suspicious') &&
+               !lower.includes('appears safe');
+      })
+    : formattedLlmReasons;
+
+  // If valid LLM reasons exist, use them. Otherwise, pull real reasons from scan.reasons or scan.summary
+  let finalReasons = [];
+  if (validThreatLlmReasons.length > 0) {
+    finalReasons = validThreatLlmReasons;
+  } else if (isThreat) {
+    const evidenceReasons = (scan.reasons || [])
+      .filter(r => r.severity === 'high' || r.severity === 'medium' || (r.source === 'Threat_Intelligence' && r.severity !== 'info'))
+      .map(r => r.detail || r.title || r.explanation)
+      .filter(Boolean)
+      .map(r => isUrlAnalysis ? formatUrlText(r) : r);
+
+    if (evidenceReasons.length > 0) {
+      finalReasons = evidenceReasons;
+    } else if (scan.summary && !scan.summary.toLowerCase().includes('no threat') && !scan.summary.toLowerCase().includes('no phishing')) {
+      finalReasons = [isUrlAnalysis ? formatUrlText(scan.summary) : scan.summary];
+    } else {
+      finalReasons = [
+        isDanger
+          ? 'Multiple severe warning signs and threat-intelligence detections were identified.'
+          : 'Elevated risk indicators and suspicious patterns warrant caution before interacting.'
+      ];
+    }
+  } else {
+    finalReasons = formattedLlmReasons.length > 0
+      ? formattedLlmReasons
+      : [isUrlAnalysis ? formatUrlText(scan.summary) || 'No threat indicators detected.' : scan.summary || 'No threat indicators detected.'];
+  }
+
+  let finalLlmAnalysisStr = isUrlAnalysis 
     ? formatUrlText(llmAnalysisStr)
     : llmAnalysisStr;
 
-  const finalReasons = isUrlAnalysis && scan.llmResult?.reasons
-    ? scan.llmResult.reasons.map(formatUrlText)
-    : scan.llmResult?.reasons;
+  if (isThreat && (finalLlmAnalysisStr.toLowerCase().includes('no phishing') || finalLlmAnalysisStr.toLowerCase().includes('no significant phishing') || finalLlmAnalysisStr.toLowerCase().includes('appears safe'))) {
+    finalLlmAnalysisStr = scan.summary || (isDanger ? 'Critical threat detected for this content.' : 'Suspicious indicators detected for this content.');
+  }
 
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">

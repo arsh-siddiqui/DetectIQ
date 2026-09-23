@@ -1,5 +1,9 @@
-// Simple brand list for heuristic detection
-const BRANDS = ['google', 'microsoft', 'amazon', 'apple', 'paypal', 'whatsapp', 'instagram', 'facebook', 'netflix'];
+// Brand list for heuristic detection (tech, social, banking & financial)
+const BRANDS = [
+  'google', 'microsoft', 'amazon', 'apple', 'paypal', 'whatsapp', 'instagram', 'facebook', 'netflix',
+  'americanexpress', 'amex', 'chase', 'wellsfargo', 'bankofamerica', 'citibank', 'barclays', 'hsbc',
+  'hdfc', 'icici', 'sbi', 'binance', 'coinbase'
+];
 
 // Common URL shorteners
 const SHORTENERS = ['bit.ly', 'tinyurl.com', 't.co', 'ow.ly', 'is.gd', 'buff.ly', 'adf.ly', 'bit.do', 'cutt.ly', 'shorturl.at'];
@@ -120,6 +124,7 @@ function analyzeUrl(urlString, options = {}) {
   // e.g., "paypal-verify.com" (parts: ['paypal-verify', 'com']) -> includes 'paypal' but 'paypal' is not a standalone part.
   // e.g., "google.com" (parts: ['google', 'com']) -> 'google' is a standalone part, so it is skipped generically.
   const hostParts = hostname.split('.');
+  let brandFlagged = false;
   for (const brand of BRANDS) {
     if (hostname.includes(brand) && !hostParts.includes(brand)) {
       signals.push({
@@ -129,7 +134,39 @@ function analyzeUrl(urlString, options = {}) {
         explanation: `The domain contains the brand name "${brand}" embedded within other text, which can indicate impersonation.`,
         evidence: hostname,
       });
+      brandFlagged = true;
       break;
+    }
+  }
+
+  // Deceptive URL Path: Check if path contains an embedded domain name (e.g. /www.online.americanexpress.com/...)
+  const embeddedDomainMatch = pathname.match(/(?:^|\/)(?:www\.)?([a-zA-Z0-9-]+\.(?:com|org|net|gov|edu|co\.[a-z]{2}|online|bank|security))(?:\/|$)/i);
+  if (embeddedDomainMatch) {
+    const embeddedHost = embeddedDomainMatch[1];
+    if (!hostname.includes(embeddedHost)) {
+      signals.push({
+        type: 'embedded_domain_in_path',
+        severity: 'high',
+        title: 'Deceptive URL Path',
+        explanation: `The URL path embeds a fake web address ("${embeddedHost}") to deceive users into believing they are on a different site.`,
+        evidence: embeddedHost,
+      });
+    }
+  }
+
+  // Brand impersonation in path or query if not already on the brand's domain
+  if (!brandFlagged) {
+    for (const brand of BRANDS) {
+      if ((pathname.includes(brand) || search.includes(brand)) && !hostname.includes(brand)) {
+        signals.push({
+          type: 'brand_impersonation',
+          severity: 'high',
+          title: 'Brand Impersonation in URL Path',
+          explanation: `The URL path specifically mimics the protected brand "${brand}" while being hosted on an unrelated domain ("${hostname}").`,
+          evidence: `${brand} in path on ${hostname}`,
+        });
+        break;
+      }
     }
   }
 
