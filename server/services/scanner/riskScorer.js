@@ -40,6 +40,7 @@ function calculateRisk(signals) {
     // Strong fraud indicators — reach High on their own
     otp_request:       { score: 70, confidence: 35 }, // Strong fraud indicator
     investment_scam:   { score: 70, confidence: 35 }, // Strong fraud indicator
+    credential_request: { score: 65, confidence: 35 }, // High credential harvesting indicator
     job_scam:          { score: 55, confidence: 30 }, // High alongside payment signal
     threat:            { score: 50, confidence: 30 }, // High when combined with urgency
     // Strong but contextual URL signals

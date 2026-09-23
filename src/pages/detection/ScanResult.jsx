@@ -173,7 +173,7 @@ export default function ScanResult() {
 
   // 1. Extract real threat reasons from evidence layers (VirusTotal, Heuristics, ML)
   const evidenceThreatReasons = isThreat
-    ? (scan.reasons || [])
+    ? (scan.evidence || scan.reasons || [])
         .filter(r => (r.source === 'Threat_Intelligence' && r.severity !== 'info') ||
                      (r.source === 'Heuristics' && r.title !== 'Verified Content') ||
                      (r.source === 'ML_Classifier' && r.severity !== 'low'))

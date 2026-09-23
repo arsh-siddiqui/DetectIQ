@@ -1,8 +1,8 @@
 // Brand list for heuristic detection (tech, social, banking & financial)
 const BRANDS = [
-  'google', 'microsoft', 'amazon', 'apple', 'paypal', 'whatsapp', 'instagram', 'facebook', 'netflix',
+  'google', 'microsoft', 'office365', 'outlook', 'amazon', 'apple', 'paypal', 'whatsapp', 'instagram', 'facebook', 'netflix',
   'americanexpress', 'amex', 'chase', 'wellsfargo', 'bankofamerica', 'citibank', 'barclays', 'hsbc',
-  'hdfc', 'icici', 'sbi', 'binance', 'coinbase'
+  'hdfc', 'icici', 'sbi', 'binance', 'coinbase', 'fedex', 'dhl', 'ups'
 ];
 
 // Common URL shorteners

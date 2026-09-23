@@ -8,7 +8,7 @@ function analyzeMessage(text) {
   const lowerText = String(text || '').toLowerCase();
 
   // 1. Urgency
-  if (/(?:act now|immediately|today|within \d+ (?:minutes|hours)|asap|urgent)/.test(lowerText)) {
+  if (/(?:act now|immediately|today|within \d+ (?:minutes|hours|days)|asap|urgent|expires? in \d+|action required|limited time|critical notice)/i.test(lowerText)) {
     signals.push({
       type: 'urgency',
       severity: 'medium',
@@ -19,7 +19,7 @@ function analyzeMessage(text) {
   }
 
   // 2. Threat / Consequence
-  if (/(?:account (?:will be|is) (?:blocked|suspended|closed)|legal action|police|arrest|warrant|fine|penalty|last warning|final notice)/.test(lowerText)) {
+  if (/(?:account (?:will be|is|has been) (?:blocked|suspended|closed|locked|terminated)|termination of|access (?:will be |is )?(?:terminated|suspended|revoked|closed)|legal action|police|arrest|warrant|fine|penalty|last warning|final notice|permanently (?:delete|close|block|suspend)|failure to .* (?:will result|access))/i.test(lowerText)) {
     signals.push({
       type: 'threat',
       severity: 'high',
@@ -30,7 +30,7 @@ function analyzeMessage(text) {
   }
 
   // 3. OTP Request
-  if (/(?:share(?: the)? otp|tell(?: me)?(?: the)? otp|send(?: the)? otp|verification code|one time password)/.test(lowerText)) {
+  if (/(?:share(?: the)? otp|tell(?: me)?(?: the)? otp|send(?: the)? otp|verification code|one time password)/i.test(lowerText)) {
     signals.push({
       type: 'otp_request',
       severity: 'high',
@@ -41,7 +41,7 @@ function analyzeMessage(text) {
   }
 
   // 4. Credential Request
-  if (/(?:enter(?: your)? password|confirm(?: your)? pin|verify(?: your)? login|account details|card number|cvv)/.test(lowerText)) {
+  if (/(?:enter(?: your)? password|confirm(?: your)? pin|verify(?: your)? login|account details|card number|cvv|credentials|password expires?|verify.*(?:credentials|identity|account|login)|update.*(?:password|credentials|login)|reset.*password)/i.test(lowerText)) {
     signals.push({
       type: 'credential_request',
       severity: 'high',
