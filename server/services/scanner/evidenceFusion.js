@@ -105,6 +105,49 @@ function otxEvidenceStrength(otxResult) {
 }
 
 // ---------------------------------------------------------------------------
+// Well-known authentic domains list & helper
+// ---------------------------------------------------------------------------
+
+const TRUSTED_DOMAINS = new Set([
+  'google.com', 'google.co.in', 'google.co.uk', 'google.ca', 'google.de', 'google.fr', 'google.com.au', 'google.co.jp',
+  'microsoft.com', 'live.com', 'office.com', 'office365.com', 'outlook.com', 'azure.com', 'bing.com',
+  'apple.com', 'icloud.com',
+  'amazon.com', 'amazon.in', 'amazon.co.uk', 'amazon.de', 'amazon.ca', 'aws.amazon.com',
+  'paypal.com',
+  'github.com', 'gitlab.com',
+  'wikipedia.org',
+  'youtube.com',
+  'facebook.com', 'instagram.com', 'whatsapp.com',
+  'twitter.com', 'x.com',
+  'linkedin.com',
+  'netflix.com',
+  'cloudflare.com',
+  'yahoo.com',
+  'duckduckgo.com',
+  'reddit.com',
+  'spotify.com',
+  'zoom.us',
+  'slack.com'
+]);
+
+function isTrustedDomain(hostname) {
+  if (!hostname || typeof hostname !== 'string') return false;
+  let cleanHost = hostname.trim().toLowerCase().replace(/\.$/, '');
+  if (cleanHost.startsWith('www.')) cleanHost = cleanHost.slice(4);
+  if (TRUSTED_DOMAINS.has(cleanHost)) return true;
+  const parts = cleanHost.split('.');
+  if (parts.length >= 2) {
+    const root2 = parts.slice(-2).join('.');
+    if (TRUSTED_DOMAINS.has(root2)) return true;
+    if (parts.length >= 3) {
+      const root3 = parts.slice(-3).join('.');
+      if (TRUSTED_DOMAINS.has(root3)) return true;
+    }
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------------
 // Main fusion function
 // ---------------------------------------------------------------------------
 
@@ -130,6 +173,18 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
 
   const hasSignals = (heuristicResult.detectedSignals || []).length > 0;
 
+  // Extract hostname from rawContent or threatIntel for domain context evaluation
+  let extractedHostname = null;
+  const urlCandidate = (typeof rawContent === 'string' && rawContent.trim()) || threatIntel?.checkedUrl || '';
+  if (urlCandidate) {
+    try {
+      const parsed = new URL(/^https?:\/\//i.test(urlCandidate) ? urlCandidate : 'http://' + urlCandidate);
+      extractedHostname = parsed.hostname.toLowerCase();
+    } catch {
+      // not a parseable URL
+    }
+  }
+
   // =========================================================================
   // 1. THREAT INTELLIGENCE — Multi-provider corroboration
   // =========================================================================
@@ -141,6 +196,13 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
   const otxUrl   = threatIntel?.otx             || null;
   const otxDomain= threatIntel?.otxDomain       || null;
   const rdap     = threatIntel?.rdap            || null;
+
+  const urlhausIsMalicious = urlhaus?.status === 'available' && urlhaus?.threat === 'malicious';
+
+  const isTrustedAuthenticDomain = isTrustedDomain(extractedHostname) &&
+    !hasSignals &&
+    (!vtUrl || (vtUrl.maliciousVotes || 0) === 0) &&
+    !urlhausIsMalicious;
 
   // Also support old single-provider format (backward compat for email/message paths)
   const legacyTI = threatIntel?.threatintel || null;
@@ -193,20 +255,32 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
   const vtDomainStrength = vtEvidenceStrength(vtDomain);
   if (vtDomainStrength.scoreBump > 0) {
     analysisSources.push('virustotal_domain');
-    // Domain is contextual — weighted lower than exact URL result
-    const domainBump = Math.floor(vtDomainStrength.scoreBump * 0.7);
-    tiScoreBump = Math.max(tiScoreBump, domainBump);
+    
+    // False-positive suppression for domain noise:
+    // If the exact URL is clean (0 malicious), heuristics detected 0 signals,
+    // and VT domain has <= 2 detections out of >= 60 engines, treat as isolated noise.
+    const isDomainNoise = (!vtUrl || (vtUrl.maliciousVotes || 0) === 0) &&
+      !hasSignals &&
+      (vtDomain.maliciousVotes || 0) <= 2 &&
+      (vtDomain.totalEngines || 0) >= 60;
+
+    if (!isTrustedAuthenticDomain && !isDomainNoise) {
+      // Domain is contextual — weighted lower than exact URL result
+      const domainBump = Math.floor(vtDomainStrength.scoreBump * 0.7);
+      tiScoreBump = Math.max(tiScoreBump, domainBump);
+    }
 
     tiReasons.push({
       source: 'Threat_Intelligence',
       title: `VirusTotal Domain Context (${vtDomainStrength.evidenceStrength})`,
-      detail: `Domain reputation: ${vtDomain.maliciousVotes || 0} malicious, ${vtDomain.suspiciousVotes || 0} suspicious out of ${vtDomain.totalEngines || 0} engines.`,
-      severity: 'medium',
+      detail: isTrustedAuthenticDomain
+        ? `Domain reputation: ${extractedHostname} is an authentic trusted service. Isolated scanner reports are false-positive noise.`
+        : `Domain reputation: ${vtDomain.maliciousVotes || 0} malicious, ${vtDomain.suspiciousVotes || 0} suspicious out of ${vtDomain.totalEngines || 0} engines.`,
+      severity: (isTrustedAuthenticDomain || isDomainNoise) ? 'info' : 'medium',
     });
   }
 
   // — URLhaus (URL-level abuse database)
-  const urlhausIsMalicious = urlhaus?.status === 'available' && urlhaus?.threat === 'malicious';
   if (urlhausIsMalicious) {
     analysisSources.push('urlhaus');
     tiScoreBump = Math.max(tiScoreBump, 65);
@@ -494,11 +568,19 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
   if (groqResult) {
     analysisSources.push('groq');
 
-    // AI can escalate score but cannot bypass the suspicious ceiling (59)
-    // if no deterministic evidence supports a higher classification.
-    if (typeof groqResult.riskScore === 'number' && tiScoreBump < 60) {
-      const aiCeiling = tiScoreBump > 0 ? 75 : 59; // With TI backing, allow up to 75
-      finalRiskScore = Math.min(aiCeiling, Math.max(finalRiskScore, groqResult.riskScore));
+    // AI score fusion:
+    // If deterministic layers (heuristics, ML, or TI) already found high risk (>=60),
+    // let AI corroborate or escalate without clamping down deterministic phishing to 59.
+    // If NO deterministic high-risk backing exists, AI alone cannot unilaterally force phishing (capped at 59, or 75 with TI).
+    if (typeof groqResult.riskScore === 'number') {
+      const hasDeterministicHighRisk = finalRiskScore >= 60 || tiScoreBump >= 60;
+      if (hasDeterministicHighRisk) {
+        finalRiskScore = Math.max(finalRiskScore, groqResult.riskScore);
+      } else {
+        const aiCeiling = tiScoreBump > 0 ? 75 : 59;
+        const aiContribution = Math.min(aiCeiling, groqResult.riskScore);
+        finalRiskScore = Math.max(finalRiskScore, aiContribution);
+      }
     }
 
     if (typeof groqResult.confidence === 'number') {
@@ -533,6 +615,16 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
         }
       }
     }
+  }
+
+  // If verified authentic trusted domain with no signals, guarantee clean legitimate output
+  if (isTrustedAuthenticDomain) {
+    finalRiskScore = 0;
+    finalSummary = `Verified Authentic Domain: The destination belongs to the authentic, established domain (${extractedHostname}) with no threats or manipulation tactics detected.`;
+    finalRecommendations = [
+      'This domain is verified as authentic and safe to use.',
+      'Continue practicing normal security hygiene.'
+    ];
   }
 
   // =========================================================================
