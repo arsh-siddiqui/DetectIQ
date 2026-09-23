@@ -1,0 +1,30 @@
+From: "Microsoft 365 Security" <admin-notification@portal-office365-security-validation.com>
+To: alex@enterprise-corp.com
+Subject: High Priority: Office 365 Password Expiration Notice
+Date: Wed, 23 Sep 2026 09:15:00 +0000
+Message-ID: <20260923091500.817291@portal-office365-security-validation.com>
+Reply-To: support@portal-office365-security-validation.com
+Return-Path: <bounce@portal-office365-security-validation.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Received: from mx.enterprise-corp.com (mx.enterprise-corp.com [198.51.100.22])
+	by mail.enterprise-corp.com (Postfix) with ESMTP id B819283711
+	for <alex@enterprise-corp.com>; Wed, 23 Sep 2026 09:15:05 +0000
+Received: from mail-relay.bullet-host.net (mail-relay.bullet-host.net [185.220.101.44])
+	by mx.enterprise-corp.com with ESMTP id 7192831A
+	for <alex@enterprise-corp.com>; Wed, 23 Sep 2026 09:15:02 +0000
+Authentication-Results: mx.enterprise-corp.com;
+	spf=fail (sender IP 185.220.101.44, domain portal-office365-security-validation.com);
+	dkim=fail;
+	dmarc=fail (p=reject) header.from=portal-office365-security-validation.com
+
+Dear Employee,
+
+Your corporate Office 365 password expires in 2 hours. Failure to update will result in immediate termination of email and intranet access.
+
+Verify your current login credentials immediately to keep your account active:
+https://portal-office365-security-validation.com/login/auth
+
+Regards,
+Enterprise IT Help Desk Support

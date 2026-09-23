@@ -1,0 +1,32 @@
+From: "Amazon Web Services" <no-reply@aws.amazon.com>
+To: alex@enterprise-corp.com
+Subject: Amazon Web Services Invoice [498127391]
+Date: Wed, 23 Sep 2026 08:30:00 +0000
+Message-ID: <20260923083000.918237@aws.amazon.com>
+Reply-To: no-reply@aws.amazon.com
+Return-Path: <no-reply@aws.amazon.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Received: from mx.enterprise-corp.com (mx.enterprise-corp.com [198.51.100.22])
+	by mail.enterprise-corp.com (Postfix) with ESMTP id C91823102B
+	for <alex@enterprise-corp.com>; Wed, 23 Sep 2026 08:30:04 +0000
+Received: from mail.aws.amazon.com (mail.aws.amazon.com [54.240.27.12])
+	by mx.enterprise-corp.com with ESMTP id 18293710A
+	for <alex@enterprise-corp.com>; Wed, 23 Sep 2026 08:30:01 +0000
+Authentication-Results: mx.enterprise-corp.com;
+	spf=pass (sender IP 54.240.27.12, domain aws.amazon.com) smtp.mailfrom=no-reply@aws.amazon.com;
+	dkim=pass header.d=amazon.com;
+	dmarc=pass (p=reject) header.from=amazon.com
+
+Greetings from Amazon Web Services,
+
+Your monthly billing statement for September 2026 is now available. 
+
+Account ID: 4829-1029-4821
+Total Due: $142.50
+
+This charge has been automatically applied to your primary corporate payment method on file. You can view your detailed usage report and tax invoice by signing into your AWS Console at https://aws.amazon.com.
+
+Thank you for building on AWS.
+AWS Billing Team
