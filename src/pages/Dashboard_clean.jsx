@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ShieldAlert, BookOpen, Target, Activity, ShieldCheck, Shield, AlertTriangle, CheckCircle, TrendingUp, ChevronRight, BarChart3, Mail, Lightbulb, GraduationCap, ArrowRight, ScanLine, Link as LinkIcon, MessageSquare, QrCode, ImageIcon, Loader2, Zap, Brain } from "lucide-react";
 import { useAppData } from "../context/AppDataContext";
 import { getScanHistory } from "../services/detectionService";
+import { fetchDashboard } from "../services/userService";
 import { getAllProgress } from "../services/progressService";
 import { getVulnerabilities } from "../services/vulnerabilityService";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -14,18 +15,23 @@ export default function Dashboard() {
   const [scanHistory, setScanHistory] = useState([]);
   const [learningProgress, setLearningProgress] = useState([]);
   const [totalModules, setTotalModules] = useState(0);
+  const [dashboardStats, setDashboardStats] = useState(null);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [scans, progress, vulns] = await Promise.all([
-          getScanHistory().catch(() => []),
+        const [scans, progress, vulns, dashboard] = await Promise.all([
+          getScanHistory({ all: true }).catch(() => []),
           getAllProgress().catch(() => []),
-          getVulnerabilities().catch(() => [])
+          getVulnerabilities().catch(() => []),
+          fetchDashboard().catch(() => null)
         ]);
         setScanHistory(scans || []);
         setLearningProgress(progress || []);
         setTotalModules(vulns?.length || 0);
+        if (dashboard?.stats) {
+          setDashboardStats(dashboard.stats);
+        }
       } finally {
         setLoading(false);
       }
@@ -33,9 +39,9 @@ export default function Dashboard() {
     loadData();
   }, []);
 
-  const totalScans = scanHistory.length;
-  const phishingScans = scanHistory.filter(s => s.riskLevel === 'high' || s.riskLevel === 'critical').length;
-  const safeScans = scanHistory.filter(s => s.riskLevel === 'safe' || s.riskLevel === 'low').length;
+  const totalScans = dashboardStats?.totalScans ?? scanHistory.length;
+  const phishingScans = dashboardStats?.highRiskScans ?? scanHistory.filter(s => s.riskLevel === 'high' || s.riskLevel === 'critical').length;
+  const safeScans = dashboardStats?.safeScans ?? scanHistory.filter(s => s.riskLevel === 'safe' || s.riskLevel === 'low').length;
   const suspiciousScans = scanHistory.filter(s => s.riskLevel === 'medium').length;
   const completedLearning = learningProgress.filter(p => p.status === 'completed').length;
   const recommendedFocus = user?.learningProfile?.recommendedFocus || "Security Fundamentals";

@@ -39,53 +39,61 @@ export default function Landing() {
       <Navbar />
 
       {/* HERO SECTION */}
-      <section className="relative pt-6 pb-16 lg:pt-10 lg:pb-24 overflow-hidden bg-background text-primary transition-colors duration-300">
-        
-        {/* Deep background lighting */}
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-accent-blue/10 dark:bg-accent-blue/20 rounded-full blur-[150px] pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent-violet/10 dark:bg-accent-violet/20 rounded-full blur-[150px] pointer-events-none" />
+      <section 
+        className="relative pt-10 pb-20 lg:pt-16 lg:pb-28 overflow-hidden min-h-[calc(88vh-68px)] flex items-center bg-no-repeat bg-cover bg-[center_right] sm:bg-[center_right_15%] lg:bg-center transition-colors duration-300"
+        style={{
+          backgroundImage: "url('/assets/detectiq-cyber-hero.png')",
+        }}
+      >
+        {/* Subtle left-to-right atmospheric gradient overlay */}
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "linear-gradient(to right, rgba(248, 250, 255, 0.92) 0%, rgba(248, 250, 255, 0.55) 50%, rgba(248, 250, 255, 0.05) 100%)"
+          }}
+        />
 
-        <div className="max-w-[1400px] mx-auto px-6 lg:pr-10 relative z-10 grid lg:grid-cols-2 gap-12 lg:gap-8 min-h-[calc(80vh-72px)]">
+        <div className="max-w-[1400px] w-full mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
           
-          {/* Left Column: Content */}
-          <div className="flex flex-col items-start text-left pt-6 lg:pt-12">
+          {/* Left-aligned Hero Content */}
+          <div className="flex flex-col items-start text-left max-w-xl lg:max-w-[580px] xl:max-w-[640px]">
             
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-accent-blue/10 border border-accent-blue/20 text-accent-blue text-[10px] sm:text-xs font-bold tracking-wide uppercase mb-8 shadow-sm">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-accent-blue/15 border border-accent-blue/30 text-[#315B8A] text-[10px] sm:text-xs font-bold tracking-wide uppercase mb-6 sm:mb-8 shadow-sm backdrop-blur-sm">
               <span className="w-2 h-2 rounded-full bg-accent-blue animate-pulse" />
               Live Threat Scan Active &bull; Zero-Trust Validation
             </div>
             
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-heading font-black leading-[1.05] tracking-tight mb-6">
-              <span className="block text-primary">Detect. Defend.</span>
+              <span className="block text-[#07152B]">Detect. Defend.</span>
               <span className="block bg-gradient-to-r from-accent-blue via-accent-cyan to-accent-violet bg-clip-text text-transparent pb-1">Stay Ahead.</span>
             </h1>
             
-            <p className="text-base sm:text-lg text-secondary font-medium leading-relaxed mb-6 max-w-xl">
+            <p className="text-base sm:text-lg text-[#263B59] font-medium leading-relaxed mb-6">
               Detect threats across emails, URLs, messages, QR codes, and screenshots with AI-powered analysis, threat intelligence, and forensic investigation.
             </p>
             
             {/* 5 Input Channels Pills */}
             <div className="flex flex-wrap gap-2 mb-6">
               {["Email", "URL", "Message", "QR Code", "Screenshot"].map((channel) => (
-                <div key={channel} className="px-3 py-1.5 rounded-full bg-card border border-border text-primary text-xs font-medium flex items-center gap-2 shadow-sm">
+                <div key={channel} className="px-3 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-[#315B8A]/20 text-[#07152B] text-xs font-semibold flex items-center gap-2 shadow-sm">
                   <div className="w-1.5 h-1.5 rounded-full bg-accent-blue" /> {channel}
                 </div>
               ))}
             </div>
 
             {/* Workflow Process */}
-            <div className="flex flex-wrap items-center gap-2 mb-10 text-xs font-bold uppercase tracking-wider text-muted">
+            <div className="flex flex-wrap items-center gap-2 mb-8 sm:mb-10 text-xs font-bold uppercase tracking-wider text-[#315B8A]">
               <div className="flex items-center gap-1.5 text-accent-blue"><Search size={14}/> Detect</div>
-              <ChevronRight size={12} className="text-muted" />
+              <ChevronRight size={12} className="text-[#315B8A]/70" />
               <div className="flex items-center gap-1.5 text-accent-cyan"><Database size={14}/> Enrich</div>
-              <ChevronRight size={12} className="text-muted" />
+              <ChevronRight size={12} className="text-[#315B8A]/70" />
               <div className="flex items-center gap-1.5 text-accent-violet"><Activity size={14}/> Investigate</div>
-              <ChevronRight size={12} className="text-muted" />
-              <div className="flex items-center gap-1.5 text-primary"><Brain size={14}/> Explain</div>
+              <ChevronRight size={12} className="text-[#315B8A]/70" />
+              <div className="flex items-center gap-1.5 text-[#07152B]"><Brain size={14}/> Explain</div>
             </div>
 
             {/* CTAs */}
-            <div className="flex flex-wrap items-center gap-4 mb-8">
+            <div className="flex flex-wrap items-center gap-4">
               <button 
                 onClick={() => navigate("/register")}
                 className="px-8 py-3.5 bg-gradient-to-r from-accent-blue to-accent-violet hover:opacity-95 text-white rounded-xl font-bold shadow-soft transition-all text-sm sm:text-base inline-flex items-center gap-2"
@@ -94,35 +102,10 @@ export default function Landing() {
               </button>
               <button 
                 onClick={() => navigate("/detection/email")}
-                className="px-8 py-3.5 bg-card hover:bg-secondary border border-border text-primary rounded-xl font-bold transition-all text-sm sm:text-base shadow-sm"
+                className="px-8 py-3.5 bg-white/85 hover:bg-white border border-[#315B8A]/25 text-[#07152B] rounded-xl font-bold transition-all text-sm sm:text-base shadow-sm backdrop-blur-sm"
               >
                 Explore Detection
               </button>
-            </div>
-          </div>
-
-          {/* Right Column: Graphic */}
-          <div className="relative flex justify-center items-start lg:pt-16 mt-6 lg:mt-0 lg:ml-auto">
-            <div className="relative w-full max-w-[620px] xl:max-w-[760px] perspective-1000">
-              <div className="absolute inset-0 bg-accent-blue/10 dark:bg-transparent rounded-[2rem] blur-3xl transform scale-105 -z-10" />
-              <motion.img 
-                src="/assets/hero-diagram.png" 
-                alt="DetectIQ Analysis Dashboard" 
-                className="w-full h-auto rounded-2xl border border-border/50 relative z-10"
-                animate={{ 
-                  y: [0, -12, 0],
-                  filter: [
-                    "drop-shadow(0px 10px 20px rgba(59,130,246,0.1))",
-                    "drop-shadow(0px 20px 40px rgba(59,130,246,0.4))",
-                    "drop-shadow(0px 10px 20px rgba(59,130,246,0.1))"
-                  ]
-                }}
-                transition={{ 
-                  duration: 6, 
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-              />
             </div>
           </div>
 

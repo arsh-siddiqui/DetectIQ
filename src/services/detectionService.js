@@ -28,9 +28,9 @@ export async function submitEml(file) {
   return data.data;
 }
 
-export async function getScanHistory() {
-  const { data } = await apiClient.get("/users/scans");
-  return data.data.scans;
+export async function getScanHistory(params = { all: true }) {
+  const { data } = await apiClient.get("/users/scans", { params });
+  return data?.data?.scans || [];
 }
 
 export const personalizeScan = async (scanId) => {

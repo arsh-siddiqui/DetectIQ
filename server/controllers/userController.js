@@ -120,20 +120,38 @@ const getScanById = asyncHandler(async (req, res) => {
 // @route  GET /api/users/scans
 // @access Private
 const getScanHistory = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page, 10) || 1;
-  const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
+  const hasPage = req.query.page !== undefined && req.query.page !== '' && !isNaN(parseInt(req.query.page, 10));
+  const hasLimit = req.query.limit !== undefined && req.query.limit !== '' && req.query.limit !== 'all' && !isNaN(parseInt(req.query.limit, 10));
+  const isAll = req.query.all === 'true' || req.query.limit === 'all' || (!hasPage && !hasLimit);
+
+  const page = hasPage ? Math.max(1, parseInt(req.query.page, 10)) : 1;
+  const limit = isAll ? 1000 : Math.min(Math.max(hasLimit ? parseInt(req.query.limit, 10) : 20, 1), 1000);
+
+  const query = { user: req.user._id };
+  if (req.query.type && req.query.type !== 'all') {
+    query.$or = [{ scanType: req.query.type }, { inputType: req.query.type }];
+  }
+
+  const findQuery = Scan.find(query).sort({ createdAt: -1 });
+  if (!isAll) {
+    findQuery.skip((page - 1) * limit).limit(limit);
+  } else {
+    findQuery.limit(limit);
+  }
 
   const [scans, total] = await Promise.all([
-    Scan.find({ user: req.user._id })
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit),
-    Scan.countDocuments({ user: req.user._id }),
+    findQuery,
+    Scan.countDocuments(query),
   ]);
 
   return sendSuccess(res, {
     data: { scans },
-    meta: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) },
+    meta: {
+      page: isAll ? 1 : page,
+      limit: isAll ? total : limit,
+      total,
+      totalPages: isAll ? 1 : Math.max(1, Math.ceil(total / limit)),
+    },
   });
 });
 

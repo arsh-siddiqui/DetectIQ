@@ -23,7 +23,7 @@ export default function ScanHistory() {
   useEffect(() => {
     async function load() {
       try {
-        const data = await getScanHistory();
+        const data = await getScanHistory({ all: true });
         setScans(data || []);
       } catch {
         setError("Failed to load scan history.");
