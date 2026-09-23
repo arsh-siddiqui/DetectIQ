@@ -171,44 +171,61 @@ export default function ScanResult() {
 
   const isThreat = isDanger || isMedium;
 
-  // Candidate LLM reasons
+  // 1. Extract real threat reasons from evidence layers (VirusTotal, Heuristics, ML)
+  const evidenceThreatReasons = isThreat
+    ? (scan.reasons || [])
+        .filter(r => (r.source === 'Threat_Intelligence' && r.severity !== 'info') ||
+                     (r.source === 'Heuristics' && r.title !== 'Verified Content') ||
+                     (r.source === 'ML_Classifier' && r.severity !== 'low'))
+        .map(r => r.detail || r.title)
+        .filter(Boolean)
+        .map(r => isUrlAnalysis ? formatUrlText(r) : r)
+    : [];
+
+  // 2. Extract candidate LLM reasons
   const rawLlmReasons = scan.llmResult?.reasons || scan.groq?.reasons;
   const formattedLlmReasons = Array.isArray(rawLlmReasons)
     ? rawLlmReasons.map(r => typeof r === 'string' ? (isUrlAnalysis ? formatUrlText(r) : r) : (r.detail || r.title || '')).filter(Boolean)
     : [];
 
-  // When this is a threat (Suspicious or Phishing), purge contradictory "safe" strings
+  // When it's a threat, purge contradictory or purely benign statements
   const validThreatLlmReasons = isThreat
     ? formattedLlmReasons.filter(r => {
         const lower = r.toLowerCase();
         return !lower.includes('no significant phishing') &&
                !lower.includes('no phishing indicators') &&
                !lower.includes('no suspicious') &&
-               !lower.includes('appears safe');
+               !lower.includes('appears safe') &&
+               !lower.includes('standard ascii') &&
+               !lower.includes('no homoglyphs') &&
+               !lower.includes('does not resemble any') &&
+               !lower.includes('generic script name');
       })
     : formattedLlmReasons;
 
-  // If valid LLM reasons exist, use them. Otherwise, pull real reasons from scan.reasons or scan.summary
+  // 3. Combine reasons: evidence threat reasons first, followed by relevant LLM insights
   let finalReasons = [];
-  if (validThreatLlmReasons.length > 0) {
-    finalReasons = validThreatLlmReasons;
-  } else if (isThreat) {
-    const evidenceReasons = (scan.reasons || [])
-      .filter(r => r.severity === 'high' || r.severity === 'medium' || (r.source === 'Threat_Intelligence' && r.severity !== 'info'))
-      .map(r => r.detail || r.title || r.explanation)
-      .filter(Boolean)
-      .map(r => isUrlAnalysis ? formatUrlText(r) : r);
+  if (isThreat) {
+    const combined = [...evidenceThreatReasons, ...validThreatLlmReasons];
+    // Deduplicate
+    const seen = new Set();
+    finalReasons = combined.filter(item => {
+      const k = item.toLowerCase().slice(0, 40);
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
 
-    if (evidenceReasons.length > 0) {
-      finalReasons = evidenceReasons;
-    } else if (scan.summary && !scan.summary.toLowerCase().includes('no threat') && !scan.summary.toLowerCase().includes('no phishing')) {
-      finalReasons = [isUrlAnalysis ? formatUrlText(scan.summary) : scan.summary];
-    } else {
-      finalReasons = [
-        isDanger
-          ? 'Multiple severe warning signs and threat-intelligence detections were identified.'
-          : 'Elevated risk indicators and suspicious patterns warrant caution before interacting.'
-      ];
+    if (finalReasons.length === 0) {
+      if (scan.summary && !scan.summary.toLowerCase().includes('no threat') && !scan.summary.toLowerCase().includes('no phishing')) {
+        finalReasons = [isUrlAnalysis ? formatUrlText(scan.summary) : scan.summary];
+      } else {
+        finalReasons = [
+          isDanger
+            ? 'Multiple security engines and threat intelligence sources identified this URL as malicious.'
+            : 'Elevated risk indicators and suspicious destination patterns warrant caution before interacting.'
+        ];
+      }
     }
   } else {
     finalReasons = formattedLlmReasons.length > 0
@@ -225,7 +242,7 @@ export default function ScanResult() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="p-4 sm:p-6 md:p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       {/* Top Navigation */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
@@ -240,7 +257,7 @@ export default function ScanResult() {
       </div>
 
       {/* Header Banner */}
-      <div className={`relative overflow-hidden rounded-3xl border p-8 md:p-12 shadow-elevated ${
+      <div className={`relative overflow-hidden rounded-3xl border p-6 md:p-10 shadow-elevated ${
         isDanger ? 'bg-danger/5 border-danger/20' : 
         isMedium ? 'bg-warning/5 border-warning/20' : 
         'bg-success/5 border-success/20'
@@ -251,46 +268,52 @@ export default function ScanResult() {
           'bg-success'
         }`} />
         
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-8">
-          <div className={`w-28 h-28 rounded-[2rem] flex items-center justify-center flex-shrink-0 shadow-soft border ${
-            isDanger ? 'bg-gradient-to-br from-danger to-red-900 border-danger/50 text-white' : 
-            isMedium ? 'bg-gradient-to-br from-warning to-orange-700 border-warning/50 text-white' : 
-            'bg-gradient-to-br from-success to-emerald-900 border-success/50 text-white'
-          }`}>
-            <RiskIcon className="w-14 h-14" />
-          </div>
-          
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3">
-              <span className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border ${
-                isDanger ? 'bg-danger/10 text-danger border-danger/20' : 
-                isMedium ? 'bg-warning/10 text-warning border-warning/20' : 
-                'bg-success/10 text-success border-success/20'
-              }`}>
-                {inputType} {inputType !== analysisType ? `→ ${analysisType}` : ''} Analysis
-              </span>
-              <span className="text-xs font-semibold text-muted">{new Date(scan.createdAt || Date.now()).toLocaleString()}</span>
+        <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          {/* Left section: Icon + Classification + URL */}
+          <div className="flex items-start sm:items-center gap-5 md:gap-6 min-w-0 flex-1 w-full">
+            <div className={`w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl md:rounded-[2rem] flex items-center justify-center flex-shrink-0 shadow-soft border ${
+              isDanger ? 'bg-gradient-to-br from-danger to-red-900 border-danger/50 text-white' : 
+              isMedium ? 'bg-gradient-to-br from-warning to-orange-700 border-warning/50 text-white' : 
+              'bg-gradient-to-br from-success to-emerald-900 border-success/50 text-white'
+            }`}>
+              <RiskIcon className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14" />
             </div>
             
-            <h1 className={`text-4xl md:text-5xl font-heading font-black mb-4 capitalize tracking-tight ${riskColor}`}>
-              {displayClassification}
-            </h1>
-            
-            <p className="text-secondary font-medium text-base md:text-lg break-words max-w-2xl leading-relaxed">
-              {displayTarget}
-            </p>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider border ${
+                  isDanger ? 'bg-danger/10 text-danger border-danger/20' : 
+                  isMedium ? 'bg-warning/10 text-warning border-warning/20' : 
+                  'bg-success/10 text-success border-success/20'
+                }`}>
+                  {inputType} {inputType !== analysisType ? `→ ${analysisType}` : ''} Analysis
+                </span>
+                <span className="text-xs font-semibold text-muted">{new Date(scan.createdAt || Date.now()).toLocaleString()}</span>
+              </div>
+              
+              <h1 className={`text-3xl sm:text-4xl md:text-5xl font-heading font-black mb-2 sm:mb-3 capitalize tracking-tight ${riskColor}`}>
+                {displayClassification}
+              </h1>
+              
+              <p className="text-secondary font-medium text-sm md:text-base break-all leading-relaxed max-w-xl">
+                {displayTarget}
+              </p>
+            </div>
           </div>
           
-          <div className="flex flex-row md:flex-col gap-4 w-full md:w-auto mt-6 md:mt-0">
-            <div className="flex-1 md:flex-none bg-card/80 backdrop-blur-md p-6 rounded-2xl border border-border shadow-sm flex flex-col items-center justify-center min-w-[160px]">
-              <div className="text-xs font-bold text-muted uppercase tracking-wider mb-1">Risk Score</div>
-              <div className={`text-4xl font-heading font-black tracking-tight ${riskColor}`}>{scan.riskScore}<span className="text-xl text-muted font-bold">/100</span></div>
+          {/* Right section: Risk Score & Assessment Strength */}
+          <div className="flex flex-row lg:flex-col gap-3 w-full lg:w-auto flex-shrink-0 mt-2 lg:mt-0">
+            <div className="flex-1 lg:flex-none bg-card/90 backdrop-blur-md px-5 py-3.5 sm:px-6 sm:py-4 rounded-2xl border border-border shadow-sm flex flex-col items-center justify-center min-w-[140px] sm:min-w-[155px]">
+              <div className="text-[11px] sm:text-xs font-bold text-muted uppercase tracking-wider mb-0.5 whitespace-nowrap">Risk Score</div>
+              <div className={`text-3xl sm:text-4xl font-heading font-black tracking-tight ${riskColor}`}>
+                {scan.riskScore}<span className="text-lg sm:text-xl text-muted font-bold">/100</span>
+              </div>
             </div>
-            <div className="flex-1 md:flex-none bg-card/80 backdrop-blur-md p-6 rounded-2xl border border-border shadow-sm flex flex-col items-center justify-center min-w-[160px]">
-              <div className="text-xs font-bold text-muted uppercase tracking-wider mb-1">
+            <div className="flex-1 lg:flex-none bg-card/90 backdrop-blur-md px-5 py-3.5 sm:px-6 sm:py-4 rounded-2xl border border-border shadow-sm flex flex-col items-center justify-center min-w-[140px] sm:min-w-[155px]">
+              <div className="text-[11px] sm:text-xs font-bold text-muted uppercase tracking-wider mb-0.5 whitespace-nowrap">
                 Assessment Strength
               </div>
-              <div className="text-3xl font-heading font-black tracking-tight text-primary">
+              <div className="text-2xl sm:text-3xl font-heading font-black tracking-tight text-primary">
                 {confidenceDisplay >= 80 ? 'High' : confidenceDisplay >= 50 ? 'Moderate' : 'Limited'}
               </div>
             </div>
