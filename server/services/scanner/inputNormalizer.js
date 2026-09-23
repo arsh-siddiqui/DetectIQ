@@ -49,6 +49,17 @@ function normalizeInput(inputType, payload) {
     } else {
       analysisType = 'message';
     }
+
+    if (type === 'screenshot') {
+      const hasUrl = /https?:\/\/[^\s]+|www\.[^\s]+|[a-z0-9-]+\.(com|org|net|edu|gov|io|co|in|ai|app|xyz|info)[^\s]*/i.test(cleanPayload);
+      const isEmail = /^(mailto:|From:|Subject:|To:)/i.test(cleanPayload) || (cleanPayload.includes("From:") && cleanPayload.includes("Subject:"));
+      const validWords = cleanPayload.match(/[A-Za-z0-9]{2,}/g) || [];
+      const alphaCount = (cleanPayload.match(/[A-Za-z0-9]/g) || []).length;
+
+      if (!hasUrl && !isEmail && (validWords.length < 2 || alphaCount < 8)) {
+        throw new Error('Screenshot contains insufficient readable text or link to analyze.');
+      }
+    }
   }
 
   // Double check direct URL length

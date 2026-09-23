@@ -140,7 +140,8 @@ Rules:
 - riskLevel must be one of: low, medium, high, critical
 - classification must be one of: phishing, legitimate, suspicious
 - personalizationEvidence should note differences or similarities with historical context (leave empty if not an email scan or no history).
-- If Threat Intelligence says MALICIOUS, do NOT classify as legitimate or safe.`;
+- If Threat Intelligence says MALICIOUS, do NOT classify as legitimate or safe.
+- Everyday conversational words, harmless terms (e.g. animals, cars, sports, common objects), or benign text with NO phishing indicators, credential requests, urgent demands, or suspicious URLs MUST be classified as "legitimate" with a low riskScore (0-15). Do NOT assume benign or unrelated words are an evasion technique unless there is concrete malicious evidence.`;
   return promptBase;
 }
 

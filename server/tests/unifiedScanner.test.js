@@ -117,6 +117,14 @@ describe('Unified Multi-Channel Detection Scanner Routing', () => {
     expect(res.body.data.scanType).toBe('message');
   });
 
+  it('22. should reject screenshot with insufficient text or noise', async () => {
+    const res = await request(app)
+      .post(scanEndpoint)
+      .send({ scanType: 'screenshot', content: '/ \\ | . 1' });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/insufficient readable text/i);
+  });
+
   it('28. should reject oversized payload', async () => {
     const massiveContent = 'A'.repeat(15000);
     const res = await request(app)

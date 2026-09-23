@@ -427,8 +427,18 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
     });
 
     if (mlLabel === 'phishing') {
-      if (mlPhishProb >= 0.85) finalRiskScore = Math.max(finalRiskScore, 72);
-      else if (mlPhishProb >= 0.70) finalRiskScore = Math.max(finalRiskScore, 45);
+      if (mlPhishProb >= 0.85) {
+        finalRiskScore = Math.max(finalRiskScore, 72);
+      } else if (mlPhishProb >= 0.70) {
+        // If there are heuristic signals, TI hits, or heuristic risk is already at least medium (>=40),
+        // moderate ML confidence (0.70+) escalates to suspicious (45).
+        // For clean/benign text (riskScore <= 20 with 0 signals and 0 TI hits), keep safely in low range (<=20).
+        if (hasSignals || tiScoreBump > 0 || (heuristicResult.riskScore || 0) >= 40) {
+          finalRiskScore = Math.max(finalRiskScore, 45);
+        } else {
+          finalRiskScore = Math.max(finalRiskScore, 20);
+        }
+      }
       finalConfidence = Math.min(99, finalConfidence + 10);
     } else if (mlLabel === 'safe' && tiScoreBump === 0) {
       if (mlPhishProb <= 0.15) {

@@ -205,23 +205,33 @@ export default function Scan() {
     try {
       setFileStatus("Extracting text via OCR...");
       const result = await Tesseract.recognize(imageUrl, 'eng');
-      const text = result.data.text.trim();
+      const text = (result?.data?.text || "").trim();
       
       if (!text) {
-        throw new Error("Text could not be read clearly. Try a clearer screenshot.");
+        throw new Error("No readable text was detected in this image. Please upload a clear screenshot of a message, email, or link.");
       }
       
       const MAX_OCR_LENGTH = 10000;
       if (text.length > MAX_OCR_LENGTH) {
         throw new Error(`Extracted text is too large. Max length is ${MAX_OCR_LENGTH} characters.`);
       }
-      
-      routePayload(text, "screenshot");
-    } catch (err) {
-      if (err.message && err.message.includes("could not be read clearly")) {
-        throw err;
+
+      // Check whether extracted text contains a URL or valid message/email structure
+      const hasUrl = /https?:\/\/[^\s]+|www\.[^\s]+|[a-z0-9-]+\.(com|org|net|edu|gov|io|co|in|ai|app|xyz|info)[^\s]*/i.test(text);
+      const isEmail = /^(mailto:|From:|Subject:|To:)/i.test(text) || (text.includes("From:") && text.includes("Subject:"));
+
+      // Extract recognizable alphanumeric words (2+ chars) and count alphanumeric characters
+      const validWords = text.match(/[A-Za-z0-9]{2,}/g) || [];
+      const alphaCount = (text.match(/[A-Za-z0-9]/g) || []).length;
+
+      // Random photos (cats, cars, scenery, abstract objects) produce isolated noise or negligible words
+      if (!hasUrl && !isEmail && (validWords.length < 2 || alphaCount < 8)) {
+        throw new Error("No readable message, email, or link was found in this image. Screenshot analysis is intended for screenshots of suspicious messages, emails, or websites (not photos of objects, animals, or scenery). Please upload an image containing text.");
       }
-      throw new Error(err.message || "OCR failed. Please try again.");
+      
+      await routePayload(text, "screenshot");
+    } catch (err) {
+      throw err;
     }
   };
 
@@ -384,7 +394,7 @@ export default function Scan() {
                     {scanType === 'url' && "Cross-referencing Threat Intelligence databases and heuristic safety analysis."}
                     {scanType === 'message' && "Applying advanced Text Analysis and Threat Intelligence to smishing and chat threats."}
                     {scanType === 'qr' && "Locally decoding QR payloads to route through standard analysis pipelines safely."}
-                    {scanType === 'screenshot' && "Extracting text locally via OCR for analysis. No visual data leaves your device."}
+                    {scanType === 'screenshot' && "Extracts text from screenshots of suspicious messages, emails, or links via on-device OCR. General photos without text are not supported."}
                   </p>
                 </div>
               </div>
@@ -437,7 +447,12 @@ export default function Scan() {
                     {scanType === 'qr' ? <QrCode className="w-10 h-10 text-primary" /> : <UploadCloud className="w-10 h-10 text-primary" />}
                   </div>
                   <h3 className="text-xl font-heading font-extrabold text-primary mb-2">Drop {scanType === 'qr' ? 'QR image' : 'screenshot'} here</h3>
-                  <p className="text-sm font-medium text-secondary mb-8">or click to browse from your device</p>
+                  <p className="text-sm font-medium text-secondary mb-3">or click to browse from your device</p>
+                  {scanType === 'screenshot' && (
+                    <p className="text-xs text-muted mb-6 max-w-sm">
+                      Upload a screenshot of a suspicious message, email, or link (photos of cats, cars, or scenery are not supported)
+                    </p>
+                  )}
                   
                   <div className="flex gap-2 text-xs font-bold text-muted mb-8 uppercase tracking-wider">
                     <span className="px-3 py-1.5 bg-background border border-border rounded-lg">PNG</span>
