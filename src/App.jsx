@@ -71,10 +71,11 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
-      <Route path="/features" element={<Features />} />
-      <Route path="/about" element={<About />} />
-      <Route path="/solutions" element={<Solutions />} />
-      <Route path="/resources" element={<Resources />} />
+      <Route path="/features" element={<Navigate to="/#features" replace />} />
+      <Route path="/about" element={<Navigate to="/#about" replace />} />
+      <Route path="/solutions" element={<Navigate to="/#investigate" replace />} />
+      <Route path="/investigate" element={<Navigate to="/#investigate" replace />} />
+      <Route path="/resources" element={<Navigate to="/#resources" replace />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       
