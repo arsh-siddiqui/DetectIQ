@@ -34,6 +34,7 @@ def clean_text(text: str) -> str:
 def main():
     try:
         import joblib
+        import numpy as np
         import pandas as pd
         import scipy.sparse as sp
         from sklearn.model_selection import train_test_split
@@ -85,7 +86,8 @@ def main():
     df["y"] = (df["label"] == phishing_label).astype(int)
     df["text_clean"] = df["text"].apply(clean_text)
 
-    X, y = df["text_clean"].values, df["y"].values
+    X = np.array(df["text_clean"].tolist(), dtype=object)
+    y = np.array(df["y"].tolist(), dtype=int)
     _, X_test_raw, _, y_test = train_test_split(
         X, y, test_size=TEST_SIZE, random_state=RANDOM_SEED, stratify=y
     )

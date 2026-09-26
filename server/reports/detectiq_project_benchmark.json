@@ -1,0 +1,49 @@
+{
+  "paperTitle": "User-Centric Phishing Detection: A RAG and LLM-Based Approach",
+  "timestamp": "2026-09-26T12:08:55.898049+00:00",
+  "dataset": "Enron Corporate & Nazario Phishing Email Corpus",
+  "corpusTotal": 500,
+  "faissBaselineCount": 150,
+  "evalQueryCount": 200,
+  "withoutRAG": {
+    "raw_counts": {
+      "n_total": 200,
+      "n_positive_phishing": 100,
+      "n_negative_safe": 100,
+      "TP": 99,
+      "TN": 91,
+      "FP": 9,
+      "FN": 1
+    },
+    "metrics": {
+      "accuracy": 0.95,
+      "precision": 0.9167,
+      "recall": 0.99,
+      "f1_score": 0.9519,
+      "fpr": 0.09,
+      "fnr": 0.01,
+      "specificity": 0.91
+    }
+  },
+  "withRAG": {
+    "raw_counts": {
+      "n_total": 200,
+      "n_positive_phishing": 100,
+      "n_negative_safe": 100,
+      "TP": 99,
+      "TN": 99,
+      "FP": 1,
+      "FN": 1
+    },
+    "metrics": {
+      "accuracy": 0.99,
+      "precision": 0.99,
+      "recall": 0.99,
+      "f1_score": 0.99,
+      "fpr": 0.01,
+      "fnr": 0.01,
+      "specificity": 0.99
+    }
+  },
+  "fprReductionPercentage": 88.89
+}

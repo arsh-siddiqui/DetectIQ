@@ -15,7 +15,7 @@ import { fetchAdminStats, fetchAdminAnalytics, fetchAdminUsers, updateAdminUserR
 
 const PAGE_SIZE = 4;
 
-const emptyUser = { name: "", email: "", accountRole: "Student", status: "Active" };
+const emptyUser = { name: "", email: "", accountRole: "User", status: "Active" };
 
 // Colors for the pie chart
 const riskColors = {
@@ -271,7 +271,6 @@ export default function AdminDashboard() {
             <thead>
               <tr className="text-left text-xs text-ink-faint uppercase border-b border-slate-100">
                 <th className="pb-3 font-semibold">Name</th>
-                <th className="pb-3 font-semibold">Role</th>
                 <th className="pb-3 font-semibold">Status</th>
                 <th className="pb-3 font-semibold text-right">Actions</th>
               </tr>
@@ -283,7 +282,6 @@ export default function AdminDashboard() {
                     <div className="font-medium text-ink">{u.name}</div>
                     <div className="text-xs text-ink-faint">{u.email}</div>
                   </td>
-                  <td className="py-3 text-ink-light">{u.accountRole || u.role}</td>
                   <td className="py-3">
                     <Badge tone={u.status === "Active" ? "success" : "danger"}>{u.status || "Active"}</Badge>
                   </td>
@@ -316,22 +314,6 @@ export default function AdminDashboard() {
       <Modal open={formOpen} onClose={() => setFormOpen(false)} title={editingId ? "Edit User" : "Add User"} size="sm">
         <div className="space-y-4">
           <Input label="Name" value={formValues.name || ""} onChange={(e) => setFormValues((v) => ({ ...v, name: e.target.value }))} />
-          <div>
-            <span className="block text-sm font-medium text-ink mb-1.5">Account Role</span>
-            <div className="grid grid-cols-3 gap-2">
-              {["Student", "Professional", "Business"].map((r) => (
-                <button
-                  key={r}
-                  onClick={() => setFormValues((v) => ({ ...v, accountRole: r }))}
-                  className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-colors ${
-                    formValues.accountRole === r ? "border-primary bg-primary-50 text-primary" : "border-slate-200 text-ink-light"
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-          </div>
           <div>
             <span className="block text-sm font-medium text-ink mb-1.5">Status</span>
             <div className="grid grid-cols-2 gap-2">

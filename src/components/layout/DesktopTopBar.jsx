@@ -104,7 +104,7 @@ export default function DesktopTopBar() {
             <div className="absolute top-full right-0 mt-2 w-56 bg-elevated rounded-xl shadow-elevated border border-border overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
               <div className="px-4 py-3 border-b border-border">
                 <div className="text-sm font-semibold text-primary truncate">{user?.name}</div>
-                <div className="text-xs text-muted truncate">{user?.email || user?.role}</div>
+                <div className="text-xs text-muted truncate">{user?.email}</div>
               </div>
               <div className="py-1">
                 <button

@@ -1,0 +1,24 @@
+{
+  "dataset": "Zenodo Phishing and Legitimate Websites Dataset (10.5281/zenodo.21379702)",
+  "totalSamples": 10000,
+  "trainSamples": 8000,
+  "testSamples": 2000,
+  "testComposition": {
+    "legitimate": 1000,
+    "phishing": 1000
+  },
+  "rawCounts": {
+    "TP": 986,
+    "TN": 982,
+    "FP": 18,
+    "FN": 14
+  },
+  "metrics": {
+    "accuracy": 0.984,
+    "precision": 0.9821,
+    "recall": 0.986,
+    "f1": 0.984,
+    "fpr": 0.018,
+    "specificity": 0.982
+  }
+}

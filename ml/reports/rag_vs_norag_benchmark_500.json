@@ -1,0 +1,80 @@
+{
+  "title": "Table III: DetectIQ Project Models Metrics With vs Without RAG Context",
+  "timestamp": "2026-09-26T12:00:17.743228+00:00",
+  "totalCorpusEmails": 500,
+  "evalTestSamples": 200,
+  "models": {
+    "DetectIQ_ML_Classifier": {
+      "withoutRAG": {
+        "accuracy": 0.98,
+        "precision": 0.9705882352941176,
+        "recall": 0.99,
+        "f1": 0.9801980198019802,
+        "fpr": 0.03,
+        "tp": 99,
+        "tn": 97,
+        "fp": 3,
+        "fn": 1
+      },
+      "withRAG": {
+        "accuracy": 0.995,
+        "precision": 1.0,
+        "recall": 0.99,
+        "f1": 0.9949748743718593,
+        "fpr": 0.0,
+        "tp": 99,
+        "tn": 100,
+        "fp": 0,
+        "fn": 1
+      }
+    },
+    "openai_gpt_oss_120b": {
+      "withoutRAG": {
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "fpr": 0.0,
+        "tp": 100,
+        "tn": 100,
+        "fp": 0,
+        "fn": 0
+      },
+      "withRAG": {
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "fpr": 0.0,
+        "tp": 100,
+        "tn": 100,
+        "fp": 0,
+        "fn": 0
+      }
+    },
+    "DetectIQ_Full_Ensemble": {
+      "withoutRAG": {
+        "accuracy": 0.985,
+        "precision": 0.970873786407767,
+        "recall": 1.0,
+        "f1": 0.9852216748768473,
+        "fpr": 0.03,
+        "tp": 100,
+        "tn": 97,
+        "fp": 3,
+        "fn": 0
+      },
+      "withRAG": {
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "fpr": 0.0,
+        "tp": 100,
+        "tn": 100,
+        "fp": 0,
+        "fn": 0
+      }
+    }
+  }
+}

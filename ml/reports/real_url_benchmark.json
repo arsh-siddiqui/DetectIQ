@@ -1,0 +1,21 @@
+{
+  "datasetFile": "url_dataset.csv",
+  "datasetTotalRows": 200000,
+  "benchmarkSample": 10000,
+  "trainSamples": 8000,
+  "testSamples": 2000,
+  "rawCounts": {
+    "TP": 982,
+    "TN": 1000,
+    "FP": 0,
+    "FN": 18
+  },
+  "metrics": {
+    "accuracy": 0.991,
+    "precision": 1.0,
+    "recall": 0.982,
+    "f1": 0.9909,
+    "fpr": 0.0,
+    "specificity": 1.0
+  }
+}

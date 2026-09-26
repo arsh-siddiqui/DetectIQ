@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShieldCheck, Mail, Lock, User, GraduationCap, Briefcase, Building2, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, Mail, Lock, User, CheckCircle2 } from "lucide-react";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import PasswordStrengthMeter from "../components/ui/PasswordStrengthMeter";
@@ -9,17 +9,10 @@ import { useFormValidation, validateEmail, validatePassword } from "../hooks/use
 import { useAppData } from "../context/AppDataContext";
 import { useToast } from "../context/ToastContext";
 
-const roles = [
-  { id: "Student", label: "Student", icon: GraduationCap },
-  { id: "Professional", label: "Professional", icon: Briefcase },
-  { id: "Business", label: "Business", icon: Building2 },
-];
-
 export default function Register() {
   const navigate = useNavigate();
   const { register } = useAppData();
   const { toast } = useToast();
-  const [role, setRole] = useState("Student");
   const [loading, setLoading] = useState(false);
 
   const { values, setValue, handleBlur, validateAll, errorFor } = useFormValidation(
@@ -44,7 +37,7 @@ export default function Register() {
       name: values.name,
       email: values.email,
       password: values.password,
-      accountRole: role,
+      accountRole: "User",
     });
     setLoading(false);
 
@@ -115,7 +108,7 @@ export default function Register() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="lg:col-span-7 p-8 sm:p-12 lg:p-14 flex flex-col justify-center bg-card"
+          className="lg:col-span-7 p-6 sm:p-12 lg:p-14 flex flex-col justify-center bg-card"
         >
           <div className="max-w-md mx-auto w-full">
             <div className="mb-6">
@@ -190,28 +183,7 @@ export default function Register() {
                     error={errorFor("confirmPassword")}
                   />
 
-                  <div className="pt-1">
-                    <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2">Account Role</label>
-                    <div className="grid grid-cols-3 gap-2.5">
-                      {roles.map((r) => (
-                        <button
-                          type="button"
-                          key={r.id}
-                          onClick={() => setRole(r.id)}
-                          className={`flex flex-col items-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all ${
-                            role === r.id
-                              ? "bg-accent-blue/10 text-accent-blue border border-accent-blue/30"
-                              : "bg-secondary/50 text-secondary hover:text-primary hover:bg-secondary"
-                          }`}
-                        >
-                          <r.icon className="w-4 h-4" />
-                          {r.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <button 
+                    <button 
                     type="submit" 
                     className="w-full mt-4 bg-gradient-to-r from-accent-blue to-accent-violet hover:opacity-95 text-white py-3.5 rounded-xl font-bold shadow-soft transition-all text-sm disabled:opacity-50"
                     disabled={loading}

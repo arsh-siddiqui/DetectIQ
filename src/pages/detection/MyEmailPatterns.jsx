@@ -64,7 +64,7 @@ export default function MyEmailPatterns() {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden animate-in fade-in duration-500">
-      <div className="flex-1 overflow-auto p-6 md:p-8">
+      <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
         <div className="w-full space-y-6">
           <header className="mb-8">
             <h1 className="text-3xl font-extrabold text-primary mb-2 flex items-center gap-3">

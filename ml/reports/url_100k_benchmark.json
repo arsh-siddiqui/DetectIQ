@@ -1,0 +1,28 @@
+{
+  "datasetFile": "url_dataset.csv",
+  "totalCorpusEvaluated": 100000,
+  "sampleComposition": {
+    "legitimate": 50000,
+    "phishing": 50000
+  },
+  "trainSamples": 80000,
+  "testSamples": 20000,
+  "testComposition": {
+    "legitimate": 10000,
+    "phishing": 10000
+  },
+  "rawCounts": {
+    "TP": 9924,
+    "TN": 9996,
+    "FP": 4,
+    "FN": 76
+  },
+  "metrics": {
+    "accuracy": 0.996,
+    "precision": 0.9996,
+    "recall": 0.9924,
+    "f1": 0.996,
+    "fpr": 0.0004,
+    "specificity": 0.9996
+  }
+}

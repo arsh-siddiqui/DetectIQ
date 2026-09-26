@@ -100,7 +100,7 @@ export default function Login() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="lg:col-span-7 p-8 sm:p-12 lg:p-14 flex flex-col justify-center bg-card"
+          className="lg:col-span-7 p-6 sm:p-12 lg:p-14 flex flex-col justify-center bg-card"
         >
           <div className="max-w-md mx-auto w-full">
             <div className="mb-8">

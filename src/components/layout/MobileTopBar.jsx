@@ -85,7 +85,7 @@ export default function MobileTopBar() {
                 >
                   <div className="px-4 py-3 border-b border-border">
                     <div className="text-sm font-semibold text-primary truncate">{user?.name}</div>
-                    <div className="text-xs text-muted truncate">{user?.email || user?.role}</div>
+                    <div className="text-xs text-muted truncate">{user?.email}</div>
                   </div>
                   <div className="py-1">
                     <button
@@ -119,7 +119,7 @@ export default function MobileTopBar() {
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="flex flex-col p-3 gap-1 bg-background border-t border-border shadow-soft">
+            <div className="flex flex-col p-3 gap-1 bg-background border-t border-border shadow-soft max-h-[80vh] overflow-y-auto">
               {navSections.map((section, idx) => (
                 <Fragment key={idx}>
                   {section.title && (

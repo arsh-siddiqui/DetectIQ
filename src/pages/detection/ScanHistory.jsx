@@ -51,7 +51,7 @@ export default function ScanHistory() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="p-6 max-w-[1400px] mx-auto"
+      className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto"
     >
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">

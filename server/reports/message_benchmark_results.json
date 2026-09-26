@@ -1,0 +1,29 @@
+{
+  "datasetFile": "message_dataset.csv",
+  "totalRawRows": 5572,
+  "deduplicatedRows": 5169,
+  "classDistribution": {
+    "legitimate": 4516,
+    "smishing": 653
+  },
+  "trainSamples": 4135,
+  "testSamples": 1034,
+  "testComposition": {
+    "legitimate": 903,
+    "smishing": 131
+  },
+  "rawCounts": {
+    "TP": 120,
+    "TN": 899,
+    "FP": 4,
+    "FN": 11
+  },
+  "metrics": {
+    "accuracy": 0.9855,
+    "precision": 0.9677,
+    "recall": 0.916,
+    "f1": 0.9412,
+    "fpr": 0.0044,
+    "specificity": 0.9956
+  }
+}

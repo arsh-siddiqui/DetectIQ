@@ -139,7 +139,7 @@ export default function Profile() {
   if (!user) return null;
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
         <div className="flex items-center gap-5">
@@ -171,7 +171,6 @@ export default function Profile() {
               {user.avatar}
             </div>
             <h2 className="text-3xl font-heading font-black text-primary relative z-10 mb-2">{user.name}</h2>
-            <div className="text-[10px] font-bold text-accent-blue relative z-10 bg-accent-blue/10 border border-accent-blue/20 px-4 py-1.5 rounded-lg uppercase tracking-wider">{user.role}</div>
             
             <div className="w-full mt-10 pt-8 border-t border-border relative z-10">
               <div className="text-xs font-medium text-secondary flex justify-between items-center bg-background border border-border p-5 rounded-2xl shadow-sm">
