@@ -1,36 +1,20 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Shield, Activity, Cpu, ArrowRight, Sparkles, CheckCircle, Search, Database, Lock, Eye } from "lucide-react";
+import { Shield, Activity, Cpu, ArrowRight, Sparkles } from "lucide-react";
 import { useAppData } from "../../context/AppDataContext";
 
+/**
+ * HeroSection Component
+ * Primary landing hero showcasing headline, detection vectors, and action CTAs.
+ */
 export default function HeroSection({ onRunScanClick, onExploreClick }) {
   const { theme } = useAppData();
-  const isDark = theme === "dark";
 
   return (
-    <section className="relative pt-8 pb-12 lg:pt-14 lg:pb-20 overflow-hidden text-primary z-10 select-none">
-      
-      {/* LAYER 1: Integrated Theme-Specific Cybersecurity Background Image */}
-      <div 
-        className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-500 pointer-events-none z-0 ${
-          isDark ? "opacity-75" : "opacity-90"
-        }`}
-        style={{
-          backgroundImage: `url(${isDark ? '/assets/hero-cyber-dark-bg.jpg' : '/assets/hero-cyber-bg.jpg'})`
-        }}
-      />
-
-      {/* LAYER 2: Soft Theme-Matched Gradient Overlay for Text Contrast */}
-      <div className={`absolute inset-0 transition-all duration-500 pointer-events-none z-0 ${
-        isDark 
-          ? "bg-gradient-to-b from-background/40 via-background/70 to-background" 
-          : "bg-gradient-to-b from-background/20 via-background/40 to-background"
-      }`} />
-
-      {/* LAYER 3: Hero Content */}
+    <section className="relative pt-8 pb-12 lg:pt-14 lg:pb-20 overflow-hidden text-primary z-10 select-none bg-transparent">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        {/* Prominent & Modern DETECTIQ Badge with Outfit Brand Font */}
+        {/* Brand badge */}
         <div className="flex justify-center mb-8">
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
@@ -71,7 +55,7 @@ export default function HeroSection({ onRunScanClick, onExploreClick }) {
             ))}
           </motion.div>
 
-          {/* Large headline */}
+          {/* Headline */}
           <motion.h1 
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -84,7 +68,7 @@ export default function HeroSection({ onRunScanClick, onExploreClick }) {
             </span>
           </motion.h1>
 
-          {/* Supporting text */}
+          {/* Subtitle */}
           <motion.p 
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -130,7 +114,7 @@ export default function HeroSection({ onRunScanClick, onExploreClick }) {
             </motion.button>
           </motion.div>
 
-          {/* Input channels summary chips */}
+          {/* Detection channels */}
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

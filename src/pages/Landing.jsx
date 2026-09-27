@@ -12,8 +12,8 @@ import Footer from "../components/layout/Footer";
 import CyberBackground from "../components/landing/CyberBackground";
 import HeroSection from "../components/landing/HeroSection";
 import ThreatAnalysisDemo from "../components/landing/ThreatAnalysisDemo";
-import WorkflowPipelineSection from "../components/landing/WorkflowPipelineSection";
 
+// Capability badges configuration
 const capabilities = [
   { icon: ShieldAlert, text: "Automated Threat Enrichment" },
   { icon: Brain, text: "AI Security Copilot" },
@@ -21,6 +21,7 @@ const capabilities = [
   { icon: MapIcon, text: "Global Intelligence Mapping" }
 ];
 
+// Core platform features
 const features = [
   { title: "AI Security Copilot", icon: Brain, description: "Analyze headers, indicators, and routing with our intelligent interactive assistant." },
   { title: "Threat Intelligence Map", icon: MapIcon, description: "Visualize the geographic origin and severity of malicious IPs globally." },
@@ -32,6 +33,7 @@ const features = [
   { title: "Vulnerability Learning", icon: GraduationCap, description: "Master security concepts with interactive, bite-sized lessons based on your profile." },
 ];
 
+// Security pipeline steps
 const workflowSteps = [
   { step: "01", label: "Input", desc: "Provide a suspicious URL, email, text message, QR code, or screenshot." },
   { step: "02", label: "Analyze", desc: "AI, heuristics and threat intelligence engines process target data." },
@@ -39,6 +41,7 @@ const workflowSteps = [
   { step: "04", label: "Result", desc: "Get an interactive risk score, detailed findings & forensic report." }
 ];
 
+// Frequently asked questions
 const faqItems = [
   {
     q: "How does DetectIQ analyze suspicious URLs and links in real time?",
@@ -62,6 +65,10 @@ const faqItems = [
   }
 ];
 
+/**
+ * FaqItem Component
+ * Single expandable accordion item for security FAQs.
+ */
 function FaqItem({ faq, index }) {
   const [isOpen, setIsOpen] = useState(index === 0);
 
@@ -109,11 +116,17 @@ function FaqItem({ faq, index }) {
   );
 }
 
+/**
+ * Landing Component
+ * Main product landing page featuring hero section, capability strip,
+ * detection suite features, security pipeline, live threat scanner, and knowledgebase.
+ */
 export default function Landing() {
   const navigate = useNavigate();
   const demoSectionRef = useRef(null);
   const featuresSectionRef = useRef(null);
 
+  // Smooth scroll helper for demo scanner
   const scrollToDemo = () => {
     const el = document.getElementById("investigate") || document.getElementById("live-demo-panel");
     if (el) {
@@ -123,6 +136,7 @@ export default function Landing() {
     }
   };
 
+  // Smooth scroll helper for features section
   const scrollToExplore = () => {
     const el = document.getElementById("features");
     if (el) {
@@ -136,10 +150,10 @@ export default function Landing() {
     <div className="bg-background min-h-screen text-primary selection:bg-accent-blue/30 relative overflow-x-hidden font-sans">
       <Navbar />
 
-      {/* BACKGROUND VISUAL LAYER */}
+      {/* Particle Flow & Cyber Background */}
       <CyberBackground />
 
-      {/* HERO SECTION */}
+      {/* Hero Section */}
       <div id="hero">
         <HeroSection 
           onRunScanClick={scrollToDemo} 
@@ -147,7 +161,7 @@ export default function Landing() {
         />
       </div>
 
-      {/* CAPABILITY STRIP */}
+      {/* Capabilities Strip */}
       <section className="border-y border-border bg-transparent relative z-10 select-none">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-border">
@@ -173,10 +187,9 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* FEATURES GRID (FEATURES SECTION) */}
+      {/* Feature Grid */}
       <section id="features" ref={featuresSectionRef} className="py-20 lg:py-28 bg-transparent border-b border-border relative z-10 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          
           <motion.div 
             initial={{ opacity: 0, y: 15 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -231,15 +244,59 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* HOW IT WORKS (TIMELINE WORKFLOW - ABOUT SECTION) */}
-      <WorkflowPipelineSection onCardClick={scrollToDemo} />
+      {/* Security Pipeline Workflow */}
+      <section id="about" className="py-20 lg:py-28 bg-transparent border-b border-border relative z-10 scroll-mt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-16 max-w-2xl mx-auto"
+          >
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-accent-blue/10 text-accent-blue text-xs font-mono font-bold tracking-wider uppercase mb-3 border border-accent-blue/20">
+              <Cpu className="w-3.5 h-3.5" /> SECURITY PIPELINE
+            </div>
+            <h2 className="text-3xl md:text-5xl font-heading font-black text-primary mb-4 tracking-tight">
+              How DetectIQ Works
+            </h2>
+            <p className="text-secondary font-medium text-base sm:text-lg">
+              A transparent, zero-trust pipeline from submission to evidence explanation.
+            </p>
+          </motion.div>
 
-      {/* INVESTIGATE SECTION (INTERACTIVE THREAT ANALYSIS SCANNER) */}
+          <div className="grid md:grid-cols-4 gap-6 sm:gap-8 relative">
+            <div className="hidden md:block absolute top-[5.25rem] left-[10%] right-[10%] h-[2px] bg-accent-blue/20 dark:bg-accent-blue/30" />
+            
+            {workflowSteps.map((step, i) => (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                whileHover={{ scale: 1.03, y: -4, borderColor: "rgba(37, 99, 235, 0.4)" }}
+                whileTap={{ scale: 0.97 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.3, delay: i * 0.1 }}
+                onClick={scrollToDemo}
+                className="relative z-10 flex flex-col items-center text-center p-8 rounded-3xl bg-card/75 dark:bg-card/75 backdrop-blur-md border border-border/80 shadow-sm hover:shadow-elevated transition-all cursor-pointer group"
+              >
+                <div className="w-12 h-12 rounded-full bg-accent-blue/10 text-accent-blue font-mono font-bold text-sm flex items-center justify-center group-hover:bg-accent-blue group-hover:text-white transition-all mb-6">
+                  {step.step}
+                </div>
+                <h3 className="text-lg font-bold text-primary mb-2 font-heading group-hover:text-accent-blue transition-colors">{step.label}</h3>
+                <p className="text-xs sm:text-sm text-secondary leading-relaxed">{step.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Threat Analysis Scanner */}
       <section id="investigate" ref={demoSectionRef} className="py-20 lg:py-28 relative z-10 scroll-mt-20 border-b border-border bg-transparent">
         <ThreatAnalysisDemo />
       </section>
 
-      {/* RESOURCES SECTION (KNOWLEDGEBASE, FAQS & DOCUMENTATION) */}
+      {/* Knowledgebase & FAQs */}
       <section id="resources" className="py-20 lg:py-28 bg-transparent relative z-10 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div 
@@ -260,7 +317,6 @@ export default function Landing() {
             </p>
           </motion.div>
 
-          {/* INTERACTIVE FAQ ACCORDION */}
           <div className="max-w-3xl mx-auto space-y-4">
             {faqItems.map((faq, i) => (
               <FaqItem key={i} faq={faq} index={i} />
