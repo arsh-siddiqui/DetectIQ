@@ -71,14 +71,14 @@ export default function CyberBackground() {
       mouse.targetY = clickY;
       mouse.isHovered = true;
 
-      // 1. Primary & Secondary Sonar Shockwave Rings
+      // 1. Primary & Secondary Sonar Shockwave Rings (Subtle & Refined Ripple)
       mouse.pulses.push({
         x: clickX,
         y: clickY,
-        radius: 4,
-        maxRadius: 240,
-        speed: 6.0,
-        opacity: 1.0,
+        radius: 3,
+        maxRadius: 75,
+        speed: 3.2,
+        opacity: 0.45,
         color: "rgba(6, 182, 212, " // cyan
       });
 
@@ -86,26 +86,26 @@ export default function CyberBackground() {
         x: clickX,
         y: clickY,
         radius: 2,
-        maxRadius: 190,
-        speed: 4.2,
-        opacity: 0.9,
+        maxRadius: 55,
+        speed: 2.4,
+        opacity: 0.35,
         color: "rgba(139, 92, 246, " // violet
       });
 
-      // 2. Exploding Energy Particle Burst (16 particles with trail)
-      const particleBurstCount = 16;
+      // 2. Exploding Energy Particle Burst (6 subtle micro-particles)
+      const particleBurstCount = 6;
       for (let i = 0; i < particleBurstCount; i++) {
         const angle = (Math.PI * 2 * i) / particleBurstCount + (Math.random() - 0.5) * 0.3;
-        const speed = Math.random() * 4.5 + 3.0;
+        const speed = Math.random() * 2.0 + 1.0;
         mouse.particles.push({
           x: clickX,
           y: clickY,
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
-          size: Math.random() * 3.0 + 2.0,
-          opacity: 1.0,
+          size: Math.random() * 1.5 + 1.0,
+          opacity: 0.5,
           life: 1.0,
-          decay: Math.random() * 0.022 + 0.018
+          decay: Math.random() * 0.035 + 0.025
         });
       }
     };
@@ -185,11 +185,11 @@ export default function CyberBackground() {
       // LAYER 2: FOREGROUND CANVAS (z-[50] IN FRONT OF CARDS)
       // ==========================================
 
-      // A. Sonar Wave Shockwave Rings (On Click)
+      // A. Sonar Wave Shockwave Rings (On Click - Soft & Subtle)
       for (let i = mouse.pulses.length - 1; i >= 0; i--) {
         const pulse = mouse.pulses[i];
         pulse.radius += pulse.speed;
-        pulse.opacity -= 0.016;
+        pulse.opacity -= 0.022;
 
         if (pulse.opacity <= 0 || pulse.radius >= pulse.maxRadius) {
           mouse.pulses.splice(i, 1);
@@ -199,7 +199,7 @@ export default function CyberBackground() {
         fgCtx.beginPath();
         fgCtx.arc(pulse.x, pulse.y, pulse.radius, 0, Math.PI * 2);
         fgCtx.strokeStyle = `${pulse.color}${pulse.opacity})`;
-        fgCtx.lineWidth = 2.5;
+        fgCtx.lineWidth = 1.2;
         fgCtx.stroke();
       }
 
