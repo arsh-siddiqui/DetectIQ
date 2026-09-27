@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ShieldAlert, Loader2, ArrowRight, ScanLine, Mail, Globe, MessageSquare, QrCode, Image, ChevronLeft, ChevronRight } from "lucide-react";
 import { getScanHistory } from "../../services/detectionService";
 import { motion } from "framer-motion";
+import ParticleFlowBackground from "../../components/landing/ParticleFlowBackground";
 
 const TYPE_ICONS = {
   email: Mail,
@@ -51,8 +52,9 @@ export default function ScanHistory() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto"
+      className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto relative z-10"
     >
+      <ParticleFlowBackground variant="history" />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>

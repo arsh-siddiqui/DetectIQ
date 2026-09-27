@@ -8,6 +8,7 @@ import { getAllProgress } from "../services/progressService";
 import { getVulnerabilities } from "../services/vulnerabilityService";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { motion } from "framer-motion";
+import ParticleFlowBackground from "../components/landing/ParticleFlowBackground";
 
 export default function Dashboard() {
   const { user } = useAppData();
@@ -88,8 +89,9 @@ export default function Dashboard() {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8"
+      className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8 relative z-10"
     >
+      <ParticleFlowBackground variant="dashboard" />
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
