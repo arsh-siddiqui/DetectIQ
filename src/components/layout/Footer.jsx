@@ -50,7 +50,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="relative z-10 backdrop-blur-md bg-background/80 border-t border-border mt-16">
+    <footer className="relative z-10 bg-transparent border-t border-border mt-16">
       <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-2 md:grid-cols-5 gap-10">
         <div className="col-span-2">
           <div className="flex items-center gap-2 font-extrabold text-lg text-primary mb-3">
@@ -66,7 +66,7 @@ export default function Footer() {
             {[Globe, Shield, Activity].map((Icon, i) => (
               <div
                 key={i}
-                className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center text-secondary hover:text-accent-blue hover:border-accent-blue/40 transition-all shadow-sm cursor-pointer"
+                className="w-9 h-9 rounded-xl bg-card/75 backdrop-blur-md border border-border flex items-center justify-center text-secondary hover:text-accent-blue hover:border-accent-blue/40 transition-all shadow-sm cursor-pointer"
               >
                 <Icon className="w-4 h-4" />
               </div>
