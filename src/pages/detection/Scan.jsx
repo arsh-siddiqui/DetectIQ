@@ -7,7 +7,6 @@ import { normalizeUrl } from "../../utils/urlValidation";
 import jsQR from "jsqr";
 import Tesseract from "tesseract.js";
 import { motion, AnimatePresence } from "framer-motion";
-import ParticleFlowBackground, { ScannerProcessingEffect } from "../../components/landing/ParticleFlowBackground";
 
 const VALID_SCAN_MODES = ["email", "url", "message", "qr", "screenshot"];
 
@@ -332,12 +331,10 @@ export default function Scan() {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6 sm:space-y-8 relative z-10"
+      className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6 sm:space-y-8"
     >
-      <ParticleFlowBackground variant="scanner" />
-
       {/* Header */}
-      <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10 relative z-10">
+      <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent-blue/10 text-accent-blue text-xs font-bold uppercase tracking-wider mb-4 border border-accent-blue/20">
           <ScanSearch className="w-3.5 h-3.5" /> Threat Detection Engine
         </div>
@@ -345,9 +342,7 @@ export default function Scan() {
         <p className="text-sm sm:text-base text-secondary font-medium">Analyze suspicious emails, URLs, messages, QR codes, and screenshots in real-time with AI-powered detection.</p>
       </div>
 
-      <div className={`bg-card/90 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-elevated border transition-all duration-300 relative overflow-hidden ${isScanning ? 'border-accent-blue ring-2 ring-accent-blue/20' : 'border-border'}`}>
-        <ScannerProcessingEffect isScanning={isScanning} />
-
+      <div className="bg-card rounded-2xl sm:rounded-3xl shadow-elevated border border-border relative overflow-hidden">
         {/* Background Gradients */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-accent-blue/5 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent-violet/5 rounded-full blur-[100px] pointer-events-none" />
