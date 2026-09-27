@@ -128,40 +128,16 @@ export default function ParticleFlowBackground() {
       state.mouse.targetY = clickY;
       state.mouse.isHovered = true;
 
-      // Create Concentric Security Pulse Rings
+      // Single Solar Security Pulse Ring
       state.pulses.push({
         x: clickX,
         y: clickY,
-        radius: 4,
-        maxRadius: isMobile ? 110 : 160,
-        speed: 4.5,
-        opacity: 0.85,
-        lineWidth: 2.0,
-        color: "rgba(6, 182, 212, ", // Cyan
-        createdAt: performance.now()
-      });
-
-      state.pulses.push({
-        x: clickX,
-        y: clickY,
-        radius: 2,
-        maxRadius: isMobile ? 85 : 125,
-        speed: 3.2,
-        opacity: 0.75,
-        lineWidth: 1.5,
-        color: "rgba(37, 99, 235, ", // Blue
-        createdAt: performance.now()
-      });
-
-      state.pulses.push({
-        x: clickX,
-        y: clickY,
-        radius: 1,
-        maxRadius: isMobile ? 60 : 90,
-        speed: 2.2,
+        radius: 3,
+        maxRadius: isMobile ? 80 : 120,
+        speed: 3.5,
         opacity: 0.65,
-        lineWidth: 1.2,
-        color: "rgba(124, 58, 237, ", // Violet
+        lineWidth: 1.5,
+        color: "rgba(6, 182, 212, ", // Cyan
         createdAt: performance.now()
       });
 
