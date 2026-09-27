@@ -3,14 +3,18 @@ import { Link } from "react-router-dom";
 import { Target, Loader2, BookOpen, AlertCircle } from "lucide-react";
 import { getAllProgress } from "../../services/progressService";
 import { useAppData } from "../../context/AppDataContext";
-import Button from "../../components/ui/Button";
 
+/**
+ * MyProgress Page Component
+ * Displays student learning progress, completed vulnerability modules, and assessment scores.
+ */
 export default function MyProgress() {
   const { user } = useAppData();
   const [progress, setProgress] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Load user progress history
   useEffect(() => {
     async function load() {
       try {
@@ -33,6 +37,7 @@ export default function MyProgress() {
     );
   }
 
+  // Format progress list items
   const progressList = progress.map(p => {
     const vuln = p.vulnerability || {};
     return {
@@ -75,7 +80,7 @@ export default function MyProgress() {
         </div>
       )}
 
-      {/* Analytics Summary */}
+      {/* Analytics Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-card rounded-3xl border border-border shadow-elevated p-6 relative overflow-hidden flex items-center justify-between">
           <div className="absolute top-0 right-0 w-32 h-32 bg-accent-blue/5 rounded-full blur-[40px] pointer-events-none" />

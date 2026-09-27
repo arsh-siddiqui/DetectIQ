@@ -3,8 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Loader2, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
 import { getVulnerabilityBySlug } from "../../services/vulnerabilityService";
 import { submitAssessment } from "../../services/progressService";
-import Button from "../../components/ui/Button";
 
+/**
+ * Assessment Page Component
+ * Renders vulnerability quiz questions, tracks user answers, and displays scoring results.
+ */
 export default function Assessment() {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -17,6 +20,7 @@ export default function Assessment() {
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(null);
 
+  // Load vulnerability quiz data
   useEffect(() => {
     async function load() {
       try {
@@ -34,13 +38,14 @@ export default function Assessment() {
   const assessment = vuln?.assessment || [];
   const currentQuestion = assessment[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === assessment.length - 1;
-  const isComplete = Object.keys(answers).length === assessment.length;
 
+  // Option selection handler
   const handleSelect = (optionId) => {
     if (result) return;
     setAnswers(prev => ({ ...prev, [currentQuestion._id]: optionId }));
   };
 
+  // Next/Submit question handler
   const handleNext = () => {
     if (isLastQuestion) {
       handleSubmit();
@@ -49,10 +54,12 @@ export default function Assessment() {
     }
   };
 
+  // Previous question handler
   const handlePrev = () => {
     setCurrentQuestionIndex(prev => Math.max(0, prev - 1));
   };
 
+  // Submit assessment payload
   const handleSubmit = async () => {
     const formattedAnswers = Object.keys(answers).map(qId => ({
       questionId: qId,
@@ -70,6 +77,7 @@ export default function Assessment() {
     }
   };
 
+  // Reset quiz state
   const resetAssessment = () => {
     setResult(null);
     setAnswers({});
@@ -83,7 +91,7 @@ export default function Assessment() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Top Header */}
+      {/* Assessment Header */}
       <div className="bg-card border-b border-border sticky top-0 z-50">
         <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -101,7 +109,7 @@ export default function Assessment() {
           )}
         </div>
         
-        {/* Progress Bar */}
+        {/* Step Progress Bar */}
         {!result && (
           <div className="h-1 bg-background w-full">
             <div 
@@ -116,11 +124,10 @@ export default function Assessment() {
         <div className="w-full max-w-3xl">
           
           {result ? (
-            /* Results State */
+            /* Quiz Score Summary */
             <div className={`relative bg-card rounded-[2rem] border overflow-hidden p-10 md:p-14 text-center shadow-[0_20px_40px_-15px_rgba(0,0,0,0.2)] transition-all ${
               result.passed ? 'border-success/30' : 'border-danger/30'
             }`}>
-              {/* 3D Background Glow */}
               <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] rounded-full blur-[100px] pointer-events-none opacity-20 ${
                 result.passed ? 'bg-success' : 'bg-danger'
               }`} />
@@ -172,7 +179,7 @@ export default function Assessment() {
               </div>
             </div>
           ) : (
-            /* Question State */
+            /* Active Question Card */
             <div className="bg-card rounded-[2rem] border border-border p-8 md:p-12 shadow-elevated relative">
               <h3 className="text-2xl md:text-3xl font-extrabold text-primary mb-10 leading-tight">
                 {currentQuestion.question}
