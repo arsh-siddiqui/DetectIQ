@@ -231,7 +231,7 @@ export default function Landing() {
       </section>
 
       {/* HOW IT WORKS (TIMELINE WORKFLOW - ABOUT SECTION) */}
-      <section id="about" className="py-20 lg:py-28 bg-[#f4f6fa] dark:bg-card/30 border-b border-border relative z-10 scroll-mt-20">
+      <section id="about" className="py-20 lg:py-28 bg-[#f4f6fa]/60 dark:bg-card/30 backdrop-blur-sm border-b border-border relative z-10 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div 
             initial={{ opacity: 0, y: 15 }}

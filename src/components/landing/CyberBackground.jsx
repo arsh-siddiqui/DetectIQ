@@ -30,17 +30,17 @@ export default function CyberBackground() {
     };
 
     // Generate Floating Ambient Cyber Data Particles (Cyber Dust)
-    const particleCount = 35;
+    const particleCount = 60;
     const cyberParticles = [];
     for (let i = 0; i < particleCount; i++) {
       cyberParticles.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.35,
-        vy: -Math.random() * 0.45 - 0.15,
-        radius: Math.random() * 2.2 + 1.2,
+        vx: (Math.random() - 0.5) * 0.45,
+        vy: -Math.random() * 0.5 - 0.2,
+        radius: Math.random() * 2.2 + 1.5,
         pulseAngle: Math.random() * Math.PI * 2,
-        baseOpacity: Math.random() * 0.35 + 0.15
+        baseOpacity: Math.random() * 0.35 + 0.25
       });
     }
 
