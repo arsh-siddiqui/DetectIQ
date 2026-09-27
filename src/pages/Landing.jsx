@@ -210,10 +210,10 @@ export default function Landing() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.25, delay: i * 0.06 }}
                 onClick={scrollToDemo}
-                className="bg-card border border-border p-6 rounded-2xl shadow-sm hover:shadow-elevated transition-all duration-200 group flex flex-col justify-between cursor-pointer"
+                className="bg-card/85 backdrop-blur-md border border-border/80 p-6 rounded-2xl shadow-sm hover:shadow-elevated hover:border-accent-cyan/40 transition-all duration-200 group flex flex-col justify-between cursor-pointer"
               >
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-accent-blue/10 flex items-center justify-center mb-5 group-hover:bg-accent-blue group-hover:text-white transition-all group-hover:rotate-6">
+                  <div className="w-12 h-12 rounded-xl bg-accent-blue/10 flex items-center justify-center mb-5 group-hover:bg-accent-blue group-hover:text-white transition-all group-hover:rotate-6 group-hover:ring-2 group-hover:ring-accent-cyan/40">
                     <feature.icon className="w-6 h-6 text-accent-blue group-hover:text-white transition-colors" />
                   </div>
                   <h3 className="text-base font-bold text-primary mb-2 font-heading group-hover:text-accent-blue transition-colors">{feature.title}</h3>
