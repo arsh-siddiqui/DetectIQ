@@ -231,7 +231,7 @@ export default function Landing() {
       </section>
 
       {/* HOW IT WORKS (TIMELINE WORKFLOW - ABOUT SECTION) */}
-      <section id="about" className="py-20 lg:py-28 bg-background border-b border-border relative z-10 scroll-mt-20">
+      <section id="about" className="py-20 lg:py-28 bg-[#f4f6fa] dark:bg-card/30 border-b border-border relative z-10 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div 
             initial={{ opacity: 0, y: 15 }}
@@ -240,7 +240,7 @@ export default function Landing() {
             transition={{ duration: 0.5 }}
             className="text-center mb-16 max-w-2xl mx-auto"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-blue/10 text-accent-blue text-xs font-mono font-bold tracking-wider uppercase mb-3 border border-accent-blue/20">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-accent-blue/10 text-accent-blue text-xs font-mono font-bold tracking-wider uppercase mb-3 border border-accent-blue/20">
               <Cpu className="w-3.5 h-3.5" /> SECURITY PIPELINE
             </div>
             <h2 className="text-3xl md:text-5xl font-heading font-black text-primary mb-4 tracking-tight">
@@ -253,21 +253,21 @@ export default function Landing() {
 
           <div className="grid md:grid-cols-4 gap-6 sm:gap-8 relative">
             {/* Connecting line on desktop */}
-            <div className="hidden md:block absolute top-10 left-[12%] right-[12%] h-[2px] bg-gradient-to-r from-accent-blue via-accent-cyan to-accent-violet opacity-30" />
+            <div className="hidden md:block absolute top-[5.25rem] left-[10%] right-[10%] h-[2px] bg-accent-blue/20 dark:bg-accent-blue/30" />
             
             {workflowSteps.map((step, i) => (
               <motion.div 
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                whileHover={{ scale: 1.04, y: -4, borderColor: "rgba(37, 99, 235, 0.5)" }}
+                whileHover={{ scale: 1.03, y: -4, borderColor: "rgba(37, 99, 235, 0.4)" }}
                 whileTap={{ scale: 0.97 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.3, delay: i * 0.1 }}
                 onClick={scrollToDemo}
-                className="relative z-10 flex flex-col items-center text-center p-6 rounded-2xl bg-card border border-border shadow-sm hover:shadow-card transition-all cursor-pointer group"
+                className="relative z-10 flex flex-col items-center text-center p-8 rounded-3xl bg-white dark:bg-card border border-border/80 shadow-sm hover:shadow-elevated transition-all cursor-pointer group"
               >
-                <div className="w-14 h-14 rounded-2xl bg-background border border-border shadow-inner flex items-center justify-center font-mono font-black text-xl text-accent-blue group-hover:scale-110 group-hover:bg-accent-blue group-hover:text-white transition-all mb-5">
+                <div className="w-12 h-12 rounded-full bg-accent-blue/10 text-accent-blue font-mono font-bold text-sm flex items-center justify-center group-hover:bg-accent-blue group-hover:text-white transition-all mb-6">
                   {step.step}
                 </div>
                 <h3 className="text-lg font-bold text-primary mb-2 font-heading group-hover:text-accent-blue transition-colors">{step.label}</h3>

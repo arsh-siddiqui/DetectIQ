@@ -71,7 +71,7 @@ export default function CyberBackground() {
       mouse.targetY = clickY;
       mouse.isHovered = true;
 
-      // 1. Primary & Secondary Sonar Shockwave Rings (Subtle & Refined Ripple)
+      // 1. Single Sonar Shockwave Ring (Subtle & Refined Ripple)
       mouse.pulses.push({
         x: clickX,
         y: clickY,
@@ -80,16 +80,6 @@ export default function CyberBackground() {
         speed: 3.2,
         opacity: 0.45,
         color: "rgba(6, 182, 212, " // cyan
-      });
-
-      mouse.pulses.push({
-        x: clickX,
-        y: clickY,
-        radius: 2,
-        maxRadius: 55,
-        speed: 2.4,
-        opacity: 0.35,
-        color: "rgba(139, 92, 246, " // violet
       });
 
       // 2. Exploding Energy Particle Burst (6 subtle micro-particles)
