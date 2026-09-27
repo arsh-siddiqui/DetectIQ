@@ -184,23 +184,8 @@ export default function ParticleFlowBackground() {
       fgCtx.clearRect(0, 0, width, height);
 
       // ========================================================
-      // LAYER 1: BACKGROUND CANVAS (WAVES, GRID, PARTICLES & NODES)
+      // LAYER 1: BACKGROUND CANVAS (CURVED WAVES, PARTICLES & NODES)
       // ========================================================
-
-      // A. Subtle Cyber Background Grid (5-7% Opacity)
-      const gridSize = 44;
-      bgCtx.beginPath();
-      bgCtx.strokeStyle = "rgba(37, 99, 235, 0.05)";
-      bgCtx.lineWidth = 0.75;
-      for (let x = 0; x <= width; x += gridSize) {
-        bgCtx.moveTo(x, 0);
-        bgCtx.lineTo(x, height);
-      }
-      for (let y = 0; y <= height; y += gridSize) {
-        bgCtx.moveTo(0, y);
-        bgCtx.lineTo(width, y);
-      }
-      bgCtx.stroke();
 
       // B. Flowing Solar / Orbital Curved Waves
       waves.forEach((w) => {

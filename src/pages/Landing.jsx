@@ -12,6 +12,7 @@ import Footer from "../components/layout/Footer";
 import CyberBackground from "../components/landing/CyberBackground";
 import HeroSection from "../components/landing/HeroSection";
 import ThreatAnalysisDemo from "../components/landing/ThreatAnalysisDemo";
+import WorkflowPipelineSection from "../components/landing/WorkflowPipelineSection";
 
 const capabilities = [
   { icon: ShieldAlert, text: "Automated Threat Enrichment" },
@@ -231,52 +232,7 @@ export default function Landing() {
       </section>
 
       {/* HOW IT WORKS (TIMELINE WORKFLOW - ABOUT SECTION) */}
-      <section id="about" className="py-20 lg:py-28 bg-transparent border-b border-border relative z-10 scroll-mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <motion.div 
-            initial={{ opacity: 0, y: 15 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-16 max-w-2xl mx-auto"
-          >
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-accent-blue/10 text-accent-blue text-xs font-mono font-bold tracking-wider uppercase mb-3 border border-accent-blue/20">
-              <Cpu className="w-3.5 h-3.5" /> SECURITY PIPELINE
-            </div>
-            <h2 className="text-3xl md:text-5xl font-heading font-black text-primary mb-4 tracking-tight">
-              How DetectIQ Works
-            </h2>
-            <p className="text-secondary font-medium text-base sm:text-lg">
-              A transparent, zero-trust pipeline from submission to evidence explanation.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-4 gap-6 sm:gap-8 relative">
-            {/* Connecting line on desktop */}
-            <div className="hidden md:block absolute top-[5.25rem] left-[10%] right-[10%] h-[2px] bg-accent-blue/20 dark:bg-accent-blue/30" />
-            
-            {workflowSteps.map((step, i) => (
-              <motion.div 
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                whileHover={{ scale: 1.03, y: -4, borderColor: "rgba(37, 99, 235, 0.4)" }}
-                whileTap={{ scale: 0.97 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.3, delay: i * 0.1 }}
-                onClick={scrollToDemo}
-                className="relative z-10 flex flex-col items-center text-center p-8 rounded-3xl bg-card/75 dark:bg-card/75 backdrop-blur-md border border-border/80 shadow-sm hover:shadow-elevated transition-all cursor-pointer group"
-              >
-                <div className="w-12 h-12 rounded-full bg-accent-blue/10 text-accent-blue font-mono font-bold text-sm flex items-center justify-center group-hover:bg-accent-blue group-hover:text-white transition-all mb-6">
-                  {step.step}
-                </div>
-                <h3 className="text-lg font-bold text-primary mb-2 font-heading group-hover:text-accent-blue transition-colors">{step.label}</h3>
-                <p className="text-xs sm:text-sm text-secondary leading-relaxed">{step.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <WorkflowPipelineSection onCardClick={scrollToDemo} />
 
       {/* INVESTIGATE SECTION (INTERACTIVE THREAT ANALYSIS SCANNER) */}
       <section id="investigate" ref={demoSectionRef} className="py-20 lg:py-28 relative z-10 scroll-mt-20 border-b border-border bg-transparent">
