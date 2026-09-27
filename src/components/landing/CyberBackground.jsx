@@ -103,31 +103,54 @@ export default function CyberBackground() {
       mouse.targetY = clickY;
       mouse.isHovered = true;
 
-      // Single Sonar Shockwave Ring (Subtle & Refined Ripple)
+      // Dynamic Concentric Solar Wave Shockwave Rings (Cyan, Violet, Electric Blue)
       mouse.pulses.push({
         x: clickX,
         y: clickY,
-        radius: 3,
-        maxRadius: 75,
-        speed: 3.2,
-        opacity: 0.45,
-        color: "rgba(6, 182, 212, " // cyan
+        radius: 4,
+        maxRadius: 180,
+        speed: 5.2,
+        opacity: 0.85,
+        lineWidth: 2.2,
+        color: "rgba(6, 182, 212, " // cyan solar wave
       });
 
-      // Exploding Energy Particle Burst (6 subtle micro-particles)
-      const particleBurstCount = 6;
+      mouse.pulses.push({
+        x: clickX,
+        y: clickY,
+        radius: 2,
+        maxRadius: 135,
+        speed: 3.8,
+        opacity: 0.75,
+        lineWidth: 1.6,
+        color: "rgba(139, 92, 246, " // violet solar wave
+      });
+
+      mouse.pulses.push({
+        x: clickX,
+        y: clickY,
+        radius: 1,
+        maxRadius: 90,
+        speed: 2.6,
+        opacity: 0.65,
+        lineWidth: 1.2,
+        color: "rgba(59, 130, 246, " // electric blue solar wave
+      });
+
+      // Exploding Solar Energy Spark Burst (12 particles with trail)
+      const particleBurstCount = 12;
       for (let i = 0; i < particleBurstCount; i++) {
         const angle = (Math.PI * 2 * i) / particleBurstCount + (Math.random() - 0.5) * 0.3;
-        const speed = Math.random() * 2.0 + 1.0;
+        const speed = Math.random() * 3.5 + 1.8;
         mouse.particles.push({
           x: clickX,
           y: clickY,
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
-          size: Math.random() * 1.5 + 1.0,
-          opacity: 0.5,
+          size: Math.random() * 2.2 + 1.2,
+          opacity: 0.85,
           life: 1.0,
-          decay: Math.random() * 0.035 + 0.025
+          decay: Math.random() * 0.025 + 0.02
         });
       }
     };
@@ -212,11 +235,11 @@ export default function CyberBackground() {
       // LAYER 2: FOREGROUND CANVAS (z-[50] INTERACTIVE RETICLE & WAVE)
       // ==========================================
 
-      // Single Sonar Wave Shockwave Ring (On Click)
+      // Dynamic Concentric Solar Wave Shockwave Rings (On Click)
       for (let i = mouse.pulses.length - 1; i >= 0; i--) {
         const pulse = mouse.pulses[i];
         pulse.radius += pulse.speed;
-        pulse.opacity -= 0.022;
+        pulse.opacity -= 0.018;
 
         if (pulse.opacity <= 0 || pulse.radius >= pulse.maxRadius) {
           mouse.pulses.splice(i, 1);
@@ -226,7 +249,7 @@ export default function CyberBackground() {
         fgCtx.beginPath();
         fgCtx.arc(pulse.x, pulse.y, pulse.radius, 0, Math.PI * 2);
         fgCtx.strokeStyle = `${pulse.color}${pulse.opacity})`;
-        fgCtx.lineWidth = 1.2;
+        fgCtx.lineWidth = pulse.lineWidth || 1.6;
         fgCtx.stroke();
       }
 
