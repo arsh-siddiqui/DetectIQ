@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Shield, Activity, Cpu, ArrowRight, Sparkles } from "lucide-react";
+import { Shield, Activity, Cpu, ArrowRight } from "lucide-react";
 import { useAppData } from "../../context/AppDataContext";
 
 /**
@@ -9,9 +9,29 @@ import { useAppData } from "../../context/AppDataContext";
  */
 export default function HeroSection({ onRunScanClick, onExploreClick }) {
   const { theme } = useAppData();
+  const isDark = theme === "dark";
 
   return (
-    <section className="relative pt-8 pb-12 lg:pt-14 lg:pb-20 overflow-hidden text-primary z-10 select-none bg-transparent">
+    <section className="relative pt-8 pb-12 lg:pt-14 lg:pb-20 overflow-hidden text-primary z-10 select-none">
+      
+      {/* Theme-specific hero cybersecurity background image */}
+      <div 
+        className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-500 pointer-events-none z-0 ${
+          isDark ? "opacity-75" : "opacity-85"
+        }`}
+        style={{
+          backgroundImage: `url(${isDark ? '/assets/hero-cyber-dark-bg.jpg' : '/assets/hero-cyber-bg.jpg'})`
+        }}
+      />
+
+      {/* Soft gradient overlay for text contrast */}
+      <div className={`absolute inset-0 transition-all duration-500 pointer-events-none z-0 ${
+        isDark 
+          ? "bg-gradient-to-b from-background/40 via-background/70 to-background" 
+          : "bg-gradient-to-b from-background/20 via-background/40 to-background"
+      }`} />
+
+      {/* Hero Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Brand badge */}
