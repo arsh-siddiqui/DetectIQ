@@ -265,7 +265,7 @@ export default function Landing() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.3, delay: i * 0.1 }}
                 onClick={scrollToDemo}
-                className="relative z-10 flex flex-col items-center text-center p-8 rounded-3xl bg-card border border-border/80 shadow-sm hover:shadow-elevated transition-all cursor-pointer group"
+                className="relative z-10 flex flex-col items-center text-center p-8 rounded-3xl bg-card/75 dark:bg-card/75 backdrop-blur-md border border-border/80 shadow-sm hover:shadow-elevated transition-all cursor-pointer group"
               >
                 <div className="w-12 h-12 rounded-full bg-accent-blue/10 text-accent-blue font-mono font-bold text-sm flex items-center justify-center group-hover:bg-accent-blue group-hover:text-white transition-all mb-6">
                   {step.step}

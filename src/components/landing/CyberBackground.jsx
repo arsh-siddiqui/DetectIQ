@@ -29,31 +29,31 @@ export default function CyberBackground() {
       hudRotation: 0
     };
 
-    // 1. Generate Floating Ambient Cyber Data Micro-Nodes (5-10% opacity)
-    const particleCount = 40;
+    // 1. Generate Floating Ambient Cyber Data Micro-Nodes (Opacity 6-12%)
+    const particleCount = 70;
     const cyberParticles = [];
     for (let i = 0; i < particleCount; i++) {
       cyberParticles.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: -Math.random() * 0.35 - 0.1,
-        radius: Math.random() * 1.5 + 1.0,
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: -Math.random() * 0.4 - 0.15,
+        radius: Math.random() * 1.8 + 1.2,
         pulseAngle: Math.random() * Math.PI * 2,
-        baseOpacity: Math.random() * 0.05 + 0.04 // 4% to 9% opacity
+        baseOpacity: Math.random() * 0.06 + 0.06 // 6% to 12% opacity
       });
     }
 
-    // 2. Generate Faint Circuit-Board Lines & Small Connector Nodes
-    const traceCount = 16;
+    // 2. Generate Faint Circuit-Board Lines & Small Connector Nodes (Dense Coverage)
+    const traceCount = 30;
     const circuitTraces = [];
     const initTraces = () => {
       circuitTraces.length = 0;
       for (let i = 0; i < traceCount; i++) {
         const startX = Math.random() * width;
         const startY = Math.random() * height;
-        const len1 = Math.random() * 140 + 70;
-        const len2 = Math.random() * 90 + 40;
+        const len1 = Math.random() * 160 + 80;
+        const len2 = Math.random() * 100 + 50;
         const dir = Math.floor(Math.random() * 4); // 0: right, 1: down, 2: left, 3: up
         
         let dx = dir === 0 ? 1 : dir === 2 ? -1 : 0;
@@ -68,7 +68,7 @@ export default function CyberBackground() {
 
         circuitTraces.push({
           p1, p2, p3,
-          nodeRadius: Math.random() * 1.2 + 1.8,
+          nodeRadius: Math.random() * 1.5 + 1.8,
           pulseOffset: Math.random() * Math.PI * 2
         });
       }
@@ -148,14 +148,14 @@ export default function CyberBackground() {
       fgCtx.clearRect(0, 0, width, height);
 
       // ==========================================
-      // LAYER 1: BACKGROUND CANVAS (SUBTLE CYBER GRID & CIRCUIT TRACES - 5-10% OPACITY)
+      // LAYER 1: BACKGROUND CANVAS (SUBTLE CYBER GRID & CIRCUIT TRACES - 8-12% OPACITY)
       // ==========================================
 
-      // A. Thin Geometric Grid (Opacity 7–9%)
-      const gridSize = 44;
+      // A. Thin Geometric Grid (Opacity 8–10%)
+      const gridSize = 40;
       bgCtx.beginPath();
-      bgCtx.strokeStyle = "rgba(37, 99, 235, 0.08)";
-      bgCtx.lineWidth = 0.8;
+      bgCtx.strokeStyle = "rgba(37, 99, 235, 0.09)";
+      bgCtx.lineWidth = 0.85;
 
       for (let x = 0; x <= width; x += gridSize) {
         bgCtx.moveTo(x, 0);
@@ -167,9 +167,9 @@ export default function CyberBackground() {
       }
       bgCtx.stroke();
 
-      // B. Faint Circuit-Board Lines & Small Glowing Nodes (Opacity 7–12%)
+      // B. Faint Circuit-Board Lines & Small Glowing Nodes (Opacity 8–14%)
       circuitTraces.forEach((trace) => {
-        const pulse = 0.07 + Math.sin(waveTime * 1.5 + trace.pulseOffset) * 0.04; // 7% to 11% opacity
+        const pulse = 0.08 + Math.sin(waveTime * 1.5 + trace.pulseOffset) * 0.05; // 8% to 13% opacity
 
         // Circuit Line
         bgCtx.beginPath();
@@ -177,19 +177,19 @@ export default function CyberBackground() {
         bgCtx.lineTo(trace.p2.x, trace.p2.y);
         bgCtx.lineTo(trace.p3.x, trace.p3.y);
         bgCtx.strokeStyle = `rgba(6, 182, 212, ${pulse})`;
-        bgCtx.lineWidth = 1.0;
+        bgCtx.lineWidth = 1.1;
         bgCtx.stroke();
 
-        // Small Glowing Nodes at Endpoints & Joints (Opacity 8-14%)
+        // Small Glowing Nodes at Endpoints & Joints (Opacity 10-16%)
         [trace.p1, trace.p2, trace.p3].forEach((pt, idx) => {
           bgCtx.beginPath();
           bgCtx.arc(pt.x, pt.y, idx === 1 ? trace.nodeRadius + 0.5 : trace.nodeRadius, 0, Math.PI * 2);
-          bgCtx.fillStyle = `rgba(37, 99, 235, ${pulse + 0.03})`;
+          bgCtx.fillStyle = `rgba(37, 99, 235, ${pulse + 0.04})`;
           bgCtx.fill();
         });
       });
 
-      // C. Faint Ambient Micro Glowing Nodes (Opacity 6–10%)
+      // C. Faint Ambient Micro Glowing Nodes (Opacity 6–12%)
       cyberParticles.forEach((p) => {
         p.x += p.vx + Math.sin(p.pulseAngle) * 0.15;
         p.y += p.vy;
@@ -200,11 +200,11 @@ export default function CyberBackground() {
           p.x = Math.random() * width;
         }
 
-        const currentOpacity = p.baseOpacity + Math.sin(p.pulseAngle) * 0.02;
+        const currentOpacity = p.baseOpacity + Math.sin(p.pulseAngle) * 0.03;
 
         bgCtx.beginPath();
         bgCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        bgCtx.fillStyle = `rgba(6, 182, 212, ${Math.max(0.05, Math.min(0.1, currentOpacity))})`;
+        bgCtx.fillStyle = `rgba(6, 182, 212, ${Math.max(0.06, Math.min(0.12, currentOpacity))})`;
         bgCtx.fill();
       });
 
