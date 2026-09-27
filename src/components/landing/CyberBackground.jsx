@@ -151,11 +151,11 @@ export default function CyberBackground() {
       // LAYER 1: BACKGROUND CANVAS (SUBTLE CYBER GRID & CIRCUIT TRACES - 5-10% OPACITY)
       // ==========================================
 
-      // A. Thin Geometric Grid (Opacity 5–7%)
+      // A. Thin Geometric Grid (Opacity 7–9%)
       const gridSize = 44;
       bgCtx.beginPath();
-      bgCtx.strokeStyle = "rgba(37, 99, 235, 0.055)";
-      bgCtx.lineWidth = 0.75;
+      bgCtx.strokeStyle = "rgba(37, 99, 235, 0.08)";
+      bgCtx.lineWidth = 0.8;
 
       for (let x = 0; x <= width; x += gridSize) {
         bgCtx.moveTo(x, 0);
@@ -167,9 +167,9 @@ export default function CyberBackground() {
       }
       bgCtx.stroke();
 
-      // B. Faint Circuit-Board Lines & Small Glowing Nodes (Opacity 5–10%)
+      // B. Faint Circuit-Board Lines & Small Glowing Nodes (Opacity 7–12%)
       circuitTraces.forEach((trace) => {
-        const pulse = 0.05 + Math.sin(waveTime * 1.5 + trace.pulseOffset) * 0.03; // 5% to 8% opacity
+        const pulse = 0.07 + Math.sin(waveTime * 1.5 + trace.pulseOffset) * 0.04; // 7% to 11% opacity
 
         // Circuit Line
         bgCtx.beginPath();
@@ -180,16 +180,16 @@ export default function CyberBackground() {
         bgCtx.lineWidth = 1.0;
         bgCtx.stroke();
 
-        // Small Glowing Nodes at Endpoints & Joints (Opacity 6-10%)
+        // Small Glowing Nodes at Endpoints & Joints (Opacity 8-14%)
         [trace.p1, trace.p2, trace.p3].forEach((pt, idx) => {
           bgCtx.beginPath();
           bgCtx.arc(pt.x, pt.y, idx === 1 ? trace.nodeRadius + 0.5 : trace.nodeRadius, 0, Math.PI * 2);
-          bgCtx.fillStyle = `rgba(37, 99, 235, ${pulse + 0.02})`;
+          bgCtx.fillStyle = `rgba(37, 99, 235, ${pulse + 0.03})`;
           bgCtx.fill();
         });
       });
 
-      // C. Faint Ambient Micro Glowing Nodes (Opacity 5–10%)
+      // C. Faint Ambient Micro Glowing Nodes (Opacity 6–10%)
       cyberParticles.forEach((p) => {
         p.x += p.vx + Math.sin(p.pulseAngle) * 0.15;
         p.y += p.vy;
@@ -204,7 +204,7 @@ export default function CyberBackground() {
 
         bgCtx.beginPath();
         bgCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        bgCtx.fillStyle = `rgba(6, 182, 212, ${Math.max(0.04, Math.min(0.09, currentOpacity))})`;
+        bgCtx.fillStyle = `rgba(6, 182, 212, ${Math.max(0.05, Math.min(0.1, currentOpacity))})`;
         bgCtx.fill();
       });
 

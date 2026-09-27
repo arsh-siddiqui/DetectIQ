@@ -147,7 +147,7 @@ export default function Landing() {
       </div>
 
       {/* CAPABILITY STRIP */}
-      <section className="border-y border-border bg-card/70 backdrop-blur-md relative z-10 select-none">
+      <section className="border-y border-border bg-transparent relative z-10 select-none">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-border">
             {capabilities.map((cap, i) => (
@@ -160,7 +160,7 @@ export default function Landing() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.2, delay: i * 0.08 }}
                 onClick={scrollToDemo}
-                className="py-6 px-4 flex flex-col items-center justify-center text-center gap-2.5 group hover:bg-secondary/60 transition-colors cursor-pointer"
+                className="py-6 px-4 flex flex-col items-center justify-center text-center gap-2.5 group hover:bg-card/40 transition-colors cursor-pointer"
               >
                 <div className="w-10 h-10 rounded-xl bg-accent-blue/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-accent-blue group-hover:text-white transition-all shadow-sm">
                   <cap.icon className="w-5 h-5 text-accent-blue group-hover:text-white transition-colors" />
@@ -173,7 +173,7 @@ export default function Landing() {
       </section>
 
       {/* FEATURES GRID (FEATURES SECTION) */}
-      <section id="features" ref={featuresSectionRef} className="py-20 lg:py-28 bg-card/60 border-b border-border relative z-10 scroll-mt-20">
+      <section id="features" ref={featuresSectionRef} className="py-20 lg:py-28 bg-transparent border-b border-border relative z-10 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           
           <motion.div 
@@ -210,7 +210,7 @@ export default function Landing() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.25, delay: i * 0.06 }}
                 onClick={scrollToDemo}
-                className="bg-background border border-border p-6 rounded-2xl shadow-sm hover:shadow-elevated transition-all duration-200 group flex flex-col justify-between cursor-pointer"
+                className="bg-card border border-border p-6 rounded-2xl shadow-sm hover:shadow-elevated transition-all duration-200 group flex flex-col justify-between cursor-pointer"
               >
                 <div>
                   <div className="w-12 h-12 rounded-xl bg-accent-blue/10 flex items-center justify-center mb-5 group-hover:bg-accent-blue group-hover:text-white transition-all group-hover:rotate-6">
@@ -231,7 +231,7 @@ export default function Landing() {
       </section>
 
       {/* HOW IT WORKS (TIMELINE WORKFLOW - ABOUT SECTION) */}
-      <section id="about" className="py-20 lg:py-28 bg-[#f4f6fa]/60 dark:bg-card/30 backdrop-blur-sm border-b border-border relative z-10 scroll-mt-20">
+      <section id="about" className="py-20 lg:py-28 bg-transparent border-b border-border relative z-10 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div 
             initial={{ opacity: 0, y: 15 }}
@@ -265,7 +265,7 @@ export default function Landing() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.3, delay: i * 0.1 }}
                 onClick={scrollToDemo}
-                className="relative z-10 flex flex-col items-center text-center p-8 rounded-3xl bg-white dark:bg-card border border-border/80 shadow-sm hover:shadow-elevated transition-all cursor-pointer group"
+                className="relative z-10 flex flex-col items-center text-center p-8 rounded-3xl bg-card border border-border/80 shadow-sm hover:shadow-elevated transition-all cursor-pointer group"
               >
                 <div className="w-12 h-12 rounded-full bg-accent-blue/10 text-accent-blue font-mono font-bold text-sm flex items-center justify-center group-hover:bg-accent-blue group-hover:text-white transition-all mb-6">
                   {step.step}
@@ -279,12 +279,12 @@ export default function Landing() {
       </section>
 
       {/* INVESTIGATE SECTION (INTERACTIVE THREAT ANALYSIS SCANNER) */}
-      <section id="investigate" ref={demoSectionRef} className="py-20 lg:py-28 relative z-10 scroll-mt-20 border-b border-border">
+      <section id="investigate" ref={demoSectionRef} className="py-20 lg:py-28 relative z-10 scroll-mt-20 border-b border-border bg-transparent">
         <ThreatAnalysisDemo />
       </section>
 
       {/* RESOURCES SECTION (KNOWLEDGEBASE, FAQS & DOCUMENTATION) */}
-      <section id="resources" className="py-20 lg:py-28 bg-card/60 relative z-10 scroll-mt-20">
+      <section id="resources" className="py-20 lg:py-28 bg-transparent relative z-10 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div 
             initial={{ opacity: 0, y: 15 }}
