@@ -148,7 +148,7 @@ export default function Landing() {
 
   return (
     <div className="bg-background min-h-screen text-primary selection:bg-accent-blue/30 relative overflow-x-hidden font-sans">
-      {/* Tactical Cyber Target Cursor & Lock-On System */}
+      {/* Tactical Lock-On Target System */}
       <TargetCursor />
 
       <Navbar />
