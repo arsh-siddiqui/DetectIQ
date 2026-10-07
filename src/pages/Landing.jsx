@@ -11,6 +11,7 @@ import Footer from "../components/layout/Footer";
 import CyberBackground from "../components/landing/CyberBackground";
 import HeroSection from "../components/landing/HeroSection";
 import ThreatAnalysisDemo from "../components/landing/ThreatAnalysisDemo";
+import TargetCursor from "../components/landing/TargetCursor";
 
 // Capability badges configuration
 const capabilities = [
@@ -147,6 +148,9 @@ export default function Landing() {
 
   return (
     <div className="bg-background min-h-screen text-primary selection:bg-accent-blue/30 relative overflow-x-hidden font-sans">
+      {/* Tactical Cyber Target Cursor & Lock-On System */}
+      <TargetCursor />
+
       <Navbar />
 
       {/* Particle Flow & Cyber Background */}

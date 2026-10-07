@@ -180,3 +180,16 @@ body { transition: background-color 200ms ease, color 200ms ease; }
   transition: all 0.3s ease;
 }
 
+/* ====================================================
+   TACTICAL TARGET CURSOR (LANDING PAGE ONLY)
+==================================================== */
+body.landing-target-active,
+body.landing-target-active *,
+body.landing-target-active a,
+body.landing-target-active button,
+body.landing-target-active input,
+body.landing-target-active textarea,
+body.landing-target-active select {
+  cursor: none !important;
+}
+
