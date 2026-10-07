@@ -2,9 +2,8 @@ import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { 
-  ArrowRight, ShieldCheck, Mail, Link as LinkIcon, MessageSquare, QrCode, Image as ImageIcon, 
-  Brain, FileSearch, GraduationCap, ChevronRight, Activity, Search, ShieldAlert, CheckCircle2, 
-  Map as MapIcon, Database, Lock, Cpu, Sparkles, BookOpen, FileText, Download, ChevronDown, HelpCircle 
+  ShieldCheck, Mail, Brain, FileSearch, GraduationCap, ChevronRight, Activity, Search, ShieldAlert, 
+  Map as MapIcon, Cpu, Sparkles, BookOpen, ChevronDown, HelpCircle, ArrowRight, CheckCircle2
 } from "lucide-react";
 
 import Navbar from "../components/layout/Navbar";
@@ -12,6 +11,7 @@ import Footer from "../components/layout/Footer";
 import CyberBackground from "../components/landing/CyberBackground";
 import HeroSection from "../components/landing/HeroSection";
 import ThreatAnalysisDemo from "../components/landing/ThreatAnalysisDemo";
+import TargetCursor from "../components/landing/TargetCursor";
 
 // Capability badges configuration
 const capabilities = [
@@ -78,7 +78,7 @@ function FaqItem({ faq, index }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.3, delay: index * 0.05 }}
-      className="bg-background border border-border rounded-2xl overflow-hidden shadow-sm"
+      className="bg-background border border-border rounded-2xl overflow-hidden shadow-sm hover:border-accent-blue/40 transition-colors"
     >
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -119,7 +119,7 @@ function FaqItem({ faq, index }) {
 /**
  * Landing Component
  * Main product landing page featuring hero section, capability strip,
- * detection suite features, security pipeline, live threat scanner, and knowledgebase.
+ * detection suite features, security pipeline, live threat scanner, metrics, social proof, and FAQs.
  */
 export default function Landing() {
   const navigate = useNavigate();
@@ -148,6 +148,9 @@ export default function Landing() {
 
   return (
     <div className="bg-background min-h-screen text-primary selection:bg-accent-blue/30 relative overflow-x-hidden font-sans">
+      {/* Tactical Cyber Target Cursor & Lock-On System */}
+      <TargetCursor />
+
       <Navbar />
 
       {/* Particle Flow & Cyber Background */}
@@ -297,7 +300,7 @@ export default function Landing() {
       </section>
 
       {/* Knowledgebase & FAQs */}
-      <section id="resources" className="py-20 lg:py-28 bg-transparent relative z-10 scroll-mt-20">
+      <section id="resources" className="py-20 lg:py-28 bg-transparent border-b border-border relative z-10 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div 
             initial={{ opacity: 0, y: 15 }}
@@ -325,7 +328,59 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Modern High-Impact Conversion CTA Banner */}
+      <section className="py-20 lg:py-28 relative z-10 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 20 }}
+            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="relative rounded-3xl bg-gradient-to-r from-accent-blue/20 via-accent-violet/20 to-accent-cyan/20 border border-accent-blue/30 p-8 sm:p-12 lg:p-16 backdrop-blur-xl shadow-elevated text-center overflow-hidden"
+          >
+            {/* Background glow circle */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-accent-blue/20 blur-3xl rounded-full pointer-events-none" />
+
+            <div className="relative z-10 max-w-3xl mx-auto">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-card/80 border border-accent-blue/40 text-accent-blue text-xs font-mono font-bold tracking-wider uppercase mb-6 shadow-sm">
+                <CheckCircle2 className="w-4 h-4 text-accent-cyan" /> ZERO TRUST THREAT PLATFORM
+              </div>
+
+              <h2 className="text-3xl sm:text-5xl font-heading font-black text-primary mb-6 tracking-tight leading-tight">
+                Ready to Shield Your Digital Identity?
+              </h2>
+
+              <p className="text-secondary font-medium text-base sm:text-lg leading-relaxed mb-10 max-w-2xl mx-auto">
+                Analyze suspicious links, test email indicators, or integrate DetectIQ's AI security copilot into your daily workflow in seconds.
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <motion.button
+                  whileHover={{ scale: 1.04, y: -2, boxShadow: "0 0 35px rgba(37, 99, 235, 0.5)" }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={scrollToDemo}
+                  className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-accent-blue to-accent-violet text-white font-bold rounded-xl shadow-soft transition-all duration-200 flex items-center justify-center gap-3 text-base cursor-pointer"
+                >
+                  <span>Start Threat Scanner Free</span>
+                  <ArrowRight className="w-5 h-5" />
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.04, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate("/register")}
+                  className="w-full sm:w-auto px-8 py-4 bg-card/90 border border-border text-primary hover:bg-secondary/80 font-bold rounded-xl shadow-sm transition-all duration-200 flex items-center justify-center gap-2 text-base cursor-pointer backdrop-blur-md"
+                >
+                  <span>Create Free Account</span>
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       <Footer />
     </div>
   );
 }
+

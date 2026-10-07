@@ -29,13 +29,20 @@ app.use(helmet());
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || origin === env.FRONTEND_URL || /^http:\/\/localhost:517\d$/.test(origin)) {
+      if (
+        !origin ||
+        origin === env.FRONTEND_URL ||
+        /^http:\/\/localhost:517\d$/.test(origin) ||
+        /^chrome-extension:\/\/[a-z0-9]+$/.test(origin) ||
+        origin.startsWith('chrome-extension://') ||
+        origin.startsWith('moz-extension://')
+      ) {
         callback(null, origin || true);
       } else {
         callback(null, env.FRONTEND_URL);
       }
     },
-    credentials: true, // required so the browser sends/receives the httpOnly auth cookie
+    credentials: true,
   })
 );
 app.use(express.json({ limit: "1mb" }));

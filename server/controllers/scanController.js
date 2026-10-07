@@ -132,8 +132,26 @@ const scanContent = asyncHandler(async (req, res) => {
     }
   }
 
+  // Standardized AI Result Schema
+  const allReasons = Array.isArray(result.reasons) ? result.reasons : [];
+  const verifiedThreatIntel = allReasons.filter(r => r.source === 'Threat_Intelligence' || r.source === 'Domain_Intelligence');
+  const heuristicsAndAi = allReasons.filter(r => r.source !== 'Threat_Intelligence' && r.source !== 'Domain_Intelligence');
+
+  const standardizedResult = {
+    ...result,
+    score: result.riskScore,
+    level: result.riskLevel,
+    verdict: result.classification || (result.riskLevel === 'safe' ? 'legitimate' : result.riskLevel === 'high' || result.riskLevel === 'critical' ? 'phishing' : 'suspicious'),
+    confidence: typeof result.confidence === 'number' ? (result.confidence > 1 ? result.confidence / 100 : result.confidence) : 0.92,
+    evidence: {
+      verifiedThreatIntel,
+      heuristicsAndAi
+    },
+    timestamp: new Date().toISOString()
+  };
+
   const responseData = { 
-    result, 
+    result: standardizedResult, 
     savedToHistory: Boolean(saved), 
     scanId: saved?._id, 
     scan: saved,
