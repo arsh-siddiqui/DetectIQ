@@ -84,8 +84,10 @@ class DetectIQApi {
       throw new Error('Content payload is required for scanning.');
     }
 
-    const validTypes = ['url', 'email', 'text', 'sms', 'whatsapp', 'qr'];
-    const type = validTypes.includes(scanType) ? scanType : 'url';
+    const typeMapping = { text: 'message' };
+    const mappedType = typeMapping[scanType] || scanType;
+    const validTypes = ['url', 'email', 'message', 'sms', 'whatsapp', 'qr', 'screenshot'];
+    const type = validTypes.includes(mappedType) ? mappedType : 'url';
     const config = await this.getConfig();
 
     const controller = new AbortController();
@@ -233,7 +235,16 @@ class DetectIQApi {
   }
 }
 
-// Global & CommonJS Export
+// Universal Global & CommonJS Export (Browser, ServiceWorker & Test Runners)
+if (typeof globalThis !== 'undefined') {
+  globalThis.DetectIQApi = DetectIQApi;
+}
+if (typeof self !== 'undefined') {
+  self.DetectIQApi = DetectIQApi;
+}
+if (typeof window !== 'undefined') {
+  window.DetectIQApi = DetectIQApi;
+}
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = DetectIQApi;
 }

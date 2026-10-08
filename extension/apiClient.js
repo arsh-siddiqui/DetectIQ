@@ -40,6 +40,11 @@ class DetectIQApiClient {
       throw new Error('Content is required for threat scanning.');
     }
 
+    const typeMapping = { text: 'message' };
+    const mappedType = typeMapping[scanType] || scanType;
+    const validTypes = ['url', 'email', 'message', 'sms', 'whatsapp', 'qr', 'screenshot'];
+    const type = validTypes.includes(mappedType) ? mappedType : 'url';
+
     const config = await this.getConfig();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
@@ -51,7 +56,7 @@ class DetectIQApiClient {
           'Content-Type': 'application/json',
           ...(config.authToken ? { 'Authorization': `Bearer ${config.authToken}` } : {})
         },
-        body: JSON.stringify({ scanType, content }),
+        body: JSON.stringify({ scanType: type, content }),
         signal: controller.signal
       });
 
@@ -159,7 +164,16 @@ class DetectIQApiClient {
   }
 }
 
-// Export for module or global scope
+// Universal Global & CommonJS Export (Browser, ServiceWorker & Test Runners)
+if (typeof globalThis !== 'undefined') {
+  globalThis.DetectIQApiClient = DetectIQApiClient;
+}
+if (typeof self !== 'undefined') {
+  self.DetectIQApiClient = DetectIQApiClient;
+}
+if (typeof window !== 'undefined') {
+  window.DetectIQApiClient = DetectIQApiClient;
+}
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = DetectIQApiClient;
 }
