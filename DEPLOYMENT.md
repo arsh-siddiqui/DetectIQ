@@ -72,11 +72,30 @@ Configured automatically via `vercel.json`.
 
 | Task | Status | Note |
 | :--- | :--- | :--- |
-| **GitHub push** | `[ ]` | Push `vercel.json` and `render.yaml` |
-| **MongoDB Atlas** | `[ ]` | Configure cluster and get URI |
-| **Vercel** | `[ ]` | Deploy frontend and set `VITE_API_URL` |
-| **Render backend** | `[ ]` | Deploy Node app and set secrets |
-| **Render ML** | `[ ]` | Deploy Python app |
-| **API keys** | `[ ]` | Add Groq & JWT Secret to Render |
-| **Environment vars** | `[ ]` | Cross-link URLs (`FRONTEND_URL`, `ML_SERVICE_URL`, `VITE_API_URL`) |
-| **Live testing** | `[ ]` | Verify Login, Scanner, and Learn progress in browser |
+| **GitHub push** | `[x]` | Synced to `origin/main` |
+| **MongoDB Atlas** | `[x]` | Cluster active, Network Access open |
+| **Vercel** | `[x]` | Deploy frontend and set `VITE_API_URL` |
+| **Render backend** | `[x]` | Live on `https://detectiq-api.onrender.com` |
+| **Render ML** | `[x]` | Deployed via `render.yaml` Blueprint |
+| **API keys** | `[x]` | Groq, JWT Secret, PhishDestroy configured |
+| **Browser Extension** | `[x]` | Configured for cloud endpoint with MV3 test suite |
+| **Live testing** | `[x]` | Verified via automated test suite & live probes |
+
+## L. Browser Extension Deployment & Cloud Testing
+
+The DetectIQ browser extension is built on **Manifest V3** and connects to the production Render backend (`https://detectiq-api.onrender.com`):
+
+1. **Load Unpacked in Chrome / Edge / Brave**:
+   - Navigate to `chrome://extensions` or `edge://extensions`.
+   - Enable **Developer mode** (top-right).
+   - Click **Load unpacked** and select the `/extension` directory in the repository.
+2. **Environment Presets**:
+   - Open extension popup → Click **Settings** (gear icon).
+   - **`Cloud (Render)`**: Pre-configures `https://detectiq-api.onrender.com`.
+   - **`Localhost:5000`**: Switches to local dev server when coding locally.
+   - Click **Test** to run instant connectivity check.
+3. **Automated Verification**:
+   - Run the full 20-test suite anytime from project root:
+     ```bash
+     npm run test:extension
+     ```

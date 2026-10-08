@@ -78,6 +78,21 @@ pip install -r requirements.txt
 python -m uvicorn api.main:app --port 8543
 ```
 
+### 4. Browser Extension & Automated Test Suite
+```bash
+# Run full 20-test suite across manifest, background, api, UI, and live cloud E2E:
+npm run test:extension
+```
+Load the extension in Chrome via `chrome://extensions` → **Developer mode** → **Load unpacked** → select `/extension`.
+
+---
+
+## 📖 System Documentation & Architecture Specs
+
+- **System Design & Architecture**: [docs/SYSTEM_DESIGN_AND_ARCHITECTURE.md](docs/SYSTEM_DESIGN_AND_ARCHITECTURE.md) (Deep dive into microservices, data modeling, authentication, security controls, rate limiting, caching, and scalability roadmap).
+- **Production Deployment Guide**: [DEPLOYMENT.md](DEPLOYMENT.md) (Vercel SPA, Render Blueprint setup, environment variables, and MongoDB Atlas configuration).
+- **Extension Architecture**: [extension/README.md](extension/README.md) (Manifest V3 components, UI design system, and background service worker specifications).
+
 ---
 
 ## 📄 License

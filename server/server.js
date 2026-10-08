@@ -65,11 +65,19 @@ app.get("/api/health", (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// Rate Limiting & Protection
+// ---------------------------------------------------------------------------
+const { apiLimiter, authLimiter, scanLimiter } = require("./middleware/rateLimiter");
+
+// Global rate limiting for general API calls (health check is excluded above)
+app.use("/api", apiLimiter);
+
+// ---------------------------------------------------------------------------
 // API routes
 // ---------------------------------------------------------------------------
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api/scan", scanRoutes);
+app.use("/api/scan", scanLimiter, scanRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/email-history", emailHistoryRoutes);
 app.use("/api/vulnerabilities", vulnerabilityRoutes);
