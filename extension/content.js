@@ -36,12 +36,14 @@
 
     const isSuspiciousShortener = /bit\.ly|tinyurl\.com|t\.co|is\.gd|buff\.ly|ow\.ly|rebrand\.ly/i.test(href);
     const isTyposquat = /rnicrosof|g00gl|paypa1|bankofamenca|login-verify-account/i.test(href);
+    const isPunycodeOrHomoglyph = href.includes('xn--') || /[\u0400-\u04FF\u0370-\u03FF]/.test(href);
     const isIpHost = /^https?:\/\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/i.test(href);
     const isNonHttpsCred = href.startsWith('http://') && /login|password|auth|verify|bank|account/i.test(href);
 
-    if (isSuspiciousShortener || isTyposquat || isIpHost || isNonHttpsCred) {
+    if (isSuspiciousShortener || isTyposquat || isPunycodeOrHomoglyph || isIpHost || isNonHttpsCred) {
       let msg = '⚠️ DetectIQ Guard: ';
-      if (isTyposquat) msg += 'Deceptive typosquatting domain!';
+      if (isPunycodeOrHomoglyph) msg += 'Deceptive Punycode / IDN homograph domain detected!';
+      else if (isTyposquat) msg += 'Deceptive typosquatting domain!';
       else if (isSuspiciousShortener) msg += 'Shortened URL hides true destination.';
       else if (isIpHost) msg += 'Direct IP host link (High Risk).';
       else msg += 'Unencrypted credential link!';

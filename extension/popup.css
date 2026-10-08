@@ -688,6 +688,94 @@ body {
   gap: 6px;
 }
 
+/* QR Scanner Dropzone */
+.qr-dropzone {
+  border: 2px dashed var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  padding: 16px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 8px;
+}
+
+.qr-dropzone:hover, .qr-dropzone.drag-active {
+  border-color: var(--primary);
+  background: rgba(37, 99, 235, 0.04);
+}
+
+.qr-drop-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.qr-drop-icon {
+  margin-bottom: 2px;
+}
+
+.qr-drop-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.qr-drop-desc {
+  font-size: 11px;
+  color: var(--text-subtle);
+  line-height: 1.3;
+}
+
+.qr-drop-hint {
+  font-size: 10px;
+  color: var(--primary);
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.qr-preview-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.qr-preview-img {
+  max-width: 140px;
+  max-height: 140px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+  object-fit: contain;
+}
+
+.qr-decoded-badge {
+  background: var(--surface-hover);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  width: 100%;
+  font-size: 11px;
+  word-break: break-all;
+  text-align: left;
+}
+
+.qr-decoded-label {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-subtle);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.qr-decoded-text {
+  color: var(--primary);
+  font-family: monospace;
+  font-weight: 600;
+}
+
 .input-with-button input {
   flex: 1;
 }

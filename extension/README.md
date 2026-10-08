@@ -53,17 +53,25 @@ extension/
    - Click the **DetectIQ** extension icon in your toolbar.
    - Click **Scan Page** to trigger real-time inspection.
 
-2. **Manual Analyzer**:
+2. **Manual Analyzer & In-Popup QR Code Scanner**:
    - Open the **Analyzer** tab in the popup.
-   - Select `URL`, `Email Text`, or `Raw Text`.
-   - Paste content and click **Analyze Content with DetectIQ**.
+   - Select `URL`, `Email Text`, `Raw Text`, or `QR Code`.
+   - In **QR Code** mode:
+     - Drag & drop a QR code image, click to browse, or paste directly with `Ctrl+V`.
+     - The extension uses local, offline JavaScript decoding (`jsQR`) to extract the destination URL without sending image data to external servers.
+     - The decoded target is automatically verified against DetectIQ threat intelligence and heuristic engines.
 
-3. **Right-Click Context Menu Overlay**:
+3. **IDN Homograph & Punycode Deception Engine**:
+   - Detects deceptive domains mimicking trusted brands using international Punycode prefixes (`xn--`) or mixed-script Unicode characters (Cyrillic `\u0400-\u04FF` or Greek `\u0370-\u03FF` homoglyphs mimicking Latin ASCII).
+   - Real-time pre-click protection in Hover Shield (`content.js`), navigation interceptor (`background.js`), and popup scanner (`api.js`).
+
+4. **Right-Click Context Menu Overlay**:
    - Highlight any text or right-click any link on a webpage.
    - Select **"🛡 Scan link with DetectIQ"** or **"🛡 Analyze text with DetectIQ"**.
    - Notice the floating **DetectIQ Security Card** appearing smoothly in the bottom-right corner.
 
-4. **Settings & Backend Connection**:
+5. **Settings & Backend Connection**:
    - Open the **Settings** tab.
    - Click **Cloud (Render)** (`https://detectiq-api.onrender.com`) for production cloud demo, or **Localhost:5000** (`http://localhost:5000`) for local backend development.
    - Click **Test** to verify connection to the backend server.
+

@@ -55,10 +55,13 @@ if (chrome.webNavigation && chrome.webNavigation.onBeforeNavigate) {
       return;
     }
 
-    // Fast heuristic check for typosquatting / critical phishing patterns
+    // Fast heuristic check for typosquatting / IDN homograph / critical phishing patterns
     const isTyposquat = /rnicrosof|g00gl|paypa1|bankofamenca|login-verify-account/i.test(url);
-    if (isTyposquat) {
-      const blockUrl = chrome.runtime.getURL(`blocked.html?url=${encodeURIComponent(url)}&score=95&reason=${encodeURIComponent('Deceptive typosquatting domain impersonation detected.')}`);
+    const homograph = typeof DetectIQApi !== 'undefined' && DetectIQApi.checkIdnHomograph ? DetectIQApi.checkIdnHomograph(url) : { isHomograph: false };
+
+    if (isTyposquat || homograph.isHomograph) {
+      const reason = homograph.isHomograph ? homograph.reason : 'Deceptive typosquatting domain impersonation detected.';
+      const blockUrl = chrome.runtime.getURL(`blocked.html?url=${encodeURIComponent(url)}&score=95&reason=${encodeURIComponent(reason)}`);
       chrome.tabs.update(details.tabId, { url: blockUrl });
     }
   });

@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Analyzer Elements
   const segmentBtns = document.querySelectorAll('.segment-btn');
   const analyzerInput = document.getElementById('analyzerInput');
+  const analyzerInputGroup = document.getElementById('analyzerInputGroup');
   const charCount = document.getElementById('charCount');
   const btnRunManualScan = document.getElementById('btnRunManualScan');
   const analyzerLoading = document.getElementById('analyzerLoading');
@@ -61,6 +62,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   const manualSignalsBox = document.getElementById('manualSignalsBox');
   const manualRecBox = document.getElementById('manualRecBox');
   const manualRecText = document.getElementById('manualRecText');
+
+  // QR Scanner Elements
+  const qrDropZone = document.getElementById('qrDropZone');
+  const qrFileInput = document.getElementById('qrFileInput');
+  const qrDropTrigger = document.getElementById('qrDropTrigger');
+  const qrPreviewWrap = document.getElementById('qrPreviewWrap');
+  const qrPreviewImg = document.getElementById('qrPreviewImg');
+  const qrDecodedBadge = document.getElementById('qrDecodedBadge');
+  const qrDecodedText = document.getElementById('qrDecodedText');
+  const qrCanvas = document.getElementById('qrCanvas');
 
   // History Elements
   const historyList = document.getElementById('historyList');
@@ -83,6 +94,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initTabNavigation();
   initSettingsView();
   initAnalyzerEvents();
+  initQrScanner();
   initHistoryView();
   initCaseSyncButton();
   await loadSettings();
@@ -398,7 +410,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // -------------------------------------------------------------
-  // MANUAL ANALYZER CONTROLLER
+  // MANUAL ANALYZER & QR CONTROLLER
   // -------------------------------------------------------------
   function initAnalyzerEvents() {
     segmentBtns.forEach(btn => {
@@ -407,12 +419,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         btn.classList.add('active');
         currentScanType = btn.getAttribute('data-type');
         
-        if (currentScanType === 'url') {
-          analyzerInput.placeholder = 'Paste URL (e.g. https://suspicious-login.com)...';
-        } else if (currentScanType === 'email') {
-          analyzerInput.placeholder = 'Paste email body, headers, or suspicious message...';
+        if (currentScanType === 'qr') {
+          if (analyzerInputGroup) analyzerInputGroup.classList.add('hidden');
+          if (qrDropZone) qrDropZone.classList.remove('hidden');
+          const btnLabel = btnRunManualScan.querySelector('span');
+          if (btnLabel) btnLabel.textContent = 'Scan QR Code';
         } else {
-          analyzerInput.placeholder = 'Paste suspicious code, raw text, or message payload...';
+          if (analyzerInputGroup) analyzerInputGroup.classList.remove('hidden');
+          if (qrDropZone) qrDropZone.classList.add('hidden');
+          const btnLabel = btnRunManualScan.querySelector('span');
+          if (btnLabel) btnLabel.textContent = 'Analyze Content with DetectIQ';
+
+          if (currentScanType === 'url') {
+            analyzerInput.placeholder = 'Paste URL (e.g. https://suspicious-login.com)...';
+          } else if (currentScanType === 'email') {
+            analyzerInput.placeholder = 'Paste email body, headers, or suspicious message...';
+          } else {
+            analyzerInput.placeholder = 'Paste suspicious code, raw text, or message payload...';
+          }
         }
       });
     });
@@ -429,48 +453,189 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     btnRunManualScan.addEventListener('click', async () => {
+      if (currentScanType === 'qr') {
+        // If on QR tab, trigger file upload if no input available
+        const inputContent = analyzerInput.value.trim();
+        if (inputContent) {
+          await runManualScanAction('url', inputContent);
+        } else if (qrFileInput) {
+          qrFileInput.click();
+        }
+        return;
+      }
+
       const inputContent = analyzerInput.value.trim();
       if (!inputContent) {
         analyzerInput.focus();
         return;
       }
 
-      // Show Loading State
-      btnRunManualScan.disabled = true;
-      analyzerLoading.classList.remove('hidden');
-      analyzerResult.classList.add('hidden');
+      await runManualScanAction(currentScanType, inputContent);
+    });
+  }
 
-      // Animate Loading Steps
-      loadingProgressFill.style.width = '30%';
-      loadingStepText.textContent = 'Analyzing content structure...';
+  // -------------------------------------------------------------
+  // QR CODE SCANNER (Offline, MV3-compliant jsQR)
+  // -------------------------------------------------------------
+  function initQrScanner() {
+    if (!qrDropZone || !qrFileInput) return;
 
-      setTimeout(() => {
-        loadingProgressFill.style.width = '65%';
-        loadingStepText.textContent = 'Checking threat intelligence databases...';
-      }, 400);
+    if (qrDropTrigger) {
+      qrDropTrigger.addEventListener('click', () => {
+        qrFileInput.click();
+      });
+    }
 
-      setTimeout(() => {
-        loadingProgressFill.style.width = '90%';
-        loadingStepText.textContent = 'Evaluating threat intelligence indicators...';
-      }, 800);
-
-      try {
-        const result = await DetectIQApi.performScan(currentScanType, inputContent);
-        renderAnalyzerResult(result.score, result.level, result.category, result.reasons, result.recommendation);
-        saveToHistory(inputContent.slice(0, 40) + '...', result.score, result.level);
-      } catch (err) {
-        console.debug('Backend offline, using fallback manual analyzer:', err);
-        const fallback = await DetectIQApi.performScan(currentScanType, inputContent);
-        renderAnalyzerResult(fallback.score, fallback.level, fallback.category, fallback.reasons, fallback.recommendation);
-      } finally {
-        loadingProgressFill.style.width = '100%';
-        setTimeout(() => {
-          analyzerLoading.classList.add('hidden');
-          analyzerResult.classList.remove('hidden');
-          btnRunManualScan.disabled = false;
-        }, 300);
+    qrFileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        processQrImage(file);
       }
     });
+
+    // Drag and Drop
+    ['dragenter', 'dragover'].forEach(name => {
+      qrDropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        qrDropZone.classList.add('drag-active');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(name => {
+      qrDropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        qrDropZone.classList.remove('drag-active');
+      });
+    });
+
+    qrDropZone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const file = dt && dt.files && dt.files[0];
+      if (file && file.type.startsWith('image/')) {
+        processQrImage(file);
+      }
+    });
+
+    // Clipboard Paste (Ctrl+V)
+    window.addEventListener('paste', (e) => {
+      const items = e.clipboardData && e.clipboardData.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.indexOf('image') !== -1) {
+          const blob = item.getAsFile();
+          if (blob) {
+            const qrBtn = document.querySelector('.segment-btn[data-type="qr"]');
+            if (qrBtn && !qrBtn.classList.contains('active')) {
+              qrBtn.click();
+            }
+            processQrImage(blob);
+            break;
+          }
+        }
+      }
+    });
+  }
+
+  function processQrImage(fileOrBlob) {
+    if (!fileOrBlob) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      if (qrPreviewImg) {
+        qrPreviewImg.src = dataUrl;
+      }
+      if (qrPreviewWrap) {
+        qrPreviewWrap.classList.remove('hidden');
+      }
+      decodeQrFromDataUrl(dataUrl);
+    };
+    reader.readAsDataURL(fileOrBlob);
+  }
+
+  function decodeQrFromDataUrl(dataUrl) {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        if (!qrCanvas) return;
+        qrCanvas.width = img.width;
+        qrCanvas.height = img.height;
+        const ctx = qrCanvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, img.width, img.height);
+        const imageData = ctx.getImageData(0, 0, img.width, img.height);
+
+        let decoded = null;
+        if (typeof window.jsQR === 'function') {
+          const code = window.jsQR(imageData.data, imageData.width, imageData.height);
+          if (code && code.data) {
+            decoded = code.data;
+          }
+        }
+
+        if (decoded) {
+          if (qrDecodedBadge) qrDecodedBadge.classList.remove('hidden');
+          if (qrDecodedText) qrDecodedText.textContent = decoded;
+          if (analyzerInput) {
+            analyzerInput.value = decoded;
+            if (charCount) charCount.textContent = decoded.length;
+          }
+          // Automatically trigger scan on decoded target
+          runManualScanAction('url', decoded);
+        } else {
+          if (qrDecodedBadge) qrDecodedBadge.classList.remove('hidden');
+          if (qrDecodedText) qrDecodedText.textContent = 'No QR code recognized. Ensure the image is clear.';
+        }
+      } catch (err) {
+        console.error('QR decode error:', err);
+        if (qrDecodedText) qrDecodedText.textContent = 'Error decoding QR: ' + (err.message || 'unknown error');
+      }
+    };
+    img.onerror = () => {
+      if (qrDecodedText) qrDecodedText.textContent = 'Failed to load image file.';
+    };
+    img.src = dataUrl;
+  }
+
+  async function runManualScanAction(scanType, inputContent) {
+    if (!inputContent) return;
+
+    btnRunManualScan.disabled = true;
+    analyzerLoading.classList.remove('hidden');
+    analyzerResult.classList.add('hidden');
+
+    loadingProgressFill.style.width = '30%';
+    loadingStepText.textContent = 'Analyzing content structure...';
+
+    setTimeout(() => {
+      loadingProgressFill.style.width = '65%';
+      loadingStepText.textContent = 'Checking threat intelligence databases...';
+    }, 400);
+
+    setTimeout(() => {
+      loadingProgressFill.style.width = '90%';
+      loadingStepText.textContent = 'Evaluating threat intelligence indicators...';
+    }, 800);
+
+    try {
+      const effectiveType = scanType === 'qr' ? 'url' : scanType;
+      const result = await DetectIQApi.performScan(effectiveType, inputContent);
+      renderAnalyzerResult(result.score, result.level, result.category, result.reasons, result.recommendation);
+      saveToHistory(inputContent.slice(0, 40) + '...', result.score, result.level);
+    } catch (err) {
+      console.debug('Backend offline, using fallback manual analyzer:', err);
+      const effectiveType = scanType === 'qr' ? 'url' : scanType;
+      const fallback = await DetectIQApi.performScan(effectiveType, inputContent);
+      renderAnalyzerResult(fallback.score, fallback.level, fallback.category, fallback.reasons, fallback.recommendation);
+    } finally {
+      loadingProgressFill.style.width = '100%';
+      setTimeout(() => {
+        analyzerLoading.classList.add('hidden');
+        analyzerResult.classList.remove('hidden');
+        btnRunManualScan.disabled = false;
+      }, 300);
+    }
   }
 
   function renderAnalyzerResult(score, level, category, signals, recommendation) {

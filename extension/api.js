@@ -114,12 +114,25 @@ class DetectIQApi {
       const resData = await response.json();
       const result = resData.data?.result || resData.data || {};
 
-      const score = typeof result.riskScore === 'number' ? result.riskScore : (result.riskLevel === 'safe' ? 10 : 70);
-      const level = result.riskLevel || this.getRiskLevelFromScore(score);
+      let score = typeof result.riskScore === 'number' ? result.riskScore : (result.riskLevel === 'safe' ? 10 : 70);
+      let level = result.riskLevel || this.getRiskLevelFromScore(score);
 
       const verdict = (result.verdict || result.classification || (level === 'safe' ? 'legitimate' : level === 'high' || level === 'critical' ? 'phishing' : 'suspicious')).toUpperCase();
       const confidence = typeof result.confidence === 'number' ? (result.confidence > 1 ? result.confidence / 100 : result.confidence) : 0.92;
-      const reasons = result.reasons || result.detectedSignals || ['Structural analysis clean', 'SSL parameters valid'];
+      let reasons = result.reasons || result.detectedSignals || ['Structural analysis clean', 'SSL parameters valid'];
+
+      // IDN Homograph & Punycode Inspection
+      const homograph = scanType === 'url' ? this.checkIdnHomograph(content) : { isHomograph: false };
+      if (homograph.isHomograph) {
+        score = Math.max(score, 85);
+        level = this.getRiskLevelFromScore(score);
+        reasons.unshift({
+          title: 'IDN Homograph / Punycode Detected',
+          detail: homograph.reason,
+          severity: 'critical',
+          source: 'Signature_Analysis'
+        });
+      }
 
       const verifiedThreatIntel = result.evidence?.verifiedThreatIntel || reasons.filter(r => r.source === 'Threat_Intelligence' || r.source === 'Domain_Intelligence');
       const heuristicsAndSignatures = result.evidence?.heuristicsAndSignatures || result.evidence?.heuristicsAndAi || reasons.filter(r => r.source !== 'Threat_Intelligence' && r.source !== 'Domain_Intelligence');
@@ -131,7 +144,8 @@ class DetectIQApi {
         level,
         verdict,
         confidence,
-        category: result.category || (score > 60 ? 'Phishing Target' : 'Legitimate Target'),
+        category: homograph.isHomograph ? 'Deceptive IDN Spoof' : (result.category || (score > 60 ? 'Phishing Target' : 'Legitimate Target')),
+        isHomograph: homograph.isHomograph,
         evidence: {
           verifiedThreatIntel,
           heuristicsAndSignatures
@@ -151,25 +165,100 @@ class DetectIQApi {
       console.warn('[DetectIQ API] Backend unavailable or timed out, executing local offline inspection:', err.message);
 
       // Offline Heuristic Engine Fallback
-      const isSuspicious = content.length > 35 && (content.toLowerCase().includes('verify') || content.toLowerCase().includes('login') || content.toLowerCase().includes('account') || content.toLowerCase().includes('http://'));
-      const score = isSuspicious ? 75 : 12;
+      const homograph = scanType === 'url' ? this.checkIdnHomograph(content) : { isHomograph: false };
+      const isSuspicious = homograph.isHomograph || (content.length > 35 && (content.toLowerCase().includes('verify') || content.toLowerCase().includes('login') || content.toLowerCase().includes('account') || content.toLowerCase().includes('http://')));
+      const score = homograph.isHomograph ? 88 : (isSuspicious ? 75 : 12);
       const level = this.getRiskLevelFromScore(score);
+
+      const reasons = [
+        'Evaluated via offline heuristic module',
+        homograph.isHomograph ? 'Homograph / Punycode Deception Detected' : (isSuspicious ? 'Potential phishing keywords detected' : 'Standard clean structure verified')
+      ];
+
+      if (homograph.isHomograph) {
+        reasons.unshift({
+          title: 'Homograph / Punycode Deception Detected',
+          detail: homograph.reason,
+          severity: 'critical',
+          source: 'Signature_Analysis'
+        });
+      }
 
       return {
         success: false,
         isOfflineFallback: true,
         score,
         level,
-        category: isSuspicious ? 'Suspicious Link/Text' : 'Safe Domain',
-        confidence: 0.85,
-        reasons: [
-          'Evaluated via offline heuristic module',
-          isSuspicious ? 'Potential phishing keywords detected' : 'Standard clean structure verified'
-        ],
-        recommendation: isSuspicious ? 'Caution: verify site identity before entering credentials.' : 'No immediate action required.',
+        category: homograph.isHomograph ? 'Deceptive IDN Spoof' : (isSuspicious ? 'Suspicious Link/Text' : 'Safe Domain'),
+        isHomograph: homograph.isHomograph,
+        confidence: 0.88,
+        reasons,
+        recommendation: homograph.isHomograph ? 'CRITICAL: Deceptive homoglyph characters detected. Do not proceed.' : (isSuspicious ? 'Caution: verify site identity before entering credentials.' : 'No immediate action required.'),
         error: err.message
       };
     }
+  }
+
+  /**
+   * Evaluates if a domain uses Punycode (xn--) or mixed-script Unicode homoglyphs
+   * (e.g. Cyrillic/Greek characters that visually mimic Latin alphabets).
+   */
+  static checkIdnHomograph(inputUrl) {
+    if (!inputUrl || typeof inputUrl !== 'string') {
+      return { isHomograph: false, punycode: false, mixedScript: false, domain: '', reason: null };
+    }
+
+    let rawHost = inputUrl;
+    if (inputUrl.includes('://')) {
+      rawHost = inputUrl.split('://')[1].split('/')[0].split('?')[0].split('#')[0].split(':')[0];
+    } else {
+      rawHost = inputUrl.split('/')[0].split('?')[0].split('#')[0].split(':')[0];
+    }
+
+    let parsedHostname = '';
+    try {
+      if (inputUrl.includes('://')) {
+        parsedHostname = new URL(inputUrl).hostname;
+      } else {
+        parsedHostname = new URL('http://' + inputUrl).hostname;
+      }
+    } catch {
+      parsedHostname = rawHost;
+    }
+
+    rawHost = rawHost.toLowerCase();
+    parsedHostname = parsedHostname.toLowerCase();
+
+    // Check Cyrillic or Greek in raw un-punycoded hostname
+    const hasCyrillic = /[\u0400-\u04FF]/.test(rawHost);
+    const hasGreek = /[\u0370-\u03FF]/.test(rawHost);
+    const hasAsciiLatin = /[a-z0-9]/.test(rawHost);
+
+    // Direct Punycode prefix detection (in raw string or converted hostname)
+    const isPunycode = rawHost.includes('xn--') || (!hasCyrillic && !hasGreek && parsedHostname.includes('xn--'));
+
+    if (hasCyrillic || hasGreek) {
+      const scriptType = hasCyrillic && hasGreek ? 'Cyrillic & Greek' : (hasCyrillic ? 'Cyrillic' : 'Greek');
+      return {
+        isHomograph: true,
+        punycode: parsedHostname.includes('xn--'),
+        mixedScript: true,
+        domain: rawHost,
+        reason: `Mixed-script Unicode homoglyph detected (${scriptType} characters visually spoofing Latin domain)`
+      };
+    }
+
+    if (isPunycode) {
+      return {
+        isHomograph: true,
+        punycode: true,
+        mixedScript: false,
+        domain: parsedHostname || rawHost,
+        reason: 'Punycode internationalized domain detected (xn--) (potential brand spoofing)'
+      };
+    }
+
+    return { isHomograph: false, punycode: false, mixedScript: false, domain: parsedHostname || rawHost, reason: null };
   }
 
   static getRiskLevelFromScore(score) {
