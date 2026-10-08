@@ -65,5 +65,5 @@ extension/
 
 4. **Settings & Backend Connection**:
    - Open the **Settings** tab.
-   - Ensure the Backend Endpoint URL is set to `http://localhost:5000`.
-   - Click **Test** to verify connection to your running DetectIQ server.
+   - Click **Cloud (Render)** (`https://detectiq-api.onrender.com`) for production cloud demo, or **Localhost:5000** (`http://localhost:5000`) for local backend development.
+   - Click **Test** to verify connection to the backend server.

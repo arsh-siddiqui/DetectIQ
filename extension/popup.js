@@ -2,7 +2,9 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Config & State
-  const DEFAULT_API_URL = 'http://localhost:5000';
+  const PROD_API_URL = 'https://detectiq-api.onrender.com';
+  const DEV_API_URL = 'http://localhost:5000';
+  const DEFAULT_API_URL = PROD_API_URL;
   let config = {
     apiUrl: DEFAULT_API_URL,
     autoScan: true,
@@ -652,6 +654,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   function initSettingsView() {
     btnSaveSettings.addEventListener('click', saveSettings);
 
+    const btnPresetProd = document.getElementById('btnPresetProd');
+    const btnPresetLocal = document.getElementById('btnPresetLocal');
+
+    if (btnPresetProd) {
+      btnPresetProd.addEventListener('click', () => {
+        settingApiUrl.value = PROD_API_URL;
+        saveSettings();
+        checkBackendHealth();
+      });
+    }
+
+    if (btnPresetLocal) {
+      btnPresetLocal.addEventListener('click', () => {
+        settingApiUrl.value = DEV_API_URL;
+        saveSettings();
+        checkBackendHealth();
+      });
+    }
+
     btnResetSettings.addEventListener('click', () => {
       settingApiUrl.value = DEFAULT_API_URL;
       toggleAutoScan.checked = true;
@@ -659,6 +680,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       toggleTextScan.checked = true;
       settingAuthToken.value = '';
       saveSettings();
+      checkBackendHealth();
     });
 
     btnTestApi.addEventListener('click', checkBackendHealth);

@@ -300,12 +300,18 @@
           <div class="settings-group-title">Backend Connection</div>
           
           <div class="form-group">
-            <label class="form-label" for="settingApiUrl">Server Endpoint URL</label>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+              <label class="form-label" for="settingApiUrl" style="margin-bottom: 0;">Server Endpoint URL</label>
+              <div class="env-presets" style="display: flex; gap: 4px;">
+                <button type="button" id="btnPresetProd" class="btn btn-xs" title="Switch to deployed cloud backend" style="background: rgba(37,99,235,0.12); color: var(--primary); border: 1px solid rgba(37,99,235,0.3); border-radius: 4px; padding: 2px 7px; font-weight: 600; cursor: pointer; font-size: 10px;">Cloud (Render)</button>
+                <button type="button" id="btnPresetLocal" class="btn btn-xs" title="Switch to local development server" style="background: rgba(100,116,139,0.1); color: var(--text-subtle); border: 1px solid var(--border-light); border-radius: 4px; padding: 2px 7px; font-weight: 600; cursor: pointer; font-size: 10px;">Localhost:5000</button>
+              </div>
+            </div>
             <div class="input-with-button">
-              <input type="url" id="settingApiUrl" class="form-input" value="http://localhost:5000" placeholder="http://localhost:5000">
+              <input type="url" id="settingApiUrl" class="form-input" value="https://detectiq-api.onrender.com" placeholder="https://detectiq-api.onrender.com">
               <button id="btnTestApi" class="btn btn-secondary btn-sm">Test</button>
             </div>
-            <span class="form-help">Local or deployed DetectIQ Express server endpoint.</span>
+            <span class="form-help">Deployed Render API or local Express backend endpoint.</span>
           </div>
 
           <div class="connection-test-result hidden" id="connectionTestResult"></div>

@@ -1,6 +1,6 @@
-// DetectIQ Browser Extension - Centralized Backend API Client (extension/api.js)
-
-const DEFAULT_API_URL = 'http://localhost:5000';
+const PROD_API_URL = 'https://detectiq-api.onrender.com';
+const DEV_API_URL = 'http://localhost:5000';
+const DEFAULT_API_URL = PROD_API_URL;
 
 class DetectIQApi {
   /**
