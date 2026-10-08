@@ -37,13 +37,11 @@ class DetectIQApi {
     const config = await this.getConfig();
     const targetUrl = (customUrl || config.apiUrl).replace(/\/$/, '');
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     try {
-      const res = await fetch(`${targetUrl}/api/scan`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scanType: 'url', content: 'https://test-health-check.com' }),
+      const res = await fetch(`${targetUrl}/api/health`, {
+        method: 'GET',
         signal: controller.signal
       });
 
