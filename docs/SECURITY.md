@@ -77,6 +77,8 @@ Express integrates `helmet()`, injecting standard defensive headers:
 
 ---
 
+---
+
 ## 5. Rate Limiting & Denial-of-Service Defense
 
 Tiered rate limiting is enforced via `express-rate-limit` ([rateLimiter.js](file:///d:/detectiq-fullstack/DETECTIQ/server/middleware/rateLimiter.js)):
@@ -90,11 +92,36 @@ Tiered rate limiting is enforced via `express-rate-limit` ([rateLimiter.js](file
 
 ---
 
-## 6. Input Validation & XSS Defenses
+## 6. Advanced Application Layer Defenses
+
+### 6.1 NoSQL Injection Mitigation (`mongoSanitize.js`)
+- Deeply inspects and sanitizes all incoming requests across `req.body`, `req.query`, and `req.params`.
+- Strips any keys starting with `$` (MongoDB operator injection like `$gt`, `$ne`, `$where`, `$regex`) or containing `.` to prevent query hijacking and unauthorized record traversal.
+
+### 6.2 HTTP Parameter Pollution Defense (`hpp.js`)
+- Intercepts duplicated query parameters (e.g. `?scanType=url&scanType=email`) and collapses them to the scalar value, preventing parameter pollution and unhandled array runtime exceptions.
+
+### 6.3 Account Lockout & Anti-Brute-Force Policy
+- Tracks failed authentication attempts on each user account (`failedLoginAttempts`).
+- Automatically locks the account for **15 minutes** upon 5 consecutive failed attempts (`lockUntil`).
+- Locks are reset to `0` upon successful authentication.
+
+### 6.4 Timing-Safe Account Enumeration Defense
+- To eliminate timing oracle attacks that reveal whether an email address exists in the system, DetectIQ runs a constant-time dummy `bcrypt.compare` against `DUMMY_HASH` when an email is not found, maintaining a uniform response time of ~80ms across existing and nonexistent accounts.
+
+### 6.5 Content Security Policy & Edge Headers
+- **Vercel Edge Headers (`vercel.json`)**: Injects `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block`, and `Permissions-Policy`.
+- **Extension CSP (`manifest.json`)**: Declares `script-src 'self'; object-src 'none';` to prevent remote script execution or inline eval.
+- **Service Worker Message Authentication**: Verifies `sender.id === chrome.runtime.id` to block unauthorized cross-extension messaging.
+
+---
+
+## 7. Input Validation & XSS Defenses
 
 1. **Payload Sanitization**:
    - `express-validator` validates all route inputs (types, string formats, length boundaries).
    - Payloads are capped at safe string lengths (max 5,000 to 10,000 characters).
+   - JSON body parser is capped at `500kb` to thwart memory exhaustion DoS attacks.
 2. **HTML Entity Sanitizer (`escapeHtml`)**:
    - The extension and frontend utilize centralized XSS escaping utilities ([api.js](file:///d:/detectiq-fullstack/DETECTIQ/extension/api.js#L222)):
    ```javascript

@@ -7,6 +7,9 @@ const cookieParser = require("cookie-parser");
 const env = require("./config/env");
 const { connectDB, isDbConnected } = require("./config/db");
 const { notFound, errorHandler } = require("./middleware/errorHandler");
+const { mongoSanitize } = require("./middleware/mongoSanitize");
+const preventHPP = require("./middleware/hpp");
+const securityHeaders = require("./middleware/securityHeaders");
 
 const app = express();
 app.set("trust proxy", 1); // Trust first proxy (Render/Vercel) for secure cookies
@@ -23,9 +26,25 @@ const vulnerabilityRoutes = require("./routes/vulnerabilityRoutes");
 const progressRoutes = require("./routes/progressRoutes");
 
 // ---------------------------------------------------------------------------
-// Core middleware
+// Core security middleware
 // ---------------------------------------------------------------------------
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // SPA is served by Vercel; Extension pages by Chrome
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    dnsPrefetchControl: { allow: false },
+    frameguard: { action: "deny" },
+    hidePoweredBy: true,
+    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+    ieNoOpen: true,
+    noSniff: true,
+    originAgentCluster: true,
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+    xssFilter: true,
+  })
+);
+app.use(securityHeaders);
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -33,21 +52,28 @@ app.use(
         !origin ||
         origin === env.FRONTEND_URL ||
         /^http:\/\/localhost:517\d$/.test(origin) ||
+        /^http:\/\/localhost:3000$/.test(origin) ||
         /^chrome-extension:\/\/[a-z0-9]+$/.test(origin) ||
         origin.startsWith('chrome-extension://') ||
         origin.startsWith('moz-extension://')
       ) {
         callback(null, origin || true);
       } else {
-        callback(null, env.FRONTEND_URL);
+        callback(new Error('Blocked by CORS policy: Origin not allowed.'));
       }
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    exposedHeaders: ['RateLimit-Limit', 'RateLimit-Remaining', 'RateLimit-Reset'],
+    maxAge: 86400,
   })
 );
-app.use(express.json({ limit: "1mb" }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "500kb" }));
+app.use(express.urlencoded({ extended: true, limit: "500kb" }));
 app.use(cookieParser());
+app.use(mongoSanitize);
+app.use(preventHPP());
 app.use(morgan(env.NODE_ENV === "development" ? "dev" : "combined"));
 
 // ---------------------------------------------------------------------------

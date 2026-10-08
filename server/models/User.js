@@ -69,6 +69,8 @@ const userSchema = new mongoose.Schema(
       riskScore: { type: Number, default: 0 },
       phishingSusceptibility: { type: String, enum: ['Low', 'Medium', 'High'], default: 'Medium' },
     },
+    failedLoginAttempts: { type: Number, default: 0 },
+    lockUntil: { type: Date, default: null },
     learningProfile: {
       strengths: [{ type: String }],
       weaknesses: [{ type: String }],
@@ -99,6 +101,10 @@ userSchema.pre("save", function setAvatarInitials(next) {
 
 userSchema.methods.comparePassword = function comparePassword(candidate) {
   return bcrypt.compare(candidate, this.password);
+};
+
+userSchema.methods.isLocked = function isLocked() {
+  return !!(this.lockUntil && this.lockUntil > Date.now());
 };
 
 /** Derived, not stored — keeps leveling logic in one place. */

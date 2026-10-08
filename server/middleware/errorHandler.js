@@ -16,6 +16,12 @@ function errorHandler(err, req, res, next) {
   let statusCode = res.statusCode && res.statusCode !== 200 ? res.statusCode : 500;
   let message = err.message || "Server error.";
 
+  // CORS policy violation
+  if (err.message && err.message.includes("CORS")) {
+    statusCode = 403;
+    message = "Cross-Origin Request Blocked by security policy.";
+  }
+
   // Malformed Mongo ObjectId
   if (err.name === "CastError" && err.kind === "ObjectId") {
     statusCode = 404;
@@ -35,6 +41,11 @@ function errorHandler(err, req, res, next) {
     message = Object.values(err.errors)
       .map((e) => e.message)
       .join(", ");
+  }
+
+  // Prevent internal error details from leaking in production
+  if (statusCode === 500 && env.NODE_ENV !== "development") {
+    message = "An internal server error occurred. Please try again later.";
   }
 
   res.status(statusCode).json({

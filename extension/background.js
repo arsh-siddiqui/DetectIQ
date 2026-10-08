@@ -173,8 +173,16 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   updateBadgeForTab(tab.id, result.score);
 });
 
-// Message Listener from Popup / Content Scripts
+// Message Listener from Popup / Content Scripts (Guarded by Sender Verification)
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // Reject messages from foreign extensions or untrusted external contexts
+  if (sender && sender.id && typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
+    if (sender.id !== chrome.runtime.id) {
+      console.warn('[DetectIQ Security] Message rejected from untrusted sender:', sender.id);
+      return false;
+    }
+  }
+
   if (request.action === 'PERFORM_SCAN') {
     performScan(request.scanType, request.content).then(result => {
       sendResponse({ success: true, result });

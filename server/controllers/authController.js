@@ -4,6 +4,10 @@ const sendSuccess = require("../utils/apiResponse");
 const { sendTokenCookie, clearTokenCookie } = require("../utils/jwt");
 const { OAuth2Client } = require("google-auth-library");
 const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
+
+// Dummy hash for constant-time comparison to prevent user enumeration
+const DUMMY_HASH = "$2a$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ012";
 
 /**
  * Strips fields the client should never see / doesn't need, and reshapes
@@ -71,7 +75,29 @@ const login = asyncHandler(async (req, res) => {
   email = (email || "").toLowerCase().trim();
 
   const user = await User.findOne({ email }).select("+password");
-  if (!user || !(await user.comparePassword(password))) {
+
+  if (!user) {
+    // Perform dummy bcrypt comparison to protect against user enumeration timing attacks
+    await bcrypt.compare(password, DUMMY_HASH).catch(() => {});
+    res.status(401);
+    throw new Error("Invalid email or password.");
+  }
+
+  // Check if account is temporarily locked
+  if (user.isLocked && user.isLocked()) {
+    const remainingMinutes = Math.ceil((user.lockUntil - Date.now()) / (60 * 1000));
+    res.status(423); // 423 Locked
+    throw new Error(`Account temporarily locked due to multiple failed login attempts. Please try again in ${remainingMinutes} minute(s).`);
+  }
+
+  const isMatch = await user.comparePassword(password);
+  if (!isMatch) {
+    user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+    if (user.failedLoginAttempts >= 5) {
+      user.lockUntil = new Date(Date.now() + 15 * 60 * 1000); // 15-minute lockout
+    }
+    await user.save({ validateBeforeSave: false });
+
     res.status(401);
     throw new Error("Invalid email or password.");
   }
@@ -79,6 +105,13 @@ const login = asyncHandler(async (req, res) => {
   if (user.status === "Suspended") {
     res.status(403);
     throw new Error("This account has been suspended. Contact support.");
+  }
+
+  // Reset failed login counters upon successful authentication
+  if (user.failedLoginAttempts > 0 || user.lockUntil) {
+    user.failedLoginAttempts = 0;
+    user.lockUntil = null;
+    await user.save({ validateBeforeSave: false });
   }
 
   sendTokenCookie(res, user._id);
