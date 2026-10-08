@@ -122,7 +122,7 @@ class DetectIQApi {
       const reasons = result.reasons || result.detectedSignals || ['Structural analysis clean', 'SSL parameters valid'];
 
       const verifiedThreatIntel = result.evidence?.verifiedThreatIntel || reasons.filter(r => r.source === 'Threat_Intelligence' || r.source === 'Domain_Intelligence');
-      const heuristicsAndAi = result.evidence?.heuristicsAndAi || reasons.filter(r => r.source !== 'Threat_Intelligence' && r.source !== 'Domain_Intelligence');
+      const heuristicsAndSignatures = result.evidence?.heuristicsAndSignatures || result.evidence?.heuristicsAndAi || reasons.filter(r => r.source !== 'Threat_Intelligence' && r.source !== 'Domain_Intelligence');
 
       return {
         success: true,
@@ -134,7 +134,7 @@ class DetectIQApi {
         category: result.category || (score > 60 ? 'Phishing Target' : 'Legitimate Target'),
         evidence: {
           verifiedThreatIntel,
-          heuristicsAndAi
+          heuristicsAndSignatures
         },
         reasons,
         recommendations: result.recommendations || [this.getRecommendationText(level)],

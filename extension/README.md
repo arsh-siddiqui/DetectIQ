@@ -1,6 +1,6 @@
 # 🛡 DetectIQ Browser Extension (Manifest V3)
 
-A production-grade, SaaS-styled cybersecurity browser extension for real-time AI threat intelligence, URL safety inspection, and phishing protection powered by DetectIQ.
+A production-grade, SaaS-styled cybersecurity browser extension for real-time threat intelligence, deterministic heuristic inspection, URL safety verification, and phishing protection powered by DetectIQ.
 
 ---
 
