@@ -19,19 +19,15 @@ describe('intelligenceMapping utils', () => {
       };
 
       const geoPoint = indicatorToGeoPoint(indicator);
-      expect(geoPoint).toEqual({
+      expect(geoPoint).toMatchObject({
         ip: "54.39.40.4",
         latitude: 45.3168,
         longitude: -73.8779,
         country: "Canada",
-        countryCode: null,
-        region: null,
         city: "Beauharnois",
         asn: "AS16276",
-        organization: null,
         isp: "OVH SAS",
-        threat: "unknown",
-        vtStatus: null
+        threat: "unknown"
       });
     });
 

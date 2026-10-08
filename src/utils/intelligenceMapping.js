@@ -85,6 +85,10 @@ export function indicatorToGeoPoints(indicator) {
   }).filter(Boolean);
 }
 
+export function indicatorToGeoPoint(indicator) {
+  const points = indicatorToGeoPoints(indicator);
+  return points.length > 0 ? points[0] : null;
+}
 
 export function normalizeVTState(virusTotal) {
   if (!virusTotal) return { state: 'unconfigured', label: 'Not configured' };

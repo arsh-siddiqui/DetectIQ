@@ -1,34 +1,35 @@
+import { describe, it, expect } from 'vitest';
 import { normalizeUrl } from './urlValidation.js';
-import test from 'node:test';
-import assert from 'node:assert';
 
-test('normalizeUrl handles standard protocols', () => {
-  assert.strictEqual(normalizeUrl('http://google.com'), 'http://google.com/');
-  assert.strictEqual(normalizeUrl('https://google.com'), 'https://google.com/');
-  assert.strictEqual(normalizeUrl('https://www.google.com'), 'https://www.google.com/');
-});
+describe('urlValidation utils', () => {
+  it('normalizeUrl handles standard protocols', () => {
+    expect(normalizeUrl('http://google.com')).toBe('http://google.com/');
+    expect(normalizeUrl('https://google.com')).toBe('https://google.com/');
+    expect(normalizeUrl('https://www.google.com')).toBe('https://www.google.com/');
+  });
 
-test('normalizeUrl prepends https:// to domains', () => {
-  assert.strictEqual(normalizeUrl('google.com'), 'https://google.com/');
-  assert.strictEqual(normalizeUrl('www.google.com'), 'https://www.google.com/');
-});
+  it('normalizeUrl prepends https:// to domains', () => {
+    expect(normalizeUrl('google.com')).toBe('https://google.com/');
+    expect(normalizeUrl('www.google.com')).toBe('https://www.google.com/');
+  });
 
-test('normalizeUrl rejects empty input', () => {
-  assert.throws(() => normalizeUrl(''), /Please enter a URL/);
-  assert.throws(() => normalizeUrl('   '), /Please enter a URL/);
-  assert.throws(() => normalizeUrl(null), /Please enter a URL/);
-});
+  it('normalizeUrl rejects empty input', () => {
+    expect(() => normalizeUrl('')).toThrow(/Please enter a URL/);
+    expect(() => normalizeUrl('   ')).toThrow(/Please enter a URL/);
+    expect(() => normalizeUrl(null)).toThrow(/Please enter a URL/);
+  });
 
-test('normalizeUrl rejects javascript: protocol', () => {
-  assert.throws(() => normalizeUrl('javascript:alert(1)'), /Unsupported protocol/);
-  assert.throws(() => normalizeUrl('JaVaScRipT:alert(1)'), /Unsupported protocol/);
-});
+  it('normalizeUrl rejects javascript: protocol', () => {
+    expect(() => normalizeUrl('javascript:alert(1)')).toThrow(/Unsupported protocol/);
+    expect(() => normalizeUrl('JaVaScRipT:alert(1)')).toThrow(/Unsupported protocol/);
+  });
 
-test('normalizeUrl rejects spaces', () => {
-  assert.throws(() => normalizeUrl('google.com / path'), /Invalid URL format/);
-});
+  it('normalizeUrl rejects spaces', () => {
+    expect(() => normalizeUrl('google.com / path')).toThrow(/Invalid URL format/);
+  });
 
-test('normalizeUrl rejects malformed domains', () => {
-  assert.throws(() => normalizeUrl('google'), /Invalid domain format/);
-  assert.throws(() => normalizeUrl('https://invalid_domain'), /Invalid domain format/);
+  it('normalizeUrl rejects malformed domains', () => {
+    expect(() => normalizeUrl('google')).toThrow(/Invalid domain format/);
+    expect(() => normalizeUrl('https://invalid_domain')).toThrow(/Invalid domain format/);
+  });
 });

@@ -6,6 +6,6 @@ export default defineConfig({
     environment: 'node',
     fileParallelism: false,
     setupFiles: ['./server/tests/setup.js'],
-    include: ['server/tests/**/*.test.js'],
+    include: ['server/tests/**/*.test.js', 'src/**/*.test.js'],
   },
 });
