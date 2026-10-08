@@ -145,4 +145,70 @@ describe('Advanced Security Hardening Suite', () => {
       expect(next).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('Cross-Site Request Forgery (CSRF) Origin Protection', () => {
+    const csrfProtection = require('../middleware/csrfProtection');
+
+    it('allows safe read methods without origin checks', () => {
+      const req = { method: 'GET', cookies: { detectiq_token: 'valid' } };
+      const res = {};
+      const next = vi.fn();
+
+      csrfProtection(req, res, next);
+      expect(next).toHaveBeenCalledTimes(1);
+    });
+
+    it('allows requests with explicit Authorization Bearer headers', () => {
+      const req = {
+        method: 'POST',
+        headers: { authorization: 'Bearer some-jwt-token' },
+        cookies: { detectiq_token: 'valid' }
+      };
+      const res = {};
+      const next = vi.fn();
+
+      csrfProtection(req, res, next);
+      expect(next).toHaveBeenCalledTimes(1);
+    });
+
+    it('allows cookie-authenticated mutations from trusted frontend origin', () => {
+      const req = {
+        method: 'POST',
+        headers: { origin: 'http://localhost:5173' },
+        cookies: { detectiq_token: 'valid' }
+      };
+      const res = {};
+      const next = vi.fn();
+
+      csrfProtection(req, res, next);
+      expect(next).toHaveBeenCalledTimes(1);
+    });
+
+    it('blocks cookie-authenticated mutations from unauthorized third-party origins', () => {
+      const req = {
+        method: 'POST',
+        headers: { origin: 'https://evil-hacker-site.com' },
+        cookies: { detectiq_token: 'valid' }
+      };
+      let statusCalled = null;
+      let jsonCalled = null;
+      const res = {
+        status: (code) => {
+          statusCalled = code;
+          return {
+            json: (payload) => {
+              jsonCalled = payload;
+            }
+          };
+        }
+      };
+      const next = vi.fn();
+
+      csrfProtection(req, res, next);
+
+      expect(next).not.toHaveBeenCalled();
+      expect(statusCalled).toBe(403);
+      expect(jsonCalled.message).toContain('CSRF');
+    });
+  });
 });

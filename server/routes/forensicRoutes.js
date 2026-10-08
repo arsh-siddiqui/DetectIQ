@@ -16,7 +16,11 @@ const upload = multer({
   storage,
   limits,
   fileFilter: (req, file, cb) => {
-    // Only accept .eml extension (basic check)
+    // Sanitize filename against null bytes and path traversal characters
+    if (file.originalname.includes('\0') || file.originalname.includes('..') || /[<>:"/\\|?*]/.test(file.originalname)) {
+      return cb(new Error('Invalid filename characters in upload.'), false);
+    }
+    // Only accept .eml extension
     if (!file.originalname.toLowerCase().endsWith('.eml')) {
       return cb(new Error('Only .eml files are allowed'), false);
     }

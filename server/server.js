@@ -10,6 +10,7 @@ const { notFound, errorHandler } = require("./middleware/errorHandler");
 const { mongoSanitize } = require("./middleware/mongoSanitize");
 const preventHPP = require("./middleware/hpp");
 const securityHeaders = require("./middleware/securityHeaders");
+const csrfProtection = require("./middleware/csrfProtection");
 
 const app = express();
 app.set("trust proxy", 1); // Trust first proxy (Render/Vercel) for secure cookies
@@ -74,6 +75,7 @@ app.use(express.urlencoded({ extended: true, limit: "500kb" }));
 app.use(cookieParser());
 app.use(mongoSanitize);
 app.use(preventHPP());
+app.use(csrfProtection);
 app.use(morgan(env.NODE_ENV === "development" ? "dev" : "combined"));
 
 // ---------------------------------------------------------------------------
