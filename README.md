@@ -87,11 +87,18 @@ Load the extension in Chrome via `chrome://extensions` → **Developer mode** �
 
 ---
 
-## 📖 System Documentation & Architecture Specs
+## 📖 Project Documentation Directory
 
-- **System Design & Architecture**: [docs/SYSTEM_DESIGN_AND_ARCHITECTURE.md](docs/SYSTEM_DESIGN_AND_ARCHITECTURE.md) (Deep dive into microservices, data modeling, authentication, security controls, rate limiting, caching, and scalability roadmap).
-- **Production Deployment Guide**: [DEPLOYMENT.md](DEPLOYMENT.md) (Vercel SPA, Render Blueprint setup, environment variables, and MongoDB Atlas configuration).
-- **Extension Architecture**: [extension/README.md](extension/README.md) (Manifest V3 components, UI design system, and background service worker specifications).
+| Document | Focus & Coverage |
+| :--- | :--- |
+| **[docs/API.md](docs/API.md)** | Complete REST API endpoint reference, request/response schemas, and ML microservice contract |
+| **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** | Microservice topology, C4 architecture, sequence diagrams, and empirical ML benchmark table |
+| **[docs/DATABASE.md](docs/DATABASE.md)** | MongoDB Atlas schemas, compound indexes, TTL eviction indexes, and FAISS vector memory |
+| **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** | Production deployment guide (Vercel, Render Blueprint, MongoDB Network Access, Extension) |
+| **[docs/SECURITY.md](docs/SECURITY.md)** | Threat model, dual-mode JWT auth, rate limiting tiers, XSS defenses, and strict CORS policy |
+| **[docs/SYSTEM_DESIGN.md](docs/SYSTEM_DESIGN.md)** | Multi-channel ingestion pipelines, Evidence Fusion mathematics, cache hierarchy, and scaling |
+| **[docs/TESTING.md](docs/TESTING.md)** | Test strategy, test pyramid breakdown (359 tests), execution commands, and CI/CD quality gates |
+| **[extension/README.md](extension/README.md)** | Manifest V3 extension components, light SaaS UI theme, and in-page hover shields |
 
 ---
 
