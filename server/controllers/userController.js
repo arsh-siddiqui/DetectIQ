@@ -61,6 +61,16 @@ const changePassword = asyncHandler(async (req, res) => {
     throw new Error("New password must be at least 8 characters.");
   }
 
+  if (newPassword.length > 128) {
+    res.status(400);
+    throw new Error("New password must be under 128 characters.");
+  }
+
+  if (currentPassword === newPassword) {
+    res.status(400);
+    throw new Error("New password must be different from current password.");
+  }
+
   // Get user with password
   const user = await User.findById(req.user._id).select("+password");
   
