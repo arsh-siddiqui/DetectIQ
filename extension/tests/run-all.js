@@ -11,7 +11,10 @@ const testFiles = [
   path.join(__dirname, 'api-unit.test.js'),
   path.join(__dirname, 'background-unit.test.js'),
   path.join(__dirname, 'popup-ui.test.js'),
+  path.join(__dirname, 'alerts-and-overlays.test.js'),
+  path.join(__dirname, 'rate-limiting.test.js'),
   path.join(__dirname, 'live-cloud-e2e.test.js'),
+  path.join(__dirname, 'cloud-threat-matrix.test.js'),
 ];
 
 console.log('====================================================');
