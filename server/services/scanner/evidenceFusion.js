@@ -603,15 +603,49 @@ function fuseEvidence(heuristicResult, mlEvidence, threatIntel, ragEvidence, gro
       if (groqResult.summary)  finalSummary  = groqResult.summary;
     }
 
-    // Add AI reasoning as evidence
+    // Helper to derive meaningful contextual titles instead of generic "AI Analysis"
+    const deriveReasonTitle = (detailText) => {
+      if (!detailText || typeof detailText !== 'string') return 'Deep Inspection';
+      const text = detailText.toLowerCase();
+      if (text.includes('homoglyph') || text.includes('punycode') || text.includes('character') || text.includes('script')) {
+        return 'Character Verification';
+      }
+      if (text.includes('impersonat') || text.includes('brand') || text.includes('belong') || text.includes('spoof') || text.includes('mimic')) {
+        return 'Brand Integrity';
+      }
+      if (text.includes('threat') || text.includes('intelligence') || text.includes('database') || text.includes('malicious') || text.includes('activity')) {
+        return 'Threat Correlation';
+      }
+      if (text.includes('path') || text.includes('structure') || text.includes('query') || text.includes('parameter') || text.includes('segment')) {
+        return 'URL Architecture';
+      }
+      if (text.includes('domain') || text.includes('subdomain') || text.includes('hostname') || text.includes('service')) {
+        return 'Domain Authenticity';
+      }
+      if (text.includes('credential') || text.includes('login') || text.includes('password') || text.includes('otp')) {
+        return 'Credential Safeguard';
+      }
+      if (text.includes('ssl') || text.includes('https') || text.includes('tls') || text.includes('certificate')) {
+        return 'SSL Encryption';
+      }
+      return 'Deep Inspection';
+    };
+
+    // Add contextual reasoning as evidence
     if (Array.isArray(groqResult.reasons)) {
       for (const reason of groqResult.reasons) {
-        finalReasons.push({ source: 'AI_Analysis', title: `AI Analysis`, detail: reason, severity: 'low', type: 'AI Reasoning' });
+        finalReasons.push({
+          source: 'Deep_Inspection',
+          title: deriveReasonTitle(reason),
+          detail: reason,
+          severity: 'low',
+          type: 'Deep Inspection'
+        });
       }
     }
     if (Array.isArray(groqResult.socialEngineeringSignals)) {
       for (const sig of groqResult.socialEngineeringSignals) {
-        finalReasons.push({ source: 'AI_Analysis', title: 'Social Engineering Signal', detail: sig, severity: 'medium', type: 'Social Engineering' });
+        finalReasons.push({ source: 'Deep_Inspection', title: 'Social Engineering Signal', detail: sig, severity: 'medium', type: 'Social Engineering' });
       }
     }
 

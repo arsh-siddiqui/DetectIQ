@@ -317,6 +317,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  function formatSignalTitle(rawTitle, reasonText) {
+    if (!rawTitle || rawTitle.toLowerCase().includes('ai analysis') || rawTitle.toLowerCase() === 'ai') {
+      const text = (reasonText || '').toLowerCase();
+      if (text.includes('homoglyph') || text.includes('punycode') || text.includes('character') || text.includes('script')) return 'Character Verification';
+      if (text.includes('impersonat') || text.includes('brand') || text.includes('belong') || text.includes('spoof') || text.includes('mimic')) return 'Brand Integrity';
+      if (text.includes('threat') || text.includes('intelligence') || text.includes('database') || text.includes('malicious')) return 'Threat Correlation';
+      if (text.includes('path') || text.includes('structure') || text.includes('query') || text.includes('parameter') || text.includes('segment')) return 'URL Architecture';
+      if (text.includes('domain') || text.includes('subdomain') || text.includes('hostname') || text.includes('service')) return 'Domain Authenticity';
+      if (text.includes('credential') || text.includes('login') || text.includes('password') || text.includes('otp')) return 'Credential Safeguard';
+      if (text.includes('ssl') || text.includes('https') || text.includes('tls') || text.includes('certificate')) return 'SSL Encryption';
+      return 'Deep Inspection';
+    }
+    return rawTitle;
+  }
+
+  function resolveSignalBadge(title, reasonText, statusType) {
+    if (statusType === 'fail') return 'DANGER';
+    if (statusType === 'warn') return 'WARNING';
+
+    const combined = (title + ' ' + (reasonText || '')).toLowerCase();
+    if (combined.includes('ssl') || combined.includes('https') || combined.includes('tls') || combined.includes('certificate')) {
+      return 'VALID HTTPS';
+    }
+    if (combined.includes('database') || combined.includes('threat intelligence') || combined.includes('blacklist') || combined.includes('no threat')) {
+      return 'NO MATCH';
+    }
+    if (combined.includes('brand') || combined.includes('authentic') || combined.includes('established') || combined.includes('legitimate')) {
+      return 'VERIFIED';
+    }
+    return 'CLEAN';
+  }
+
   function renderScanResult(score, riskLevel, reasons, recommendation) {
     updateGauge(score, riskLevel, riskLevel.toUpperCase());
     
@@ -336,7 +368,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const defaultTitles = ['Domain Reputation', 'SSL Encryption', 'URL Pattern', 'Threat Intelligence', 'Keyword Analysis'];
-    const defaultBadges = { pass: 'CLEAN', warn: 'WARNING', fail: 'DANGER' };
 
     const isSafe = riskLevel === 'safe' || score < 30;
     const statusType = isSafe ? 'pass' : (score > 70 ? 'fail' : 'warn');
@@ -369,7 +400,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           reasonDesc = reasonDesc.slice(0, 92) + '...';
         }
 
-        const badgeLabel = idx === 1 && isSafe ? 'VALID HTTPS' : (idx === 3 && isSafe ? 'NO MATCH' : defaultBadges[statusType]);
+        title = formatSignalTitle(title, reasonDesc);
+        const badgeLabel = resolveSignalBadge(title, reasonDesc, statusType);
 
         sigCard.innerHTML = `
           <div class="signal-icon-wrapper ${statusType}">${defaultIcons[statusType]}</div>
@@ -710,6 +742,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (value.length > 95) {
           value = value.slice(0, 92) + '...';
         }
+
+        label = formatSignalTitle(label, value);
 
         row.innerHTML = `<span class="meta-label">${escapeHtml(label)}:</span><span class="meta-value">${escapeHtml(value)}</span>`;
         manualSignalsBox.appendChild(row);
