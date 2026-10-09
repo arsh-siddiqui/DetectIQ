@@ -97,6 +97,7 @@ class DetectIQApi {
       try {
         response = await fetch(`${activeApiUrl}/api/scan`, {
           method: 'POST',
+          credentials: 'omit',
           headers: {
             'Content-Type': 'application/json',
             ...(config.authToken ? { 'Authorization': `Bearer ${config.authToken}` } : {})
@@ -117,6 +118,7 @@ class DetectIQApi {
           }
           response = await fetch(`${activeApiUrl}/api/scan`, {
             method: 'POST',
+            credentials: 'omit',
             headers: {
               'Content-Type': 'application/json',
               ...(config.authToken ? { 'Authorization': `Bearer ${config.authToken}` } : {})

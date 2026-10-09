@@ -38,6 +38,9 @@ function csrfProtection(req, res, next) {
 
   const isAllowedOrigin = (urlStr) => {
     if (!urlStr) return false;
+    if (urlStr.startsWith('chrome-extension://') || urlStr.startsWith('moz-extension://')) {
+      return true;
+    }
     try {
       const parsed = new URL(urlStr);
       const originBase = parsed.origin;
@@ -47,7 +50,6 @@ function csrfProtection(req, res, next) {
       if (/^http:\/\/127\.0\.0\.1:517\d$/.test(originBase)) return true;
       if (originBase === 'http://localhost:3000') return true;
       if (originBase === 'http://127.0.0.1:3000') return true;
-      if (originBase.startsWith('chrome-extension://') || originBase.startsWith('moz-extension://')) return true;
       return false;
     } catch {
       return false;

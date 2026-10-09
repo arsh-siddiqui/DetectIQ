@@ -205,10 +205,22 @@ describe('Advanced Security Hardening Suite', () => {
       const next = vi.fn();
 
       csrfProtection(req, res, next);
-
       expect(next).not.toHaveBeenCalled();
       expect(statusCalled).toBe(403);
       expect(jsonCalled.message).toContain('CSRF');
+    });
+
+    it('allows cookie-authenticated mutations from Chrome extension origin', () => {
+      const req = {
+        method: 'POST',
+        headers: { origin: 'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn' },
+        cookies: { detectiq_token: 'valid' }
+      };
+      const res = {};
+      const next = vi.fn();
+
+      csrfProtection(req, res, next);
+      expect(next).toHaveBeenCalledTimes(1);
     });
   });
 });
