@@ -194,6 +194,9 @@
   border-radius: 8px;
   border-left: 3px solid #2563EB;
 }
+.recommendation-box.safe, .recommendation-box.low { border-left-color: #10B981; }
+.recommendation-box.suspicious { border-left-color: #F59E0B; }
+.recommendation-box.high, .recommendation-box.critical { border-left-color: #EF4444; }
 
 .card-footer {
   display: flex;

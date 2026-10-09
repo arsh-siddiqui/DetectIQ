@@ -266,12 +266,16 @@
         .risk-score-display { font-size: 13px; font-weight: 700; color: #0F172A; }
         .signals-list { display: flex; flex-direction: column; gap: 4px; }
         .signal-item { display: flex; align-items: flex-start; gap: 6px; font-size: 11px; color: #334155; }
-        .signal-bullet.pass { color: #10B981; font-weight: 700; }
-        .signal-bullet.fail { color: #EF4444; font-weight: 700; }
+        .signal-bullet.pass { color: #10B981; font-weight: 700; font-size: 12px; }
+        .signal-bullet.warn { color: #F59E0B; font-weight: 700; font-size: 12px; }
+        .signal-bullet.fail { color: #EF4444; font-weight: 700; font-size: 12px; }
         .recommendation-box {
           font-size: 11px; color: #475569; background: #F8FAFC; padding: 8px 10px;
           border-radius: 8px; border-left: 3px solid #2563EB;
         }
+        .recommendation-box.safe, .recommendation-box.low { border-left-color: #10B981; }
+        .recommendation-box.suspicious { border-left-color: #F59E0B; }
+        .recommendation-box.high, .recommendation-box.critical { border-left-color: #EF4444; }
         .loading-box { display: flex; align-items: center; gap: 8px; padding: 10px 0; color: #2563EB; font-weight: 600; }
         .spinner {
           width: 16px; height: 16px; border: 2px solid #E2E8F0; border-top-color: #2563EB;
@@ -350,16 +354,72 @@
             if (textVal.length > 95) {
               textVal = textVal.slice(0, 92) + '...';
             }
+
+            // Determine bullet icon and color based on signal and risk level
+            const lowerText = textVal.toLowerCase();
+            const isCleanSignal = lowerText.includes('no threat') ||
+                                 lowerText.includes('clean') ||
+                                 lowerText.includes('verified') ||
+                                 lowerText.includes('matches standard') ||
+                                 lowerText.includes('valid') ||
+                                 lowerText.includes('authentic') ||
+                                 lowerText.includes('no suspicious') ||
+                                 lowerText.includes('no urgent') ||
+                                 lowerText.includes('typical for a legitimate');
+
+            const isThreatSignal = lowerText.includes('phishing') ||
+                                  lowerText.includes('malicious') ||
+                                  lowerText.includes('suspicious') ||
+                                  lowerText.includes('deceptive') ||
+                                  lowerText.includes('spoof') ||
+                                  lowerText.includes('homoglyph') ||
+                                  lowerText.includes('punycode') ||
+                                  lowerText.includes('harvest') ||
+                                  (typeof s === 'object' && (s?.severity === 'high' || s?.severity === 'critical'));
+
+            let bulletIcon = '✓';
+            let bulletClass = 'pass';
+
+            if (level === 'safe' || level === 'low') {
+              if (isThreatSignal) {
+                bulletIcon = '⚠';
+                bulletClass = 'warn';
+              } else {
+                bulletIcon = '✓';
+                bulletClass = 'pass';
+              }
+            } else if (level === 'suspicious') {
+              if (isCleanSignal) {
+                bulletIcon = '✓';
+                bulletClass = 'pass';
+              } else if (isThreatSignal) {
+                bulletIcon = '!';
+                bulletClass = 'fail';
+              } else {
+                bulletIcon = '⚠';
+                bulletClass = 'warn';
+              }
+            } else {
+              // High or Critical
+              if (isCleanSignal) {
+                bulletIcon = '✓';
+                bulletClass = 'pass';
+              } else {
+                bulletIcon = '!';
+                bulletClass = 'fail';
+              }
+            }
+
             return `
               <div class="signal-item">
-                <span class="signal-bullet ${level === 'safe' ? 'pass' : 'fail'}">${level === 'safe' ? '✓' : '!'}</span>
+                <span class="signal-bullet ${bulletClass}">${bulletIcon}</span>
                 <span>${escapeHtml(textVal)}</span>
               </div>
             `;
           }).join('')}
         </div>
 
-        <div class="recommendation-box">
+        <div class="recommendation-box ${level}">
           ${escapeHtml(recommendation)}
         </div>
       </div>
