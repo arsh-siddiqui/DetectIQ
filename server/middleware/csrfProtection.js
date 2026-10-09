@@ -22,7 +22,18 @@ function csrfProtection(req, res, next) {
   }
 
   // Explicit Bearer headers are inherently immune to browser CSRF
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+  if (req.headers?.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    return next();
+  }
+
+  // Custom headers (like X-Requested-With) cannot be sent by cross-origin attackers without CORS preflight
+  if (req.headers?.['x-requested-with']) {
+    return next();
+  }
+
+  // Public scan routes are read/analysis utilities, not sensitive state mutations
+  const reqPath = req.baseUrl ? `${req.baseUrl}${req.path}` : (req.path || req.originalUrl || '');
+  if (reqPath.startsWith('/api/scan') || reqPath === '/scan') {
     return next();
   }
 

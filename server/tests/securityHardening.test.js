@@ -222,5 +222,31 @@ describe('Advanced Security Hardening Suite', () => {
       csrfProtection(req, res, next);
       expect(next).toHaveBeenCalledTimes(1);
     });
+
+    it('allows requests bearing X-Requested-With custom header', () => {
+      const req = {
+        method: 'POST',
+        headers: { 'x-requested-with': 'DetectIQ-Extension' },
+        cookies: { detectiq_token: 'valid' }
+      };
+      const res = {};
+      const next = vi.fn();
+
+      csrfProtection(req, res, next);
+      expect(next).toHaveBeenCalledTimes(1);
+    });
+
+    it('exempts public /api/scan route from CSRF blocking', () => {
+      const req = {
+        method: 'POST',
+        path: '/api/scan',
+        cookies: { detectiq_token: 'valid' }
+      };
+      const res = {};
+      const next = vi.fn();
+
+      csrfProtection(req, res, next);
+      expect(next).toHaveBeenCalledTimes(1);
+    });
   });
 });

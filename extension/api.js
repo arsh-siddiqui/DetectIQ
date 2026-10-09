@@ -100,6 +100,7 @@ class DetectIQApi {
           credentials: 'omit',
           headers: {
             'Content-Type': 'application/json',
+            'X-Requested-With': 'DetectIQ-Extension',
             ...(config.authToken ? { 'Authorization': `Bearer ${config.authToken}` } : {})
           },
           body: JSON.stringify({
@@ -121,6 +122,7 @@ class DetectIQApi {
             credentials: 'omit',
             headers: {
               'Content-Type': 'application/json',
+              'X-Requested-With': 'DetectIQ-Extension',
               ...(config.authToken ? { 'Authorization': `Bearer ${config.authToken}` } : {})
             },
             body: JSON.stringify({
@@ -325,8 +327,10 @@ class DetectIQApi {
     try {
       const response = await fetch(`${config.apiUrl}/api/scan`, {
         method: 'POST',
+        credentials: 'omit',
         headers: {
           'Content-Type': 'application/json',
+          'X-Requested-With': 'DetectIQ-Extension',
           ...(config.authToken ? { 'Authorization': `Bearer ${config.authToken}` } : {})
         },
         body: JSON.stringify({
