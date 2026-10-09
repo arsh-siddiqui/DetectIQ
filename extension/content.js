@@ -10,8 +10,15 @@
   let hoverTooltip = null;
   let formWarningBanner = null;
 
-  // Listen for background service worker messages
-  chrome.runtime.onMessage.addListener((request, _sender, _sendResponse) => {
+  // Listen for background service worker messages (Strictly verified sender)
+  chrome.runtime.onMessage.addListener((request, sender, _sendResponse) => {
+    if (sender && sender.id && typeof chrome !== 'undefined' && chrome.runtime?.id) {
+      if (sender.id !== chrome.runtime.id) {
+        console.warn('[DetectIQ Content] Message rejected from untrusted sender:', sender.id);
+        return;
+      }
+    }
+
     if (request.action === 'SHOW_LOADING_OVERLAY') {
       createOrShowOverlay();
       renderLoadingState(request.target);

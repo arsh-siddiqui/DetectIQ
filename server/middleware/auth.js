@@ -29,9 +29,20 @@ const protect = asyncHandler(async (req, res, next) => {
       throw new Error("Not authorized — user no longer exists.");
     }
 
+    if (user.status === "Suspended") {
+      res.status(403);
+      throw new Error("This account has been suspended. Contact support.");
+    }
+
+    if (user.isLocked && user.isLocked()) {
+      res.status(423);
+      throw new Error("Account temporarily locked due to multiple failed login attempts.");
+    }
+
     req.user = user;
     next();
   } catch (err) {
+    if (res.statusCode === 403 || res.statusCode === 423) throw err;
     res.status(401);
     throw new Error("Not authorized — invalid or expired token.");
   }
