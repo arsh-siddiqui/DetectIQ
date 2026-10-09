@@ -156,16 +156,25 @@ document.addEventListener('DOMContentLoaded', async () => {
           btnTrustDomain.textContent = '⭐ Trusted!';
           btnTrustDomain.style.background = '#10B981';
           btnTrustDomain.style.color = '#FFF';
+
+          // If domain is whitelisted by user, show trusted safe status immediately
+          if (errorStateCard) errorStateCard.classList.add('hidden');
+          renderScanResult(0, 'safe', ['Verified Trusted Domain', 'Whitelisted in local security profile'], 'User-whitelisted domain: Verified authentic.');
+          return;
         } else {
           btnTrustDomain.textContent = '⭐ Trust';
           btnTrustDomain.style.background = '';
           btnTrustDomain.style.color = '';
+
+          if (autoScan && config.autoScan && !urlStr.startsWith('chrome://') && !urlStr.startsWith('edge://')) {
+            runPageScan(activeTabUrl);
+          }
         }
       });
-    }
-
-    if (autoScan && config.autoScan && !urlStr.startsWith('chrome://') && !urlStr.startsWith('edge://')) {
-      runPageScan(activeTabUrl);
+    } else {
+      if (autoScan && config.autoScan && !urlStr.startsWith('chrome://') && !urlStr.startsWith('edge://')) {
+        runPageScan(activeTabUrl);
+      }
     }
   }
 

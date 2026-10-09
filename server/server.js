@@ -85,6 +85,17 @@ app.use(morgan(env.NODE_ENV === "development" ? "dev" : "combined"));
 // deployment platforms and the frontend can distinguish "server is down"
 // from "server is up but database isn't connected yet".
 // ---------------------------------------------------------------------------
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "DetectIQ Threat Intelligence API is active and running.",
+    version: "1.0.0",
+    docs: "/api/health",
+    env: env.NODE_ENV,
+    dbConnected: isDbConnected(),
+  });
+});
+
 app.get("/api/health", (req, res) => {
   res.json({
     success: true,
