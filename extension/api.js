@@ -37,7 +37,7 @@ class DetectIQApi {
     const config = await this.getConfig();
     const targetUrl = (customUrl || config.apiUrl).replace(/\/$/, '');
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 12000); // 12-second health check timeout to tolerate cloud cold starts
 
     try {
       const res = await fetch(`${targetUrl}/api/health`, {
@@ -89,7 +89,7 @@ class DetectIQApi {
     const config = await this.getConfig();
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8-second request timeout
+    const timeoutId = setTimeout(() => controller.abort(), 16000); // 16-second request timeout to tolerate Render cold starts
 
     try {
       const response = await fetch(`${config.apiUrl}/api/scan`, {

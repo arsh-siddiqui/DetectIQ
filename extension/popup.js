@@ -900,6 +900,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       showConnectionTest('Connected to DetectIQ Server (200 OK)', true);
       connectionStatusBadge.className = 'status-indicator online';
       connectionStatusBadge.querySelector('.status-label').textContent = 'Active';
+
+      // Auto-recover: if the scan had fallen back to offline mode while waking up, re-scan with live backend
+      if (errorStateCard && !errorStateCard.classList.contains('hidden') && activeTabUrl) {
+        errorStateCard.classList.add('hidden');
+        runPageScan(activeTabUrl);
+      }
     } else {
       showConnectionTest('Cannot reach backend (Offline Heuristic Mode)', false);
       connectionStatusBadge.className = 'status-indicator';
