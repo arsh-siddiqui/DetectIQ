@@ -235,6 +235,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         view.classList.remove('active');
       }
     });
+
+    // If switching back to Guard while in an offline error state and server is Active, re-scan
+    if ((tabId === 'page' || tabId === 'guard') && errorStateCard && !errorStateCard.classList.contains('hidden') && activeTabUrl) {
+      if (connectionStatusBadge.classList.contains('online')) {
+        errorStateCard.classList.add('hidden');
+        runPageScan(activeTabUrl);
+      }
+    }
   }
 
   // -------------------------------------------------------------
