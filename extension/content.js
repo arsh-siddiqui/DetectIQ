@@ -407,31 +407,42 @@
 
             // Determine bullet icon and color based on signal and risk level
             const lowerText = textVal.toLowerCase();
-            const isCleanSignal = lowerText.includes('no threat') ||
+            const isNegativePhrasing = lowerText.startsWith('no ') ||
+                                       lowerText.includes('no threat') ||
+                                       lowerText.includes('no suspicious') ||
+                                       lowerText.includes('no phishing') ||
+                                       lowerText.includes('no urgent') ||
+                                       lowerText.includes('not detected') ||
+                                       lowerText.includes('no deceptive') ||
+                                       lowerText.includes('were detected') ||
+                                       lowerText.includes('were found');
+
+            const isCleanSignal = isNegativePhrasing ||
                                  lowerText.includes('clean') ||
                                  lowerText.includes('verified') ||
                                  lowerText.includes('matches standard') ||
                                  lowerText.includes('valid') ||
                                  lowerText.includes('authentic') ||
-                                 lowerText.includes('no suspicious') ||
-                                 lowerText.includes('no urgent') ||
-                                 lowerText.includes('typical for a legitimate');
+                                 lowerText.includes('typical for a legitimate') ||
+                                 lowerText.includes('safe');
 
-            const isThreatSignal = lowerText.includes('phishing') ||
-                                  lowerText.includes('malicious') ||
-                                  lowerText.includes('suspicious') ||
-                                  lowerText.includes('deceptive') ||
-                                  lowerText.includes('spoof') ||
-                                  lowerText.includes('homoglyph') ||
-                                  lowerText.includes('punycode') ||
-                                  lowerText.includes('harvest') ||
-                                  (typeof s === 'object' && (s?.severity === 'high' || s?.severity === 'critical'));
+            const isExplicitThreat = !isCleanSignal && (
+              lowerText.includes('phishing') ||
+              lowerText.includes('malicious') ||
+              lowerText.includes('suspicious') ||
+              lowerText.includes('deceptive') ||
+              lowerText.includes('spoof') ||
+              lowerText.includes('homoglyph') ||
+              lowerText.includes('punycode') ||
+              lowerText.includes('harvest') ||
+              (typeof s === 'object' && (s?.severity === 'high' || s?.severity === 'critical'))
+            );
 
             let bulletIcon = '✓';
             let bulletClass = 'pass';
 
             if (level === 'safe' || level === 'low') {
-              if (isThreatSignal) {
+              if (isExplicitThreat) {
                 bulletIcon = '⚠';
                 bulletClass = 'warn';
               } else {
@@ -442,7 +453,7 @@
               if (isCleanSignal) {
                 bulletIcon = '✓';
                 bulletClass = 'pass';
-              } else if (isThreatSignal) {
+              } else if (isExplicitThreat) {
                 bulletIcon = '!';
                 bulletClass = 'fail';
               } else {
