@@ -270,6 +270,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     recommendationText.textContent = 'Analyzing URL structure, SSL certificate, and threat intelligence...';
 
+    const wakeTimer = setTimeout(() => {
+      summaryTitle.textContent = 'Waking up security engine...';
+      summarySubtitle.textContent = 'Render cloud container is starting up (takes ~20s on cold starts).';
+      recommendationText.textContent = 'Connecting to threat intelligence pipeline... please wait a few seconds.';
+    }, 3500);
+
     try {
       const result = await DetectIQApi.performScan('url', targetUrl);
 
@@ -296,6 +302,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (errorMsg) errorMsg.textContent = err.message || 'Analysis engine request failed.';
       }
     } finally {
+      clearTimeout(wakeTimer);
       btnScanPage.disabled = false;
       icon.classList.remove('loading');
     }

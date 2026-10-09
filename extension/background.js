@@ -27,7 +27,21 @@ chrome.runtime.onInstalled.addListener(() => {
   // Default badge
   chrome.action.setBadgeText({ text: 'SEC' });
   chrome.action.setBadgeBackgroundColor({ color: '#2563EB' });
+
+  // Keep-alive heartbeat: ping backend every 10 minutes to prevent Render free-tier cold sleep
+  if (chrome.alarms && chrome.alarms.create) {
+    chrome.alarms.create('detectiq-keepalive', { periodInMinutes: 10 });
+  }
 });
+
+// Keep-alive alarm handler
+if (chrome.alarms && chrome.alarms.onAlarm) {
+  chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === 'detectiq-keepalive') {
+      DetectIQApi.healthCheck().catch(() => {});
+    }
+  });
+}
 
 // Ambient Navigation Guard: Tab activation listener
 chrome.tabs.onActivated.addListener((activeInfo) => {

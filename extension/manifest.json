@@ -24,7 +24,8 @@
     "contextMenus",
     "webNavigation",
     "downloads",
-    "notifications"
+    "notifications",
+    "alarms"
   ],
   "host_permissions": [
     "<all_urls>"
