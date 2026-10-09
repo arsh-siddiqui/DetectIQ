@@ -1,6 +1,6 @@
 // DetectIQ Browser Extension - Background Service Worker
 
-importScripts('api.js');
+importScripts('api.js', 'lib/jsQR.js');
 
 const urlScanCache = new Map();
 
@@ -16,6 +16,12 @@ chrome.runtime.onInstalled.addListener(() => {
     id: 'detectiq-scan-selection',
     title: '🛡 Analyze text with DetectIQ',
     contexts: ['selection']
+  });
+
+  chrome.contextMenus.create({
+    id: 'detectiq-scan-image-qr',
+    title: '🛡 Scan image for malicious QR code',
+    contexts: ['image']
   });
 
   chrome.contextMenus.create({
@@ -150,6 +156,33 @@ async function inspectTabUrl(tabId, url) {
   }
 }
 
+// Offline QR Code Decoder for Context Menu Image Sniffing
+async function decodeQrFromImageUrl(imageUrl) {
+  try {
+    if (typeof OffscreenCanvas === 'undefined' || typeof createImageBitmap === 'undefined') {
+      return null;
+    }
+    const res = await fetch(imageUrl);
+    const blob = await res.blob();
+    const bitmap = await createImageBitmap(blob);
+    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(bitmap, 0, 0);
+    const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+    const jsQRfn = typeof jsQR === 'function' ? jsQR : (typeof self !== 'undefined' && typeof self.jsQR === 'function' ? self.jsQR : null);
+    if (jsQRfn) {
+      const code = jsQRfn(imageData.data, imageData.width, imageData.height);
+      if (code && code.data) {
+        return code.data;
+      }
+    }
+    return null;
+  } catch (err) {
+    console.warn('[DetectIQ] QR image decode error:', err);
+    return null;
+  }
+}
+
 // Context Menu Click Handler
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (!tab || !tab.id) return;
@@ -163,6 +196,31 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   } else if (info.menuItemId === 'detectiq-scan-selection' && info.selectionText) {
     contentToScan = info.selectionText;
     scanType = 'text';
+  } else if (info.menuItemId === 'detectiq-scan-image-qr' && info.srcUrl) {
+    chrome.tabs.sendMessage(tab.id, {
+      action: 'SHOW_LOADING_OVERLAY',
+      target: 'Decoding QR Code...'
+    }).catch(() => {});
+
+    const decoded = await decodeQrFromImageUrl(info.srcUrl);
+    if (decoded) {
+      contentToScan = decoded;
+      scanType = decoded.startsWith('http') ? 'url' : 'text';
+    } else {
+      chrome.tabs.sendMessage(tab.id, {
+        action: 'SHOW_RESULT_OVERLAY',
+        target: 'QR Code Image',
+        scanType: 'qr',
+        result: {
+          score: 5,
+          level: 'safe',
+          category: 'QR Code Guard',
+          signals: ['No valid QR code pattern detected in the selected image.'],
+          recommendation: 'Ensure the image contains a clear, high-contrast QR code.'
+        }
+      }).catch(() => {});
+      return;
+    }
   } else if (info.menuItemId === 'detectiq-scan-page' && tab.url) {
     contentToScan = tab.url;
     scanType = 'url';

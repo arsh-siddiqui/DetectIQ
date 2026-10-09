@@ -142,7 +142,29 @@
   // 3. WEBMAIL SAFETY SHIELD (Gmail & Outlook)
   // -------------------------------------------------------------
   if (window.location.hostname.includes('mail.google.com') || window.location.hostname.includes('outlook')) {
-    setInterval(injectWebmailShield, 2500);
+    // Immediate initial inspection
+    injectWebmailShield();
+
+    // High-performance reactive MutationObserver for instant email container detection
+    let shieldDebounce = null;
+    const observer = new MutationObserver(() => {
+      if (shieldDebounce) return;
+      shieldDebounce = setTimeout(() => {
+        shieldDebounce = null;
+        injectWebmailShield();
+      }, 300);
+    });
+
+    if (document.body) {
+      observer.observe(document.body, { childList: true, subtree: true });
+    } else {
+      document.addEventListener('DOMContentLoaded', () => {
+        observer.observe(document.body, { childList: true, subtree: true });
+      });
+    }
+
+    // Passive fallback interval (5s) to guarantee resilience across background iframe shifts
+    setInterval(injectWebmailShield, 5000);
   }
 
   function injectWebmailShield() {
