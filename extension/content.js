@@ -427,7 +427,11 @@
     const rawLevel = (result.level || 'safe').toLowerCase();
     const level = rawLevel;
     const signals = result.signals || ['Clean target'];
-    const recommendation = result.recommendation || 'No threat detected.';
+    const rawRec = result.recommendation || 'No threat detected.';
+    const isUrlTarget = /^https?:\/\//i.test(targetStr);
+    const cleanRecommendation = isUrlTarget
+      ? rawRec.replace(/\bthis message\b/gi, 'this URL').replace(/\bmessage\b/gi, 'URL')
+      : rawRec;
 
     let levelLabel = level.toUpperCase();
     if (level === 'suspicious') levelLabel = 'SUSPICIOUS';
@@ -468,6 +472,10 @@
             // Convert raw key identifiers if present
             if (SIGNAL_FRIENDLY_MAP[textVal.toLowerCase()]) {
               textVal = SIGNAL_FRIENDLY_MAP[textVal.toLowerCase()];
+            }
+
+            if (isUrlTarget) {
+              textVal = textVal.replace(/\bin this message\b/gi, 'for this URL');
             }
 
             if (textVal.length > 240) {
@@ -552,7 +560,7 @@
         </div>
 
         <div class="recommendation-box ${level}">
-          ${escapeHtml(recommendation)}
+          ${escapeHtml(cleanRecommendation)}
         </div>
       </div>
     `;

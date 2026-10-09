@@ -2,18 +2,22 @@
  * Maps heuristic signals into the user-friendly format expected by the frontend.
  * @param {Array} signals - The array of detected signals.
  * @param {string} riskLevel - "Safe", "Low", "Medium", "High"
+ * @param {string} [scanType='message'] - "url", "email", "message", etc.
  * @returns {Object} - { category, summary, reasons, recommendations }
  */
-function buildResult(signals, riskLevel) {
+function buildResult(signals, riskLevel, scanType = 'message') {
   let category = 'Unknown';
   let summary = '';
   let recommendations = [];
+
+  const isUrlType = scanType === 'url' || scanType === 'qr';
+  const entityNoun = isUrlType ? 'URL' : 'message';
 
   const hasSignal = (type) => signals.some(s => s.type === type);
 
   // 1. Determine Category
   if (signals.length === 0) {
-    category = 'Verified — No Threats Detected';
+    category = isUrlType ? 'Verified — No Threat Detected' : 'Verified — No Threats Detected';
   } else if (hasSignal('brand_impersonation') || hasSignal('typosquatting')) {
     category = 'Impersonation / Fake Brand';
   } else if (hasSignal('credential_request') || hasSignal('credential_path')) {
@@ -32,16 +36,22 @@ function buildResult(signals, riskLevel) {
 
   // 2. Generate Summary
   if (signals.length === 0) {
-    summary = 'No phishing indicators, suspicious links, or manipulation tactics were found in this message.';
+    summary = isUrlType
+      ? 'No phishing indicators, malicious redirects, or deceptive patterns were found for this URL.'
+      : 'No phishing indicators, suspicious links, or manipulation tactics were found in this message.';
   } else if (riskLevel === 'high' || riskLevel === 'critical') {
-    summary = 'This content shows multiple severe warning signs of a scam or phishing attempt. It is highly recommended not to interact with it.';
+    summary = isUrlType
+      ? 'This URL shows multiple severe warning signs of a scam or phishing attempt. It is highly recommended not to visit it.'
+      : 'This content shows multiple severe warning signs of a scam or phishing attempt. It is highly recommended not to interact with it.';
   } else if (riskLevel === 'medium') {
-    summary = 'This message has some warning signs but isn\'t a clear-cut scam. Treat it with caution before acting.';
+    summary = isUrlType
+      ? 'This URL has some warning signs but isn\'t a clear-cut scam. Treat it with caution before visiting.'
+      : 'This message has some warning signs but isn\'t a clear-cut scam. Treat it with caution before acting.';
   } else {
     // Low risk with signals: neutral, deterministic language — no implied AI judgment
     summary = signals.length > 0
-      ? 'This content has minor indicators that warrant a closer look, but no confirmed threats were detected.'
-      : 'No suspicious indicators were found. This content appears safe based on deterministic analysis.';
+      ? `This ${entityNoun} has minor indicators that warrant a closer look, but no confirmed threats were detected.`
+      : `No suspicious indicators were found. This ${entityNoun} appears safe based on deterministic analysis.`;
   }
 
   // 3. Map Reasons
@@ -53,8 +63,10 @@ function buildResult(signals, riskLevel) {
 
   if (signals.length === 0) {
     reasons.push({
-      title: 'Verified Content',
-      detail: 'No suspicious keywords, links, or manipulation tactics were detected.',
+      title: isUrlType ? 'Verified URL' : 'Verified Content',
+      detail: isUrlType
+        ? 'No suspicious redirects, deceptive domains, or credential harvesting paths were detected.'
+        : 'No suspicious keywords, links, or manipulation tactics were detected.',
       severity: 'low'
     });
   }
@@ -62,7 +74,7 @@ function buildResult(signals, riskLevel) {
   // 4. Generate Recommendations
   if (signals.length === 0) {
     recommendations = [
-      'No action needed — this message appears safe.',
+      isUrlType ? 'No action needed — this link appears safe.' : 'No action needed — this message appears safe.',
       'Always remain cautious and avoid sharing passwords or OTPs.',
     ];
   } else {

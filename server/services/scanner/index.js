@@ -57,7 +57,7 @@ function analyzeContentSync(content, scanType = 'url') {
   const type = VALID_TYPES.includes(scanType) ? scanType : 'url';
   const signals = detectSignals(content, type);
   const { riskScore, confidence, riskLevel } = calculateRisk(signals);
-  const result = buildResult(signals, riskLevel);
+  const result = buildResult(signals, riskLevel, type);
 
   return {
     riskScore,
