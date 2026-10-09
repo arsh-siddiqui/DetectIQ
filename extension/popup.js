@@ -196,9 +196,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   if (btnRetryScan) {
-    btnRetryScan.addEventListener('click', () => {
+    btnRetryScan.addEventListener('click', async () => {
+      btnRetryScan.textContent = 'Retrying...';
+      btnRetryScan.disabled = true;
       if (errorStateCard) errorStateCard.classList.add('hidden');
-      runPageScan(activeTabUrl);
+      try {
+        await runPageScan(activeTabUrl);
+      } finally {
+        btnRetryScan.textContent = 'Try Again';
+        btnRetryScan.disabled = false;
+      }
     });
   }
 
@@ -269,6 +276,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (errorStateCard) {
         if (result.isOfflineFallback) {
           errorStateCard.classList.remove('hidden');
+          const errorMsg = errorStateCard.querySelector('.error-msg');
+          if (errorMsg) {
+            errorMsg.textContent = result.error ? `Engine connecting (${result.error})` : 'DetectIQ analysis engine could not be reached.';
+          }
         } else {
           errorStateCard.classList.add('hidden');
         }
@@ -278,10 +289,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       saveToHistory(targetUrl, result.score, result.level);
 
     } catch (err) {
-      console.debug('Backend offline fallback scan:', err);
-      if (errorStateCard) errorStateCard.classList.remove('hidden');
-      const fallback = await DetectIQApi.performScan('url', targetUrl);
-      renderScanResult(fallback.score, fallback.level, fallback.reasons, fallback.recommendation);
+      console.warn('Scan execution error:', err);
+      if (errorStateCard) {
+        errorStateCard.classList.remove('hidden');
+        const errorMsg = errorStateCard.querySelector('.error-msg');
+        if (errorMsg) errorMsg.textContent = err.message || 'Analysis engine request failed.';
+      }
     } finally {
       btnScanPage.disabled = false;
       icon.classList.remove('loading');

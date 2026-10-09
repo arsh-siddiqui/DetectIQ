@@ -77,7 +77,7 @@ class DetectIQApi {
   /**
    * Core Request Handler: Sends content to POST /api/scan
    */
-  static async performScan(scanType, content) {
+  static async performScan(scanType, content, retryCount = 1) {
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
       throw new Error('Content payload is required for scanning.');
     }
@@ -89,7 +89,7 @@ class DetectIQApi {
     const config = await this.getConfig();
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 16000); // 16-second request timeout to tolerate Render cold starts
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20-second timeout to accommodate cloud cold starts & AI inference
 
     try {
       const response = await fetch(`${config.apiUrl}/api/scan`, {
@@ -162,6 +162,14 @@ class DetectIQApi {
 
     } catch (err) {
       clearTimeout(timeoutId);
+
+      // If network failed or timed out during server wake-up, auto-retry once after 1.5s
+      if (retryCount > 0 && !err.message.includes('HTTP 400') && !err.message.includes('HTTP 401') && !err.message.includes('HTTP 403')) {
+        console.warn(`[DetectIQ API] Request interrupted (${err.message}). Auto-retrying cloud engine in 1.5s...`);
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        return this.performScan(scanType, content, retryCount - 1);
+      }
+
       console.warn('[DetectIQ API] Backend unavailable or timed out, executing local offline inspection:', err.message);
 
       // Offline Heuristic Engine Fallback
