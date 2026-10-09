@@ -28,3 +28,6 @@ __pycache__/
 *.py[cod]
 *.pyo
 .pytest_cache/
+
+# Academic papers and documents
+papers/
