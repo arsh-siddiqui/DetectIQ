@@ -1,18 +1,20 @@
 # 🛡 DetectIQ Browser Extension (Manifest V3)
 
-A production-grade, SaaS-styled cybersecurity browser extension for real-time threat intelligence, deterministic heuristic inspection, URL safety verification, and phishing protection powered by DetectIQ.
+A production-grade, SaaS-styled cybersecurity browser extension for real-time threat intelligence, deterministic heuristic inspection, URL safety verification, Quishing (QR code) defense, and phishing protection powered by DetectIQ.
 
 ---
 
 ## 🎨 Design System & Visual Features
 
-- **Light SaaS Theme**: Polished light interface (`#F8FAFC` slate background, `#FFFFFF` crisp cards, `#2563EB` primary blue, `#14B8A6` teal, `#F59E0B` warning accent).
-- **Interactive SVG Risk Meter**: Dynamic semi-circle gauge displaying animated numerical score (`0 - 100`) and clear visual status pills (`SAFE`, `LOW`, `SUSPICIOUS`, `HIGH`, `CRITICAL`).
-- **Indicator Signals Grid**: Categorized threat signals with icons, clean badges, and concise descriptions.
-- **Manual Content Analyzer**: Dedicated tab with sub-tabs (`[ URL ] [ EMAIL ] [ TEXT ]`), character count, step-by-step progress animation, and detailed result breakdowns.
-- **In-Page Floating Overlay**: Draggable, shadow-DOM isolated floating security card triggered via right-click context menu ("Scan link with DetectIQ" / "Analyze text with DetectIQ").
+- **Light SaaS Theme**: Polished interface (`#F8FAFC` slate background, `#FFFFFF` crisp cards, `#2563EB` primary blue, `#10B981` emerald, `#F59E0B` warning amber, `#EF4444` threat crimson).
+- **Interactive SVG Risk Meter**: Dynamic semi-circle gauge displaying numerical score (`0 - 100`) and clear visual status pills (`SAFE`, `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`).
+- **Indicator Signals Grid**: Categorized threat signals with icons, clean badges, and human-friendly security translations (translating raw keys like `urgency` or `credential_path` into clear, readable rationales).
+- **Manual Content Analyzer**: Dedicated tab with sub-tabs (`[ URL ] [ EMAIL ] [ TEXT ] [ QR CODE ]`), character count, step-by-step progress animation, and detailed result breakdowns.
+- **Enlarged In-Page Security Guard Modal**: Draggable, 395px responsive Shadow DOM card with animated progress risk gauge, customized slim scrollbars, color-coded bullets, and context-tailored verdict recommendations (`this URL` vs `this message`).
+- **Reactive Webmail Safety Shield**: Powered by a zero-polling `MutationObserver` on Gmail (`mail.google.com`) and Outlook for instant inline pill injection and one-click email analysis.
+- **Quishing Defense (QR Image Scanner)**: In-popup drag-and-drop scanner + right-click context menu image scanner using client-side offline decoding (`jsQR` + `OffscreenCanvas`) with zero image transmission.
 - **Extension Status Badge**: Dynamic badge on browser toolbar icon (`SAFE`, `WARN`, `RISK`, `CRIT`).
-- **Settings & API Configuration**: Custom backend API endpoint (`http://localhost:5000`), real-time protection toggles, and user token authentication.
+- **Resilient Cloud & Offline Architecture**: Automatic keep-alive heartbeat alarm every 10 minutes to prevent Render free-tier cold sleep, 1.5s auto-retry on network interruption, and seamless offline heuristic fallback.
 
 ---
 
@@ -20,14 +22,25 @@ A production-grade, SaaS-styled cybersecurity browser extension for real-time th
 
 ```
 extension/
-├── manifest.json       # Manifest V3 setup & permissions
+├── manifest.json       # Manifest V3 setup, permissions & CSP
 ├── popup.html          # Main extension control center UI
 ├── popup.css           # Light SaaS design system stylesheet
 ├── popup.js            # Popup state machine & active tab scanner
-├── background.js       # Background service worker (badge & context menus)
-├── content.js          # Shadow DOM in-page floating threat overlay
-├── content.css         # Scoped styling for webpage overlays
-├── create_icons.cjs    # Icon generation utility
+├── background.js       # Background service worker (badge, keep-alive & context menus)
+├── content.js          # Shadow DOM in-page floating threat overlay & MutationObserver shield
+├── content.css         # Scoped styling for isolated Shadow DOM webpage overlays
+├── api.js              # Universal DetectIQ API client & offline heuristic engine
+├── blocked.html        # Pre-navigation critical threat block warning page
+├── lib/
+│   └── jsQR.js         # Offline, client-side QR code decoding library
+├── tests/              # 46 automated extension unit, integration & E2E cloud tests
+│   ├── run-all.js      # Central test runner (Node.js test runner)
+│   ├── manifest.test.js
+│   ├── background-unit.test.js
+│   ├── alerts-and-overlays.test.js
+│   ├── homograph-and-qr.test.js
+│   ├── cold-start-and-recovery.test.js
+│   └── live-cloud-e2e.test.js
 └── icons/              # Extension icons (16x16, 48x48, 128x128)
 ```
 
@@ -53,25 +66,38 @@ extension/
    - Click the **DetectIQ** extension icon in your toolbar.
    - Click **Scan Page** to trigger real-time inspection.
 
-2. **Manual Analyzer & In-Popup QR Code Scanner**:
-   - Open the **Analyzer** tab in the popup.
-   - Select `URL`, `Email Text`, `Raw Text`, or `QR Code`.
-   - In **QR Code** mode:
-     - Drag & drop a QR code image, click to browse, or paste directly with `Ctrl+V`.
-     - The extension uses local, offline JavaScript decoding (`jsQR`) to extract the destination URL without sending image data to external servers.
-     - The decoded target is automatically verified against DetectIQ threat intelligence and heuristic engines.
+2. **Webmail Safety Shield (Gmail & Outlook)**:
+   - Open Gmail (`https://mail.google.com`) or Outlook.
+   - Open any email thread. DetectIQ instantly injects the **DetectIQ Email Shield** banner into the email header via a reactive `MutationObserver`.
+   - Click **"Analyze Email with DetectIQ Engine"** to review the email's risk score and threat indicators inside the floating Security Guard card.
 
-3. **IDN Homograph & Punycode Deception Engine**:
+3. **Context Menu Image QR Code Scanner (Quishing Protection)**:
+   - Right-click any QR code image on any webpage or email.
+   - Select **"🛡 Scan image for malicious QR code"**.
+   - DetectIQ extracts the embedded destination link in-memory using `OffscreenCanvas` and `jsQR`, and automatically scans the target for phishing or malicious redirects.
+
+4. **Right-Click Context Menu Link & Text Overlays**:
+   - Highlight any suspicious text or right-click any link on a webpage.
+   - Select **"🛡 Scan link with DetectIQ"** or **"🛡 Analyze text with DetectIQ"**.
+   - The floating **DetectIQ Security Guard** card displays the risk score, visual meter, and bulleted security findings.
+
+5. **IDN Homograph & Punycode Deception Engine**:
    - Detects deceptive domains mimicking trusted brands using international Punycode prefixes (`xn--`) or mixed-script Unicode characters (Cyrillic `\u0400-\u04FF` or Greek `\u0370-\u03FF` homoglyphs mimicking Latin ASCII).
    - Real-time pre-click protection in Hover Shield (`content.js`), navigation interceptor (`background.js`), and popup scanner (`api.js`).
 
-4. **Right-Click Context Menu Overlay**:
-   - Highlight any text or right-click any link on a webpage.
-   - Select **"🛡 Scan link with DetectIQ"** or **"🛡 Analyze text with DetectIQ"**.
-   - Notice the floating **DetectIQ Security Card** appearing smoothly in the bottom-right corner.
-
-5. **Settings & Backend Connection**:
-   - Open the **Settings** tab.
-   - Click **Cloud (Render)** (`https://detectiq-api.onrender.com`) for production cloud demo, or **Localhost:5000** (`http://localhost:5000`) for local backend development.
+6. **Settings & Backend Connection**:
+   - Open the **Settings** tab in the popup.
+   - Toggle between **Cloud (Render)** (`https://detectiq-api.onrender.com`) for production cloud demo, or **Localhost:5000** (`http://localhost:5000`) for local development.
    - Click **Test** to verify connection to the backend server.
+   - *(Optional)* Paste your DetectIQ web application JWT token to automatically sync your browser scans with your central dashboard history.
+
+---
+
+## 🧪 Automated Test Suite
+
+Run the full suite of **46 automated tests** (manifest checks, offline heuristics, background alarms, live cloud E2E, homoglyph detection, and Quishing decoders):
+
+```bash
+npm run test:extension
+```
 

@@ -80,10 +80,10 @@ python -m uvicorn api.main:app --port 8543
 
 ### 4. Browser Extension & Automated Test Suite
 ```bash
-# Run full 20-test suite across manifest, background, api, UI, and live cloud E2E:
+# Run full 46-test suite across manifest, background, api, UI, QR decoder, and live cloud E2E:
 npm run test:extension
 ```
-Load the extension in Chrome via `chrome://extensions` → **Developer mode** → **Load unpacked** → select `/extension`.
+Load the extension in Chrome via `chrome://extensions` → **Developer mode** → **Load unpacked** → select `/extension`. Includes reactive `MutationObserver` email shields, in-page Shadow DOM overlays, and context-menu QR image sniffing.
 
 ---
 

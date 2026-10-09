@@ -136,11 +136,16 @@ Tiered rate limiting is enforced via `express-rate-limit` ([rateLimiter.js](file
    ```
    - Automatically parses nested signal objects and threat messages to prevent injection into DOM elements.
 3. **Shadow DOM Isolation**:
-   - Browser extension in-page overlays use closed Shadow DOM trees (`attachShadow({ mode: 'open' })`), completely isolating extension UI from host page scripts and CSS.
+   - Browser extension in-page overlays use encapsulated Shadow DOM trees (`attachShadow({ mode: 'open' })`), completely isolating extension UI from host page scripts and CSS overrides.
+4. **Client-Side Quishing Defense & Memory Isolation**:
+   - QR code image decoding (`popup.js` and context menu in `background.js`) runs 100% locally in-memory using `OffscreenCanvas` and `jsQR`.
+   - Raw image pixels and user photos are **never uploaded or transmitted** over network channels; only the extracted textual URL destination is submitted for security evaluation.
+5. **Reactive Webmail Shield Isolation**:
+   - Webmail inspection utilizes a debounced `MutationObserver` on trusted container selectors (`.a3s.aiL`), preventing recursive injection loops while ensuring zero background CPU polling overhead when idle.
 
 ---
 
-## 7. Data Privacy & Isolation
+## 8. Data Privacy & Isolation
 
 - **Tenant Boundary Enforcement**: Queries for scan history, personalized email patterns, and learning progress strictly enforce `{ userId: req.user._id }`.
 - **Target URL Hashing**: Stored threat cache records use SHA-256 digests (`urlHash`) as primary lookup keys. Raw target URLs are omitted from default database projections (`select: false`).
