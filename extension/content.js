@@ -249,7 +249,7 @@
       styleEl.textContent = `
         :host {
           all: initial;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
           z-index: 2147483647;
           position: fixed;
           bottom: 24px;
@@ -257,16 +257,28 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         .detectiq-card {
-          width: 310px;
+          width: 395px;
+          max-width: min(92vw, 420px);
+          max-height: 85vh;
+          overflow-y: auto;
+          overflow-x: hidden;
           background-color: #FFFFFF;
           border: 1px solid #E2E8F0;
-          border-radius: 14px;
-          box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.15), 0 4px 10px -2px rgba(15, 23, 42, 0.08);
-          overflow: hidden;
+          border-radius: 16px;
+          box-shadow: 0 20px 45px -8px rgba(15, 23, 42, 0.22), 0 8px 16px -4px rgba(15, 23, 42, 0.1);
           color: #0F172A;
           font-size: 13px;
-          line-height: 1.4;
+          line-height: 1.45;
           animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          scrollbar-width: thin;
+          scrollbar-color: #CBD5E1 transparent;
+        }
+        .detectiq-card::-webkit-scrollbar {
+          width: 6px;
+        }
+        .detectiq-card::-webkit-scrollbar-thumb {
+          background-color: #CBD5E1;
+          border-radius: 4px;
         }
         .detectiq-card.hiding {
           animation: slideOutDown 0.2s cubic-bezier(0.7, 0, 0.84, 0) forwards;
@@ -281,54 +293,83 @@
         }
         .card-header {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 10px 14px; background: #F8FAFC; border-bottom: 1px solid #E2E8F0;
+          padding: 12px 16px; background: linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%);
+          border-bottom: 1px solid #E2E8F0;
           cursor: move; user-select: none;
         }
-        .brand-row { display: flex; align-items: center; gap: 7px; }
+        .brand-row { display: flex; align-items: center; gap: 8px; }
         .logo-badge {
-          width: 22px; height: 22px; border-radius: 6px; background: #2563EB;
+          width: 24px; height: 24px; border-radius: 7px; background: #2563EB;
           color: #FFF; display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
         }
-        .brand-title { font-weight: 700; font-size: 13px; color: #0F172A; }
+        .brand-title { font-weight: 700; font-size: 13.5px; color: #0F172A; letter-spacing: -0.2px; }
         .brand-title span { color: #2563EB; }
         .btn-close {
           background: transparent; border: none; color: #64748B; cursor: pointer;
-          width: 22px; height: 22px; border-radius: 4px; display: flex;
-          align-items: center; justify-content: center; font-size: 16px;
+          width: 24px; height: 24px; border-radius: 6px; display: flex;
+          align-items: center; justify-content: center; font-size: 18px;
+          transition: background 0.15s, color 0.15s;
         }
         .btn-close:hover { background: #E2E8F0; color: #0F172A; }
-        .card-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+        .card-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
         .target-row {
-          font-size: 11px; color: #64748B; white-space: nowrap; overflow: hidden;
-          text-overflow: ellipsis; background: #F8FAFC; padding: 4px 8px;
-          border-radius: 6px; border: 1px solid #E2E8F0;
+          font-size: 11.5px; color: #475569; background: #F8FAFC; padding: 7px 10px;
+          border-radius: 8px; border: 1px solid #E2E8F0;
+          word-break: break-all; white-space: normal; line-height: 1.4;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         }
         .risk-summary-row { display: flex; align-items: center; justify-content: space-between; }
         .risk-badge {
-          display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px;
-          border-radius: 9999px; font-size: 10px; font-weight: 700; text-transform: uppercase;
+          display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px;
+          border-radius: 9999px; font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+          letter-spacing: 0.3px;
         }
-        .risk-badge.safe { background: #ECFDF5; color: #10B981; border: 1px solid #A7F3D0; }
-        .risk-badge.low { background: #F0F9FF; color: #0EA5E9; border: 1px solid #BAE6FD; }
-        .risk-badge.suspicious { background: #FFFBEB; color: #F59E0B; border: 1px solid #FDE68A; }
-        .risk-badge.high { background: #FEF2F2; color: #EF4444; border: 1px solid #FECACA; }
-        .risk-badge.critical { background: #FEF2F2; color: #DC2626; border: 1px solid #FCA5A5; }
+        .risk-badge-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+        .risk-badge.safe { background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
+        .risk-badge.low { background: #F0FDF4; color: #16A34A; border: 1px solid #BBF7D0; }
+        .risk-badge.medium, .risk-badge.suspicious { background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; }
+        .risk-badge.high { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
+        .risk-badge.critical { background: #FEF2F2; color: #B91C1C; border: 1px solid #FCA5A5; }
         .risk-score-display { font-size: 13px; font-weight: 700; color: #0F172A; }
-        .signals-list { display: flex; flex-direction: column; gap: 4px; }
-        .signal-item { display: flex; align-items: flex-start; gap: 6px; font-size: 11px; color: #334155; }
-        .signal-bullet.pass { color: #10B981; font-weight: 700; font-size: 12px; }
-        .signal-bullet.warn { color: #F59E0B; font-weight: 700; font-size: 12px; }
-        .signal-bullet.fail { color: #EF4444; font-weight: 700; font-size: 12px; }
-        .recommendation-box {
-          font-size: 11px; color: #475569; background: #F8FAFC; padding: 8px 10px;
-          border-radius: 8px; border-left: 3px solid #2563EB;
+        .risk-meter {
+          width: 100%; height: 6px; background: #F1F5F9; border-radius: 999px;
+          overflow: hidden; margin-top: -4px;
         }
-        .recommendation-box.safe, .recommendation-box.low { border-left-color: #10B981; }
-        .recommendation-box.suspicious { border-left-color: #F59E0B; }
-        .recommendation-box.high, .recommendation-box.critical { border-left-color: #EF4444; }
-        .loading-box { display: flex; align-items: center; gap: 8px; padding: 10px 0; color: #2563EB; font-weight: 600; }
+        .risk-meter-fill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
+        .risk-meter-fill.safe, .risk-meter-fill.low { background: #10B981; }
+        .risk-meter-fill.medium, .risk-meter-fill.suspicious { background: #F59E0B; }
+        .risk-meter-fill.high, .risk-meter-fill.critical { background: #EF4444; }
+        .signals-list { display: flex; flex-direction: column; gap: 6px; }
+        .signal-item {
+          display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #334155;
+          line-height: 1.45; background: #F8FAFC; padding: 7px 10px; border-radius: 8px;
+          border: 1px solid #F1F5F9;
+        }
+        .signal-bullet {
+          width: 18px; height: 18px; border-radius: 50%; display: flex;
+          align-items: center; justify-content: center; font-size: 11px;
+          font-weight: 800; flex-shrink: 0; margin-top: 1px;
+        }
+        .signal-bullet.pass { background: #ECFDF5; color: #059669; }
+        .signal-bullet.warn { background: #FFFBEB; color: #D97706; }
+        .signal-bullet.fail { background: #FEF2F2; color: #DC2626; }
+        .recommendation-box {
+          font-size: 12px; line-height: 1.45; color: #334155; background: #F8FAFC;
+          padding: 10px 12px; border-radius: 8px; border-left: 4px solid #2563EB; font-weight: 500;
+        }
+        .recommendation-box.safe, .recommendation-box.low {
+          background: #F0FDF4; border-left-color: #10B981; color: #166534;
+        }
+        .recommendation-box.medium, .recommendation-box.suspicious {
+          background: #FFFBEB; border-left-color: #F59E0B; color: #92400E;
+        }
+        .recommendation-box.high, .recommendation-box.critical {
+          background: #FEF2F2; border-left-color: #EF4444; color: #991B1B;
+        }
+        .loading-box { display: flex; align-items: center; gap: 10px; padding: 12px 0; color: #2563EB; font-weight: 600; font-size: 13px; }
         .spinner {
-          width: 16px; height: 16px; border: 2px solid #E2E8F0; border-top-color: #2563EB;
+          width: 18px; height: 18px; border: 2.5px solid #E2E8F0; border-top-color: #2563EB;
           border-radius: 50%; animation: spin 0.8s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -345,6 +386,19 @@
     }
   }
 
+  const SIGNAL_FRIENDLY_MAP = {
+    urgency: 'Artificial urgency tactic detected to induce rapid unverified action',
+    credential_path: 'Sensitive credential or account login path detected in content',
+    brand_lookalike: 'Potential brand impersonation or deceptive name mimicry detected',
+    suspicious_keywords: 'Phishing trigger phrases identified in communication body',
+    typosquatting: 'Deceptive typosquatting domain mimicking legitimate entity',
+    shortened_url: 'Obfuscated shortened URL hiding actual destination',
+    ip_host: 'Direct numerical IP address used instead of verified domain',
+    free_domain: 'Free or untrusted hosting provider utilized',
+    high_risk_tld: 'High-risk or suspicious top-level domain extension',
+    punycode: 'Internationalized homograph character spoofing detected'
+  };
+
   function renderLoadingState(targetStr) {
     overlayCard.innerHTML = `
       <div class="card-header">
@@ -352,7 +406,7 @@
           <div class="logo-badge">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           </div>
-          <span class="brand-title">Detect<span>IQ</span></span>
+          <span class="brand-title">Detect<span>IQ</span> Security Guard</span>
         </div>
         <button class="btn-close" id="btnCloseOverlay">&times;</button>
       </div>
@@ -360,7 +414,7 @@
         <div class="target-row" title="${escapeHtml(targetStr)}">Target: ${escapeHtml(targetStr)}</div>
         <div class="loading-box">
           <div class="spinner"></div>
-          <span>Analyzing security parameters...</span>
+          <span>Deep inspecting security parameters...</span>
         </div>
       </div>
     `;
@@ -370,9 +424,14 @@
 
   function renderResultState(targetStr, result) {
     const score = typeof result.score === 'number' ? result.score : 10;
-    const level = result.level || 'safe';
+    const rawLevel = (result.level || 'safe').toLowerCase();
+    const level = rawLevel;
     const signals = result.signals || ['Clean target'];
     const recommendation = result.recommendation || 'No threat detected.';
+
+    let levelLabel = level.toUpperCase();
+    if (level === 'suspicious') levelLabel = 'SUSPICIOUS';
+    else if (level === 'medium') levelLabel = 'MEDIUM';
 
     overlayCard.innerHTML = `
       <div class="card-header">
@@ -390,9 +449,13 @@
         <div class="risk-summary-row">
           <span class="risk-badge ${level}">
             <span class="risk-badge-dot"></span>
-            ${level.toUpperCase()} RISK
+            ${levelLabel} RISK
           </span>
           <span class="risk-score-display">Risk Score: ${score}/100</span>
+        </div>
+
+        <div class="risk-meter">
+          <div class="risk-meter-fill ${level}" style="width: ${Math.max(5, Math.min(100, score))}%;"></div>
         </div>
 
         <div class="signals-list">
@@ -401,8 +464,14 @@
               ? (s.detail || s.explanation || s.description || s.message || s.summary || s.title || s.signal || JSON.stringify(s))
               : String(s);
             textVal = textVal.trim().replace(/\s+/g, ' ');
-            if (textVal.length > 95) {
-              textVal = textVal.slice(0, 92) + '...';
+
+            // Convert raw key identifiers if present
+            if (SIGNAL_FRIENDLY_MAP[textVal.toLowerCase()]) {
+              textVal = SIGNAL_FRIENDLY_MAP[textVal.toLowerCase()];
+            }
+
+            if (textVal.length > 240) {
+              textVal = textVal.slice(0, 237) + '...';
             }
 
             // Determine bullet icon and color based on signal and risk level
@@ -435,6 +504,8 @@
               lowerText.includes('homoglyph') ||
               lowerText.includes('punycode') ||
               lowerText.includes('harvest') ||
+              lowerText.includes('urgency') ||
+              lowerText.includes('credential') ||
               (typeof s === 'object' && (s?.severity === 'high' || s?.severity === 'critical'))
             );
 
@@ -449,13 +520,13 @@
                 bulletIcon = '✓';
                 bulletClass = 'pass';
               }
-            } else if (level === 'suspicious') {
+            } else if (level === 'medium' || level === 'suspicious') {
               if (isCleanSignal) {
                 bulletIcon = '✓';
                 bulletClass = 'pass';
               } else if (isExplicitThreat) {
-                bulletIcon = '!';
-                bulletClass = 'fail';
+                bulletIcon = '⚠';
+                bulletClass = 'warn';
               } else {
                 bulletIcon = '⚠';
                 bulletClass = 'warn';
