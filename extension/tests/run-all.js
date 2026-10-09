@@ -16,6 +16,7 @@ const testFiles = [
   path.join(__dirname, 'live-cloud-e2e.test.js'),
   path.join(__dirname, 'cloud-threat-matrix.test.js'),
   path.join(__dirname, 'homograph-and-qr.test.js'),
+  path.join(__dirname, 'cold-start-and-recovery.test.js'),
 ];
 
 console.log('====================================================');

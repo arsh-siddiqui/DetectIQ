@@ -35,7 +35,8 @@ test('Manifest V3: Permissions & Host Permissions', () => {
     'contextMenus',
     'webNavigation',
     'downloads',
-    'notifications'
+    'notifications',
+    'alarms'
   ];
 
   for (const perm of expectedPermissions) {
