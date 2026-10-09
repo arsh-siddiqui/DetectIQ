@@ -44,7 +44,9 @@ function csrfProtection(req, res, next) {
 
       if (originBase === env.FRONTEND_URL) return true;
       if (/^http:\/\/localhost:517\d$/.test(originBase)) return true;
+      if (/^http:\/\/127\.0\.0\.1:517\d$/.test(originBase)) return true;
       if (originBase === 'http://localhost:3000') return true;
+      if (originBase === 'http://127.0.0.1:3000') return true;
       if (originBase.startsWith('chrome-extension://') || originBase.startsWith('moz-extension://')) return true;
       return false;
     } catch {

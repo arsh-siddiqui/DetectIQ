@@ -47,6 +47,21 @@ export function AppDataProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false;
+
+    // Check for token in URL query params (from OAuth redirect e.g. /dashboard?token=...)
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get("token");
+      if (urlToken) {
+        localStorage.setItem("detectiq_token", urlToken);
+        params.delete("token");
+        const newSearch = params.toString() ? `?${params.toString()}` : "";
+        window.history.replaceState({}, document.title, window.location.pathname + newSearch);
+      }
+    } catch {
+      // ignore
+    }
+
     getCurrentUser()
       .then(async (remoteUser) => {
         if (cancelled) return;

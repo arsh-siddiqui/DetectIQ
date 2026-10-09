@@ -121,5 +121,32 @@ describe('Google OAuth Controller', () => {
       expect(jwtUtils.sendTokenCookie).toHaveBeenCalledWith(res, 'existing_id');
       expect(res.redirect).toHaveBeenCalledWith(expect.stringContaining('/dashboard'));
     });
+
+    it('should authenticate successfully without cookies via stateless HMAC state (Linux / Firefox compatibility)', async () => {
+      const crypto = require('crypto');
+      const timestamp = Date.now().toString();
+      const nonce = crypto.randomBytes(16).toString('hex');
+      const env = require('../config/env');
+      const hmacSecret = env.JWT_SECRET;
+      const data = `${timestamp}:${nonce}`;
+      const sig = crypto.createHmac('sha256', hmacSecret).update(data).digest('hex');
+      const hmacState = `${data}:${sig}`;
+
+      req.query = { code: 'mock_code', state: hmacState };
+      req.cookies = {}; // Simulated Linux/Kali/Firefox where third-party cookies are blocked
+
+      const mockUser = {
+        _id: 'linux_user_id',
+        email: 'test@example.com',
+        authProvider: 'google',
+        googleId: '12345'
+      };
+      User.findOne.mockResolvedValue(mockUser);
+
+      await googleOAuthCallback(req, res);
+
+      expect(jwtUtils.sendTokenCookie).toHaveBeenCalledWith(res, 'linux_user_id');
+      expect(res.redirect).toHaveBeenCalledWith(expect.stringContaining('/dashboard?token='));
+    });
   });
 });

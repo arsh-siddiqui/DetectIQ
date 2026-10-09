@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, Mail, Lock, User, CheckCircle2 } from "lucide-react";
@@ -11,9 +11,15 @@ import { useToast } from "../context/ToastContext";
 
 export default function Register() {
   const navigate = useNavigate();
-  const { register } = useAppData();
+  const { register, isAuthenticated } = useAppData();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const { values, setValue, handleBlur, validateAll, errorFor } = useFormValidation(
     { name: "", email: "", password: "", confirmPassword: "" },

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ShieldCheck, Mail, Lock, ArrowRight } from "lucide-react";
@@ -12,8 +12,35 @@ import { useAppData } from "../context/AppDataContext";
 export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { login } = useAppData();
+  const { login, isAuthenticated } = useAppData();
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const errorParam = params.get("error");
+      if (errorParam) {
+        const errorMap = {
+          invalid_state: "Google Sign-In session expired or state invalid. Please try again.",
+          oauth_rejected: "Google sign-in was cancelled.",
+          unverified_email: "Google account email is not verified.",
+          oauth_failed: "Google Sign-In service encountered an error. Please try again.",
+        };
+        toast(errorMap[errorParam] || `Sign-in notice: ${errorParam}`, "warning");
+        params.delete("error");
+        const newSearch = params.toString() ? `?${params.toString()}` : "";
+        window.history.replaceState({}, document.title, window.location.pathname + newSearch);
+      }
+    } catch {
+      // ignore
+    }
+  }, [toast]);
 
   const { values, setValue, handleBlur, validateAll, errorFor } = useFormValidation(
     { email: "", password: "" },

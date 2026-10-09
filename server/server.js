@@ -53,7 +53,9 @@ app.use(
         !origin ||
         origin === env.FRONTEND_URL ||
         /^http:\/\/localhost:517\d$/.test(origin) ||
-        /^http:\/\/localhost:3000$/.test(origin) ||
+        /^http:\/\/127\.0\.0\.1:517\d$/.test(origin) ||
+        origin === 'http://localhost:3000' ||
+        origin === 'http://127.0.0.1:3000' ||
         /^chrome-extension:\/\/[a-z0-9]+$/.test(origin) ||
         origin.startsWith('chrome-extension://') ||
         origin.startsWith('moz-extension://')

@@ -1,4 +1,5 @@
 const asyncHandler = require("express-async-handler");
+const env = require("../config/env");
 const User = require("../models/User");
 const sendSuccess = require("../utils/apiResponse");
 const { sendTokenCookie, clearTokenCookie } = require("../utils/jwt");
@@ -59,12 +60,12 @@ const register = asyncHandler(async (req, res) => {
   }
 
   const user = await User.create({ name, email, password, accountRole });
-  sendTokenCookie(res, user._id);
+  const token = sendTokenCookie(res, user._id);
 
   return sendSuccess(res, {
     statusCode: 201,
     message: "Account created.",
-    data: { user: toPublicUser(user) },
+    data: { user: toPublicUser(user), token },
   });
 });
 
@@ -114,11 +115,11 @@ const login = asyncHandler(async (req, res) => {
     await user.save({ validateBeforeSave: false });
   }
 
-  sendTokenCookie(res, user._id);
+  const token = sendTokenCookie(res, user._id);
 
   return sendSuccess(res, {
     message: "Logged in.",
-    data: { user: toPublicUser(user) },
+    data: { user: toPublicUser(user), token },
   });
 });
 
@@ -144,12 +145,20 @@ const googleOAuth = asyncHandler(async (req, res) => {
     process.env.GOOGLE_CALLBACK_URL
   );
 
-  const state = crypto.randomBytes(32).toString("hex");
+  const timestamp = Date.now().toString();
+  const nonce = crypto.randomBytes(16).toString("hex");
+  const data = `${timestamp}:${nonce}`;
+  const hmacSecret = env.JWT_SECRET || "oauth_state_hmac_secret";
+  const signature = crypto.createHmac("sha256", hmacSecret).update(data).digest("hex");
+  const state = `${data}:${signature}`;
+
+  const isProd = (process.env.NODE_ENV || "").includes("production");
   res.cookie("oauth_state", state, {
     httpOnly: true,
-    maxAge: 10 * 60 * 1000, // 10 minutes
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    maxAge: 15 * 60 * 1000, // 15 minutes
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
+    path: "/",
   });
 
   const authorizeUrl = client.generateAuthUrl({
@@ -173,9 +182,36 @@ const googleOAuthCallback = asyncHandler(async (req, res) => {
   }
 
   const savedState = req.cookies?.oauth_state;
-  res.clearCookie("oauth_state");
+  res.clearCookie("oauth_state", {
+    httpOnly: true,
+    secure: (process.env.NODE_ENV || "").includes("production"),
+    sameSite: (process.env.NODE_ENV || "").includes("production") ? "none" : "lax",
+    path: "/",
+  });
 
-  if (!state || !savedState || state !== savedState) {
+  let stateValid = false;
+  if (state) {
+    if (savedState && state === savedState) {
+      stateValid = true;
+    } else {
+      // Stateless HMAC verification: allows Linux / privacy-hardened browsers (Firefox, Kali, Ubuntu)
+      // where cross-site cookies are blocked by default to authenticate safely.
+      const parts = state.split(":");
+      if (parts.length === 3) {
+        const [tsStr, nonce, sig] = parts;
+        const ts = parseInt(tsStr, 10);
+        if (!isNaN(ts) && Date.now() - ts >= 0 && Date.now() - ts < 15 * 60 * 1000) {
+          const hmacSecret = env.JWT_SECRET || "oauth_state_hmac_secret";
+          const expectedSig = crypto.createHmac("sha256", hmacSecret).update(`${tsStr}:${nonce}`).digest("hex");
+          if (Buffer.byteLength(sig) === Buffer.byteLength(expectedSig) && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) {
+            stateValid = true;
+          }
+        }
+      }
+    }
+  }
+
+  if (!stateValid) {
     return res.redirect(`${frontendUrl}/login?error=invalid_state`);
   }
 
@@ -220,8 +256,8 @@ const googleOAuthCallback = asyncHandler(async (req, res) => {
       });
     }
 
-    sendTokenCookie(res, user._id);
-    return res.redirect(`${frontendUrl}/dashboard`);
+    const token = sendTokenCookie(res, user._id);
+    return res.redirect(`${frontendUrl}/dashboard?token=${encodeURIComponent(token)}`);
   } catch (err) {
     console.error("Google OAuth Error:", err);
     return res.redirect(`${frontendUrl}/login?error=oauth_failed`);

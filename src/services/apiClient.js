@@ -9,6 +9,21 @@ const apiClient = axios.create({
   timeout: 8000,
 });
 
+// Interceptor: In browsers with Total Cookie Protection / third-party cookie restrictions
+// (such as Firefox on Ubuntu/Kali, Safari, Brave), httpOnly cross-origin cookies may be blocked.
+// We attach the JWT Bearer token from localStorage as a fallback.
+apiClient.interceptors.request.use((config) => {
+  try {
+    const token = localStorage.getItem("detectiq_token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch {
+    // Graceful fallback if localStorage is unavailable
+  }
+  return config;
+});
+
 /**
  * True when the request failed because the backend couldn't be reached at
  * all (no response — network error, server down, CORS block) as opposed to

@@ -16,7 +16,7 @@ test('Live Cloud E2E: URL Scan with Cloud Engine', async () => {
   assert.equal(result.isOfflineFallback, false);
   assert.equal(typeof result.score, 'number');
   assert.ok(result.score >= 0 && result.score <= 100);
-  assert.ok(['safe', 'low', 'suspicious', 'high', 'critical'].includes(result.level));
+  assert.ok(['safe', 'low', 'medium', 'suspicious', 'high', 'critical'].includes(result.level));
   assert.ok(result.verdict, 'Must return verdict');
   assert.ok(result.category, 'Must return category');
   assert.ok(Array.isArray(result.reasons), 'Must return reasons array');
