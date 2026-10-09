@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (errorStateCard) {
         if (result.isOfflineFallback) {
           errorStateCard.classList.remove('hidden');
-          const errorMsg = errorStateCard.querySelector('.error-msg');
+          const errorMsg = document.getElementById('errorStateDesc') || errorStateCard.querySelector('.error-desc');
           if (errorMsg) {
             errorMsg.textContent = result.error ? `Engine connecting (${result.error})` : 'DetectIQ analysis engine could not be reached.';
           }
@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.warn('Scan execution error:', err);
       if (errorStateCard) {
         errorStateCard.classList.remove('hidden');
-        const errorMsg = errorStateCard.querySelector('.error-msg');
+        const errorMsg = document.getElementById('errorStateDesc') || errorStateCard.querySelector('.error-desc');
         if (errorMsg) errorMsg.textContent = err.message || 'Analysis engine request failed.';
       }
     } finally {

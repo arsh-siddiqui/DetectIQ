@@ -91,19 +91,46 @@ class DetectIQApi {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 35000); // 35-second timeout to accommodate cloud cold starts (takes 20-30s on Render free tier)
 
+    let activeApiUrl = config.apiUrl;
     try {
-      const response = await fetch(`${config.apiUrl}/api/scan`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(config.authToken ? { 'Authorization': `Bearer ${config.authToken}` } : {})
-        },
-        body: JSON.stringify({
-          scanType: type,
-          content: content.trim()
-        }),
-        signal: controller.signal
-      });
+      let response;
+      try {
+        response = await fetch(`${activeApiUrl}/api/scan`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(config.authToken ? { 'Authorization': `Bearer ${config.authToken}` } : {})
+          },
+          body: JSON.stringify({
+            scanType: type,
+            content: content.trim()
+          }),
+          signal: controller.signal
+        });
+      } catch (fetchErr) {
+        // If configured endpoint was localhost and is offline, immediately try production cloud backend
+        if (activeApiUrl.includes('localhost') || activeApiUrl.includes('127.0.0.1')) {
+          console.warn('[DetectIQ API] Localhost endpoint unreachable, falling back to production cloud backend:', PROD_API_URL);
+          activeApiUrl = PROD_API_URL;
+          if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.set({ apiUrl: PROD_API_URL });
+          }
+          response = await fetch(`${activeApiUrl}/api/scan`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(config.authToken ? { 'Authorization': `Bearer ${config.authToken}` } : {})
+            },
+            body: JSON.stringify({
+              scanType: type,
+              content: content.trim()
+            }),
+            signal: controller.signal
+          });
+        } else {
+          throw fetchErr;
+        }
+      }
 
       clearTimeout(timeoutId);
 
