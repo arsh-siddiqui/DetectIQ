@@ -32,20 +32,72 @@ export default function ThreatIntelligence() {
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
 
+  // Readable investigation title generator
+  const getInvestigationTitle = useCallback((inv) => {
+    if (!inv) return 'Email Investigation';
+    if (inv.headers?.subject?.trim()) return inv.headers.subject.trim();
+    if (inv.headers?.from?.trim()) return `Email from ${inv.headers.from.trim()}`;
+    if (inv.sourceType) {
+      const cleanSource = inv.sourceType.replace(/_/g, ' ');
+      return `Email Scan (${cleanSource})`;
+    }
+    return 'Email Investigation';
+  }, []);
+
+  // Map investigation IDs to objects for fast lookup
+  const invMap = useMemo(() => {
+    const map = new Map();
+    data.recentInvestigations.forEach(inv => {
+      map.set(String(inv._id), inv);
+    });
+    return map;
+  }, [data.recentInvestigations]);
+
+  // Dropdown options for filtering by investigation
+  const investigationOptions = useMemo(() => {
+    return data.recentInvestigations.map(inv => ({
+      id: String(inv._id),
+      label: getInvestigationTitle(inv)
+    }));
+  }, [data.recentInvestigations, getInvestigationTitle]);
+
+  // Enrich indicators with investigation context (title and ID)
+  const enrichedIndicators = useMemo(() => {
+    return data.indicators.map(ind => {
+      const invObj = (typeof ind.investigation === 'object' && ind.investigation !== null)
+        ? ind.investigation
+        : invMap.get(String(ind.investigation));
+
+      const invTitle = invObj ? getInvestigationTitle(invObj) : null;
+      const invId = invObj?._id ? String(invObj._id) : (ind.investigation ? String(ind.investigation) : null);
+
+      return {
+        ...ind,
+        investigationId: invId,
+        investigationTitle: invTitle,
+      };
+    });
+  }, [data.indicators, invMap, getInvestigationTitle]);
+
   // Compute available countries across the entire unfiltered dataset (so dropdown doesn't lose options)
   const availableCountries = useMemo(() => {
     const countrySet = new Set();
-    data.indicators.forEach(ind => {
+    enrichedIndicators.forEach(ind => {
       let c = ind.geolocation?.country;
       if (!c && ind.geolocations?.length) c = ind.geolocations[0].country;
       if (c) countrySet.add(c);
     });
     return Array.from(countrySet).sort();
-  }, [data.indicators]);
+  }, [enrichedIndicators]);
 
-  // SINGLE FILTERED DATASET: Apply status, type, and country filters on the client
+  // SINGLE FILTERED DATASET: Apply status, type, country, and investigation filters on the client
   const filteredIndicators = useMemo(() => {
-    return data.indicators.filter(ind => {
+    return enrichedIndicators.filter(ind => {
+      // Investigation Filter
+      if (filters.investigation !== 'all') {
+        if (ind.investigationId !== filters.investigation) return false;
+      }
+
       // Threat Status
       if (filters.threatStatus !== 'all') {
         if (ind.threatStatus !== filters.threatStatus) return false;
@@ -67,7 +119,7 @@ export default function ThreatIntelligence() {
 
       return true;
     });
-  }, [data.indicators, filters]);
+  }, [enrichedIndicators, filters]);
 
   // Derived Summary KPIs
   const summary = useMemo(() => {
@@ -123,18 +175,23 @@ export default function ThreatIntelligence() {
         type: ind.type,
         status: ind.threatStatus,
         country: c || null,
-        timestamp: ind.createdAt
+        timestamp: ind.createdAt,
+        investigationId: ind.investigationId,
+        investigationTitle: ind.investigationTitle,
       });
     });
 
     // Investigations (only if no specific country/type filters are actively hiding them)
     if (filters.indicatorType === 'all' && filters.country === 'all') {
-      data.recentInvestigations.forEach(inv => {
-        let title = inv.headers?.subject || (inv.headers?.from ? `From: ${inv.headers.from}` : 'Untitled investigation');
+      const invList = filters.investigation !== 'all'
+        ? data.recentInvestigations.filter(inv => String(inv._id) === filters.investigation)
+        : data.recentInvestigations;
+
+      invList.forEach(inv => {
         activity.push({
           id: inv._id,
           entityType: 'investigation',
-          title: title,
+          title: getInvestigationTitle(inv),
           type: 'Investigation',
           status: inv.status,
           country: null,
@@ -144,7 +201,7 @@ export default function ThreatIntelligence() {
     }
 
     return activity.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 20);
-  }, [filteredIndicators, data.recentInvestigations, filters]);
+  }, [filteredIndicators, data.recentInvestigations, filters, getInvestigationTitle]);
 
   // Derived Trends
   const trends = useMemo(() => {
@@ -338,6 +395,21 @@ export default function ThreatIntelligence() {
           <option value="all">All Countries</option>
           {availableCountries.map((country, idx) => (
             <option key={idx} value={country}>{country}</option>
+          ))}
+        </select>
+
+        <select 
+          name="investigation" 
+          value={filters.investigation} 
+          onChange={handleFilterChange}
+          className="bg-background border border-border text-primary text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-accent-blue min-w-[180px] max-w-[280px] truncate"
+          title="Filter by Email Investigation"
+        >
+          <option value="all">All Email Investigations</option>
+          {investigationOptions.map((inv) => (
+            <option key={inv.id} value={inv.id} title={inv.label}>
+              {inv.label}
+            </option>
           ))}
         </select>
 

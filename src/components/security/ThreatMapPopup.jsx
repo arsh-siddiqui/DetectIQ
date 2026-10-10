@@ -107,6 +107,28 @@ const ThreatMapPopup = ({ feature, filteredIndicators = [], forceClose, onViewIn
               )}
             </div>
           )}
+
+          {/* Source Email / Investigation */}
+          {props.emailSubject && (
+            <div className="bg-blue-50/90 border border-blue-200/90 rounded-md p-2 flex flex-col gap-0.5">
+              <span className="text-[9px] uppercase font-bold text-blue-600 tracking-wider flex items-center gap-1">
+                <span>✉</span> Source Email
+              </span>
+              {props.investigationId ? (
+                <a 
+                  href={`/security/investigations/${props.investigationId}`}
+                  className="text-[11px] font-bold text-blue-700 hover:text-blue-900 underline truncate transition-colors"
+                  title={props.emailSubject}
+                >
+                  {props.emailSubject}
+                </a>
+              ) : (
+                <span className="text-[11px] font-medium text-gray-800 truncate" title={props.emailSubject}>
+                  {props.emailSubject}
+                </span>
+              )}
+            </div>
+          )}
         </div>
         
         {/* Actions */}
@@ -186,9 +208,16 @@ const ThreatMapPopup = ({ feature, filteredIndicators = [], forceClose, onViewIn
                   <span className="text-[11px] font-mono text-gray-800 leading-tight" style={{ overflowWrap: 'anywhere' }}>
                     {value}
                   </span>
-                  <span className="text-[9px] text-gray-400 uppercase font-bold tracking-wider">
-                    {ind.type}
-                  </span>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[9px] text-gray-400 uppercase font-bold tracking-wider">
+                      {ind.type}
+                    </span>
+                    {ind.investigationTitle && (
+                      <span className="text-[9px] text-blue-600 font-medium truncate max-w-[190px]" title={`Email: ${ind.investigationTitle}`}>
+                        &middot; ✉ {ind.investigationTitle}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             );

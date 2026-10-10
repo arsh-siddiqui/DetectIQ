@@ -36,6 +36,7 @@ exports.getThreatIntelligenceOverview = asyncHandler(async (req, res) => {
   // We fetch up to 2000 indicators so the frontend can compute all stats dynamically
   const indicators = await Indicator.find(filter)
     .select('_id value normalizedValue type threatStatus geolocation geolocations city country asn isp intelligence investigation createdAt')
+    .populate({ path: 'investigation', select: '_id headers.subject headers.from sourceType' })
     .sort({ createdAt: -1 })
     .limit(2000)
     .lean();

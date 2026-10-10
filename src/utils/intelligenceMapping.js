@@ -80,7 +80,9 @@ export function indicatorToGeoPoints(indicator) {
       organization: geo.organization || null,
       isp: geo.isp || null,
       threat,
-      vtStatus
+      vtStatus,
+      investigationId: indicator.investigationId || indicator.investigation?._id || indicator.investigation || null,
+      investigationTitle: indicator.investigationTitle || indicator.investigation?.headers?.subject || null
     };
   }).filter(Boolean);
 }
@@ -182,7 +184,9 @@ export function buildMapGeoJSON(geoPoints = []) {
         threat: p.threat,
         vtStatus: p.vtStatus || '',
         indicatorCount: p.indicatorCount || 1,
-        indicatorIds: p.indicatorIds ? JSON.stringify(p.indicatorIds) : JSON.stringify(p.id ? [p.id] : [])
+        indicatorIds: p.indicatorIds ? JSON.stringify(p.indicatorIds) : JSON.stringify(p.id ? [p.id] : []),
+        emailSubject: p.investigationTitle || '',
+        investigationId: p.investigationId || ''
       },
     })),
   };

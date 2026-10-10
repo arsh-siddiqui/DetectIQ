@@ -1,5 +1,5 @@
 import { formatDistanceToNow, format } from "date-fns";
-import { Shield, ShieldAlert, Activity, FileSearch } from "lucide-react";
+import { Shield, ShieldAlert, Activity, FileSearch, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function RecentThreatActivity({ activities, isLoading }) {
@@ -78,6 +78,13 @@ export default function RecentThreatActivity({ activities, isLoading }) {
                       {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
                     </span>
                   </div>
+
+                  {activity.investigationTitle && (
+                    <div className="flex items-center gap-1.5 mt-1 text-[11px] text-accent-blue/90 font-medium truncate" title={`Observed in email: ${activity.investigationTitle}`}>
+                      <Mail size={12} className="flex-shrink-0 opacity-80 text-accent-blue" />
+                      <span className="truncate">Email: {activity.investigationTitle}</span>
+                    </div>
+                  )}
                   
                   <div className="flex items-center gap-3 mt-1.5 text-xs">
                     <span className="text-secondary font-medium capitalize">
