@@ -1,6 +1,4 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
-import maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
 
 import { Shield, Info, Map as MapIcon, RotateCcw, AlertTriangle, Maximize2, Minimize2, ZoomIn, ZoomOut, Expand } from "lucide-react";
 import { createRoot } from "react-dom/client";
@@ -22,7 +20,28 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
   const mapRef = useRef(null);
   const [mapError, setMapError] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [mapLibreReady, setMapLibreReady] = useState(typeof window !== "undefined" && !!window.maplibregl);
   const navigate = useNavigate();
+
+  // Ensure window.maplibregl from index.html CDN script is ready
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.maplibregl) {
+      setMapLibreReady(true);
+      return;
+    }
+    const start = Date.now();
+    const interval = setInterval(() => {
+      if (typeof window !== "undefined" && window.maplibregl) {
+        setMapLibreReady(true);
+        clearInterval(interval);
+      } else if (Date.now() - start > 6000) {
+        clearInterval(interval);
+        console.warn("MapLibre GL script timed out");
+        setMapError(true);
+      }
+    }, 100);
+    return () => clearInterval(interval);
+  }, []);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -62,20 +81,28 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
   }, [selectedIndicatorId]);
 
   useEffect(() => {
-    if (mapError) return;
+    if (!mapLibreReady || mapError) return;
     if (mapRef.current) return; // Initialize map only once
 
     let resizeObserver = null;
 
     try {
-      const ml = maplibregl || window.maplibregl;
+      const ml = typeof window !== 'undefined' ? window.maplibregl : null;
       if (!ml || !ml.Map) {
         throw new Error("MapLibre GL library not available");
       }
 
+      const isLightMode = typeof document !== 'undefined' && (
+        document.documentElement.classList.contains('light') || 
+        localStorage.getItem('detectiq-theme') === 'light'
+      );
+      const mapStyle = isLightMode 
+        ? 'https://tiles.openfreemap.org/styles/positron'
+        : 'https://tiles.openfreemap.org/styles/dark';
+
       const map = new ml.Map({
         container: mapContainer.current,
-        style: `https://tiles.openfreemap.org/styles/positron`,
+        style: mapStyle,
         center: [0, 20],
         zoom: 1.5,
         dragRotate: false,
@@ -161,7 +188,7 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
         mapRef.current = null;
       }
     };
-  }, [mapError]);
+  }, [mapLibreReady, mapError]);
 
   // Update data if it changes
   useEffect(() => {
@@ -271,7 +298,8 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
     const existingPopups = document.querySelectorAll('.maplibregl-popup');
     existingPopups.forEach(p => p.remove());
 
-    const ml = maplibregl || window.maplibregl;
+    const ml = typeof window !== 'undefined' ? window.maplibregl : null;
+    if (!ml) return;
     const popup = new ml.Popup({ 
       className: 'custom-popup-react',
       maxWidth: '360px',
@@ -318,7 +346,8 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
       return;
     }
 
-    const ml = maplibregl || window.maplibregl;
+    const ml = typeof window !== 'undefined' ? window.maplibregl : null;
+    if (!ml) return;
     const bounds = new ml.LngLatBounds();
     currentGeoJson.features.forEach(f => {
       if (Array.isArray(f.geometry.coordinates) && f.geometry.coordinates.length === 2) {
