@@ -202,37 +202,33 @@ export default function Scan() {
   };
 
   const processScreenshot = async (imageUrl) => {
-    try {
-      setFileStatus("Extracting text via OCR...");
-      const result = await Tesseract.recognize(imageUrl, 'eng');
-      const text = (result?.data?.text || "").trim();
-      
-      if (!text) {
-        throw new Error("No readable text was detected in this image. Please upload a clear screenshot of a message, email, or link.");
-      }
-      
-      const MAX_OCR_LENGTH = 10000;
-      if (text.length > MAX_OCR_LENGTH) {
-        throw new Error(`Extracted text is too large. Max length is ${MAX_OCR_LENGTH} characters.`);
-      }
-
-      // Check whether extracted text contains a URL or valid message/email structure
-      const hasUrl = /https?:\/\/[^\s]+|www\.[^\s]+|[a-z0-9-]+\.(com|org|net|edu|gov|io|co|in|ai|app|xyz|info)[^\s]*/i.test(text);
-      const isEmail = /^(mailto:|From:|Subject:|To:)/i.test(text) || (text.includes("From:") && text.includes("Subject:"));
-
-      // Extract recognizable alphanumeric words (2+ chars) and count alphanumeric characters
-      const validWords = text.match(/[A-Za-z0-9]{2,}/g) || [];
-      const alphaCount = (text.match(/[A-Za-z0-9]/g) || []).length;
-
-      // Random photos (cats, cars, scenery, abstract objects) produce isolated noise or negligible words
-      if (!hasUrl && !isEmail && (validWords.length < 2 || alphaCount < 8)) {
-        throw new Error("No readable message, email, or link was found in this image. Screenshot analysis is intended for screenshots of suspicious messages, emails, or websites (not photos of objects, animals, or scenery). Please upload an image containing text.");
-      }
-      
-      await routePayload(text, "screenshot");
-    } catch (err) {
-      throw err;
+    setFileStatus("Extracting text via OCR...");
+    const result = await Tesseract.recognize(imageUrl, 'eng');
+    const text = (result?.data?.text || "").trim();
+    
+    if (!text) {
+      throw new Error("No readable text was detected in this image. Please upload a clear screenshot of a message, email, or link.");
     }
+    
+    const MAX_OCR_LENGTH = 10000;
+    if (text.length > MAX_OCR_LENGTH) {
+      throw new Error(`Extracted text is too large. Max length is ${MAX_OCR_LENGTH} characters.`);
+    }
+
+    // Check whether extracted text contains a URL or valid message/email structure
+    const hasUrl = /https?:\/\/[^\s]+|www\.[^\s]+|[a-z0-9-]+\.(com|org|net|edu|gov|io|co|in|ai|app|xyz|info)[^\s]*/i.test(text);
+    const isEmail = /^(mailto:|From:|Subject:|To:)/i.test(text) || (text.includes("From:") && text.includes("Subject:"));
+
+    // Extract recognizable alphanumeric words (2+ chars) and count alphanumeric characters
+    const validWords = text.match(/[A-Za-z0-9]{2,}/g) || [];
+    const alphaCount = (text.match(/[A-Za-z0-9]/g) || []).length;
+
+    // Random photos (cats, cars, scenery, abstract objects) produce isolated noise or negligible words
+    if (!hasUrl && !isEmail && (validWords.length < 2 || alphaCount < 8)) {
+      throw new Error("No readable message, email, or link was found in this image. Screenshot analysis is intended for screenshots of suspicious messages, emails, or websites (not photos of objects, animals, or scenery). Please upload an image containing text.");
+    }
+    
+    await routePayload(text, "screenshot");
   };
 
   const routePayload = async (payload, sourceMode) => {
