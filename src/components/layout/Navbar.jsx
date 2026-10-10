@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShieldCheck, Menu, X, Sun, Moon } from "lucide-react";
+import BrandLogo from "../common/BrandLogo";
+import { Menu, X, Sun, Moon } from "lucide-react";
 import { useAppData } from "../../context/AppDataContext";
 import useScrollPosition from "../../hooks/useScrollPosition";
 
@@ -57,16 +58,9 @@ export default function Navbar() {
         {/* Logo */}
         <button 
           onClick={() => handleNavClick("hero")}
-          className="group flex items-center gap-2.5 font-bold text-base text-primary cursor-pointer text-left"
+          className="group cursor-pointer text-left bg-transparent border-0 p-0 hover:opacity-95 transition-opacity"
         >
-          <motion.div 
-            whileHover={{ scale: 1.1, rotate: -5 }}
-            whileTap={{ scale: 0.9 }}
-            className="w-8 h-8 rounded-xl bg-gradient-to-tr from-accent-blue to-accent-violet flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-glow transition-all"
-          >
-            <ShieldCheck className="w-4.5 h-4.5 text-white" />
-          </motion.div>
-          <span className="font-heading tracking-tight font-black text-lg group-hover:text-accent-blue transition-colors">DetectIQ</span>
+          <BrandLogo size="md" animated={true} />
         </button>
 
         {/* Center nav - Smooth In-Page Section Scrolling */}

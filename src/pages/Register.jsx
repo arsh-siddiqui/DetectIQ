@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, Mail, Lock, User, CheckCircle2 } from "lucide-react";
+import BrandLogo from "../components/common/BrandLogo";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import PasswordStrengthMeter from "../components/ui/PasswordStrengthMeter";
@@ -69,11 +70,8 @@ export default function Register() {
         <div className="hidden lg:flex lg:col-span-5 flex-col justify-between bg-gradient-to-br from-[#050B16] via-[#081120] to-[#0D1728] p-12 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-tr from-accent-blue/10 via-transparent to-accent-violet/10 pointer-events-none" />
           
-          <Link to="/" className="flex items-center gap-2.5 relative z-10">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-accent-blue to-accent-violet flex items-center justify-center text-white shadow-soft">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <span className="font-heading font-black text-xl text-white tracking-tight">DetectIQ</span>
+          <Link to="/" className="inline-block relative z-10 transition-opacity hover:opacity-90">
+            <BrandLogo size="md" />
           </Link>
 
           <div className="relative z-10 my-auto py-8">

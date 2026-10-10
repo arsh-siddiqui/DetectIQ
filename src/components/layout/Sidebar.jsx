@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ScanLine, ShieldAlert, History, Shield, FileSearch, BookOpen, User, ShieldCheck, Settings2, LogOut, Target, Globe, LayoutDashboard } from "lucide-react";
+import { ScanLine, ShieldAlert, History, Shield, FileSearch, BookOpen, Settings2, LogOut, Target, Globe, LayoutDashboard } from "lucide-react";
 import { useAppData } from "../../context/AppDataContext";
+import BrandLogo from "../common/BrandLogo";
 
 const navSections = [
   {
@@ -45,10 +45,9 @@ export default function Sidebar() {
 
   return (
     <aside className="hidden lg:flex flex-col w-[240px] flex-shrink-0 h-screen sticky top-0 bg-background border-r border-border py-6 px-4">
-      <div className="flex items-center gap-2 font-heading font-extrabold text-2xl text-primary px-2 mb-8">
-        <ShieldCheck className="w-7 h-7 text-accent-blue" />
-        DetectIQ
-      </div>
+      <NavLink to="/dashboard" className="px-2 mb-8 block transition-opacity hover:opacity-90">
+        <BrandLogo size="md" />
+      </NavLink>
 
       <nav className="flex flex-col gap-4 flex-1 overflow-y-auto pr-2 pb-4 hide-scrollbar">
         {navSections.map((section, idx) => (

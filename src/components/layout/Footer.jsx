@@ -1,5 +1,6 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { ShieldCheck, Globe, Shield, Activity } from "lucide-react";
+import { Globe, Shield, Activity } from "lucide-react";
+import BrandLogo from "../common/BrandLogo";
 
 const columns = [
   {
@@ -53,11 +54,8 @@ export default function Footer() {
     <footer className="relative z-10 bg-transparent border-t border-border mt-16">
       <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-2 md:grid-cols-5 gap-10">
         <div className="col-span-2">
-          <div className="flex items-center gap-2 font-extrabold text-lg text-primary mb-3">
-            <span className="w-9 h-9 rounded-xl bg-gradient-to-tr from-accent-blue to-accent-violet flex items-center justify-center shadow-sm">
-              <ShieldCheck className="w-5 h-5 text-white" />
-            </span>
-            <span className="font-heading tracking-tight font-black text-xl">DetectIQ</span>
+          <div className="mb-4">
+            <BrandLogo size="md" showTagline={true} />
           </div>
           <p className="text-sm text-secondary leading-relaxed max-w-xs font-medium">
             Learn Smart. Detect Fast. Stay Safe. AI-powered fraud awareness and threat detection for everyone, everywhere.

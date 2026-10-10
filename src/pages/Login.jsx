@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ShieldCheck, Mail, Lock, ArrowRight } from "lucide-react";
+import BrandLogo from "../components/common/BrandLogo";
 import Card from "../components/ui/Card";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
@@ -81,11 +82,8 @@ export default function Login() {
           <div className="absolute inset-0 bg-gradient-to-tr from-accent-blue/10 via-transparent to-accent-violet/10 pointer-events-none" />
           
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 relative z-10">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-accent-blue to-accent-violet flex items-center justify-center text-white shadow-soft">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <span className="font-heading font-black text-xl text-white tracking-tight">DetectIQ</span>
+          <Link to="/" className="inline-block relative z-10 transition-opacity hover:opacity-90">
+            <BrandLogo size="md" />
           </Link>
 
           {/* Statement & Highlights */}

@@ -1,8 +1,9 @@
 import { useState, Fragment, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ScanLine, ShieldAlert, History, Shield, FileSearch, BookOpen, ShieldCheck, Menu, X, Settings2, Target, Globe, User, LogOut, LayoutDashboard } from "lucide-react";
+import { ScanLine, ShieldAlert, History, Shield, FileSearch, BookOpen, Menu, X, Settings2, Target, Globe, User, LogOut, LayoutDashboard } from "lucide-react";
 import { useAppData } from "../../context/AppDataContext";
+import BrandLogo from "../common/BrandLogo";
 
 const navSections = [
   {
@@ -61,10 +62,9 @@ export default function MobileTopBar() {
   return (
     <div className="lg:hidden sticky top-0 z-40 bg-background/90 backdrop-blur-lg border-b border-border shadow-sm">
       <div className="flex items-center justify-between px-4 h-16">
-        <div className="flex items-center gap-2 font-heading font-extrabold text-xl text-primary">
-          <ShieldCheck className="w-6 h-6 text-accent-blue" />
-          DetectIQ
-        </div>
+        <NavLink to="/dashboard" className="block transition-opacity hover:opacity-90">
+          <BrandLogo size="sm" />
+        </NavLink>
         <div className="flex items-center gap-3">
           <div className="relative" ref={profileRef}>
             <button 
