@@ -1,7 +1,7 @@
 import { useState, Fragment, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ScanLine, ShieldAlert, History, Shield, FileSearch, BookOpen, Menu, X, Settings2, Target, Globe, User, LogOut, LayoutDashboard, Radio } from "lucide-react";
+import { ScanLine, ShieldAlert, History, Shield, FileSearch, BookOpen, Menu, X, Settings2, Target, Globe, User, LogOut, LayoutDashboard } from "lucide-react";
 import { useAppData } from "../../context/AppDataContext";
 import BrandLogo from "../common/BrandLogo";
 
@@ -24,7 +24,6 @@ const navSections = [
     title: "Security Intelligence",
     items: [
       { label: "Threat Intelligence", to: "/security/threat-intelligence", icon: Globe },
-      { label: "Lookalike Radar", to: "/security/lookalike-generator", icon: Radio },
       { label: "Investigations", to: "/security/investigations", icon: ShieldAlert },
       { label: "Indicators", to: "/security/indicators", icon: Shield },
     ]

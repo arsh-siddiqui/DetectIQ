@@ -19,8 +19,3 @@ export const getIndicatorById = async (id) => {
   const response = await api.get(`/security/indicators/${id}`);
   return response.data;
 };
-
-export const analyzeTyposquattingApi = async (payload) => {
-  const response = await api.post('/security/typosquatting', payload);
-  return response.data;
-};

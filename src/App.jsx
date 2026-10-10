@@ -28,7 +28,6 @@ const InvestigationDetail = lazy(() => import("./pages/security/InvestigationDet
 const IndicatorList = lazy(() => import("./pages/security/IndicatorList"));
 const IndicatorDetail = lazy(() => import("./pages/security/IndicatorDetail"));
 const ThreatIntelligence = lazy(() => import("./pages/security/ThreatIntelligence"));
-const DomainLookalike = lazy(() => import("./pages/security/DomainLookalike"));
 
 // Lazy-loaded Learning & Vulnerability Center Pages
 const VulnerabilityList = lazy(() => import("./pages/learning/VulnerabilityList"));
@@ -123,8 +122,6 @@ function AppRoutes() {
         <Route path="/security/indicators" element={<RequireAuth><AppLayoutWrapper><IndicatorList /></AppLayoutWrapper></RequireAuth>} />
         <Route path="/security/indicators/:id" element={<RequireAuth><AppLayoutWrapper><IndicatorDetail /></AppLayoutWrapper></RequireAuth>} />
         <Route path="/security/threat-intelligence" element={<RequireAuth><AppLayoutWrapper><ThreatIntelligence /></AppLayoutWrapper></RequireAuth>} />
-        <Route path="/security/lookalike-generator" element={<RequireAuth><AppLayoutWrapper><DomainLookalike /></AppLayoutWrapper></RequireAuth>} />
-        <Route path="/security/typosquatting" element={<Navigate to="/security/lookalike-generator" replace />} />
 
         {/* Learning Center */}
         <Route path="/vulnerabilities" element={<RequireAuth><AppLayoutWrapper><VulnerabilityList /></AppLayoutWrapper></RequireAuth>} />
