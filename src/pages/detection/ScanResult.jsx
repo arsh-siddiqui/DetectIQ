@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ShieldAlert, ShieldCheck, AlertTriangle, Loader2, Info, Search, Cpu, BookOpen, Brain, ChevronDown, ChevronUp, CheckCircle, Eye, X } from "lucide-react";
+import { ShieldAlert, ShieldCheck, AlertTriangle, Loader2, Info, Search, Cpu, BookOpen, Brain, ChevronDown, ChevronUp, CheckCircle, Eye, X, Printer, Copy, Check } from "lucide-react";
 import { getScanResult, personalizeScan } from "../../services/detectionService";
 import Button from "../../components/ui/Button";
 
@@ -12,6 +12,21 @@ export default function ScanResult() {
   const [error, setError] = useState("");
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
   const [personalizeStatus, setPersonalizeStatus] = useState('idle'); // 'idle', 'loading', 'success', 'skipped'
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handlePrintReport = () => {
+    window.print();
+  };
 
   const handlePersonalize = async () => {
     setPersonalizeStatus('loading');
@@ -249,9 +264,25 @@ export default function ScanResult() {
         <Link to="/detection/scanner" className="inline-flex items-center gap-2 text-sm font-bold text-secondary hover:text-primary transition-colors">
           <ChevronDown className="w-4 h-4 rotate-90" /> Back to Scanner
         </Link>
-        <div className="flex items-center gap-2">
-          <Link to="/detection/history" className="text-sm font-bold text-accent-blue hover:underline">
-            View Scan History
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={handleCopyLink}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card border border-border text-secondary hover:text-primary text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+            title="Copy direct link to this scan result"
+          >
+            {linkCopied ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{linkCopied ? 'Link Copied' : 'Share Link'}</span>
+          </button>
+          <button
+            onClick={handlePrintReport}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card border border-border text-secondary hover:text-primary text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+            title="Print or export as PDF"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span>Print Report</span>
+          </button>
+          <Link to="/detection/history" className="text-xs font-bold text-accent-blue hover:underline ml-1">
+            View History
           </Link>
         </div>
       </div>
