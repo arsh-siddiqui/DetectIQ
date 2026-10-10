@@ -83,7 +83,7 @@ export default function Login() {
           
           {/* Logo */}
           <Link to="/" className="inline-block relative z-10 transition-opacity hover:opacity-90">
-            <BrandLogo size="md" />
+            <BrandLogo size="md" lightText={true} />
           </Link>
 
           {/* Statement & Highlights */}
@@ -128,6 +128,11 @@ export default function Login() {
           className="lg:col-span-7 p-6 sm:p-12 lg:p-14 flex flex-col justify-center bg-card"
         >
           <div className="max-w-md mx-auto w-full">
+            <div className="lg:hidden mb-6">
+              <Link to="/" className="inline-block transition-opacity hover:opacity-90">
+                <BrandLogo size="md" />
+              </Link>
+            </div>
             <div className="mb-8">
               <h1 className="text-2xl sm:text-3xl font-heading font-extrabold text-primary tracking-tight mb-2">Welcome Back</h1>
               <p className="text-sm text-secondary font-medium">Sign in to your DetectIQ dashboard</p>

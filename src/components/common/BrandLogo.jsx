@@ -21,8 +21,8 @@ export function BrandIcon({ size = 32, className = '' }) {
         {/* Gradients for Ribbon D */}
         <linearGradient id="diq-outer-d" x1="20" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor="#00F0FF" />
-          <stop offset="45%" stopColor="#0284C7" />
-          <stop offset="100%" stopColor="#1E3A8A" />
+          <stop offset="50%" stopColor="#0284C7" />
+          <stop offset="100%" stopColor="#2563EB" />
         </linearGradient>
 
         <linearGradient id="diq-fold" x1="25" y1="50" x2="60" y2="85" gradientUnits="userSpaceOnUse">
@@ -98,6 +98,8 @@ export default function BrandLogo({
   size = 'md', 
   showText = true, 
   showTagline = false,
+  lightText = false,
+  textColor,
   className = '',
   onClick,
   animated = false 
@@ -111,6 +113,7 @@ export default function BrandLogo({
   };
 
   const currentSize = sizeMap[size] || sizeMap.md;
+  const wordmarkColor = textColor || (lightText ? 'text-white' : 'text-primary');
 
   return (
     <div 
@@ -124,14 +127,14 @@ export default function BrandLogo({
       {showText && (
         <div className="flex flex-col leading-none">
           <div className={`font-heading font-black tracking-tight ${currentSize.text} flex items-center`}>
-            <span className="text-primary transition-colors">Detect</span>
-            <span className="bg-gradient-to-r from-[#00F0FF] via-[#0284C7] to-[#3B82F6] bg-clip-text text-transparent ml-0.5">
+            <span className={`${wordmarkColor} transition-colors drop-shadow-sm`}>Detect</span>
+            <span className="bg-gradient-to-r from-[#00F0FF] via-[#0284C7] to-[#38BDF8] bg-clip-text text-transparent ml-0.5 drop-shadow-[0_0_12px_rgba(0,240,255,0.35)]">
               IQ
             </span>
           </div>
 
           {showTagline && (
-            <span className={`text-muted uppercase tracking-[0.2em] font-bold mt-1 font-mono ${currentSize.tag}`}>
+            <span className={`${lightText ? 'text-slate-400' : 'text-muted'} uppercase tracking-[0.2em] font-bold mt-1 font-mono ${currentSize.tag}`}>
               Intelligence-Driven Threat Detection
             </span>
           )}

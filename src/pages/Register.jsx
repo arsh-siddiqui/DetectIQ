@@ -71,7 +71,7 @@ export default function Register() {
           <div className="absolute inset-0 bg-gradient-to-tr from-accent-blue/10 via-transparent to-accent-violet/10 pointer-events-none" />
           
           <Link to="/" className="inline-block relative z-10 transition-opacity hover:opacity-90">
-            <BrandLogo size="md" />
+            <BrandLogo size="md" lightText={true} />
           </Link>
 
           <div className="relative z-10 my-auto py-8">
@@ -115,6 +115,11 @@ export default function Register() {
           className="lg:col-span-7 p-6 sm:p-12 lg:p-14 flex flex-col justify-center bg-card"
         >
           <div className="max-w-md mx-auto w-full">
+            <div className="lg:hidden mb-6">
+              <Link to="/" className="inline-block transition-opacity hover:opacity-90">
+                <BrandLogo size="md" />
+              </Link>
+            </div>
             <div className="mb-6">
               <h1 className="text-2xl sm:text-3xl font-heading font-extrabold text-primary tracking-tight mb-1.5">Create your account</h1>
               <p className="text-xs sm:text-sm text-secondary font-medium">Join DetectIQ in less than a minute</p>
