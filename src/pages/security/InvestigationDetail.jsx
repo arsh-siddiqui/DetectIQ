@@ -5,7 +5,8 @@ import {
   ArrowLeft, ShieldAlert, Activity, Clock, 
   FileText, ChevronDown, ChevronRight, Hash, Network,
   Globe, Brain, LayoutDashboard, Search, FileBox,
-  CheckCircle2, XCircle, ShieldCheck, AlertTriangle, HelpCircle
+  CheckCircle2, XCircle, ShieldCheck, AlertTriangle, HelpCircle,
+  Server, Link2, Shield, Layers, Compass, BookOpen
 } from 'lucide-react';
 import * as securityService from '../../services/securityService';
 import InvestigationGraph from '../../components/security/InvestigationGraph';
@@ -388,6 +389,300 @@ const TimelineTab = ({ inv }) => {
   );
 };
 
+const GraphForensicBreakdown = ({ inv }) => {
+  const [selectedFilter, setSelectedFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const nodes = inv.graph?.nodes || [];
+  const edges = inv.graph?.edges || [];
+
+  const ipNodes = nodes.filter(n => n.type === 'ip');
+  const domainNodes = nodes.filter(n => n.type === 'domain');
+  const urlNodes = nodes.filter(n => n.type === 'url');
+  const locationNodes = nodes.filter(n => n.type === 'location');
+  const emailNodes = nodes.filter(n => n.type === 'email' || n.type === 'person');
+  const attachmentNodes = nodes.filter(n => n.type === 'attachment' || n.type === 'hash');
+
+  const senderDomainNode = domainNodes.find(d => {
+    return edges.some(e => (e.relation === 'sent from' || e.relation === 'reply_to domain') && (e.target?.id || e.target) === d.id);
+  });
+
+  const getNodeRoleDescription = (node) => {
+    switch (node.type) {
+      case 'email':
+        return 'Central subject of analysis. Root node to which all header hops, senders, and hyperlinks connect.';
+      case 'person':
+        return `Identity extracted from email headers (${node.label || node.id}) representing the sender or recipient.`;
+      case 'domain': {
+        const isSender = edges.some(e => (e.relation === 'sent from' || e.relation === 'reply_to domain') && (e.target?.id || e.target) === node.id);
+        if (isSender) return `Primary originating domain (${node.label || node.id}) configured in the sender address.`;
+        const hasUrlParent = edges.some(e => e.relation === 'hosted on' && (e.target?.id || e.target) === node.id);
+        if (hasUrlParent) return `Host domain parsed from an embedded URL in the email body or tracking chain.`;
+        return `External domain referenced in the email message headers or HTML body.`;
+      }
+      case 'ip': {
+        const isReceived = edges.some(e => (e.relation === 'received via' || e.relation === 'contains ip') && (e.target?.id || e.target) === node.id);
+        if (isReceived) return `Mail Transfer Agent (MTA) relay IP extracted from Received: trace headers.`;
+        return `Network endpoint associated with the message delivery path.`;
+      }
+      case 'location':
+        return `Geographic hosting jurisdiction (${node.label || node.id}) resolved via GeoIP lookup of relay infrastructure.`;
+      case 'url':
+        return `Hyperlink extracted from the email HTML body or plaintext payload.`;
+      case 'attachment':
+        return `File attachment payload delivered inside the email message.`;
+      case 'hash':
+        return `Cryptographic hash (SHA-256) of attachment used for virus/malware signatures.`;
+      default:
+        return `Forensic indicator (${node.label || node.id}) captured during inspection.`;
+    }
+  };
+
+  const filteredNodes = nodes.filter(node => {
+    if (selectedFilter !== 'all') {
+      if (selectedFilter === 'ips' && node.type !== 'ip') return false;
+      if (selectedFilter === 'domains' && node.type !== 'domain') return false;
+      if (selectedFilter === 'urls' && node.type !== 'url') return false;
+      if (selectedFilter === 'identities' && node.type !== 'person' && node.type !== 'email') return false;
+      if (selectedFilter === 'locations' && node.type !== 'location') return false;
+      if (selectedFilter === 'attachments' && node.type !== 'attachment' && node.type !== 'hash') return false;
+    }
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase();
+      const labelMatch = (node.label || '').toLowerCase().includes(q);
+      const idMatch = (node.id || '').toLowerCase().includes(q);
+      const typeMatch = (node.type || '').toLowerCase().includes(q);
+      if (!labelMatch && !idMatch && !typeMatch) return false;
+    }
+    return true;
+  });
+
+  return (
+    <div className="space-y-6 mt-6">
+      {/* Header & Overview Stats */}
+      <div className="bg-card border border-border shadow-soft rounded-xl p-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border">
+          <div>
+            <div className="flex items-center gap-2">
+              <BookOpen size={20} className="text-accent-violet" />
+              <h3 className="text-lg font-bold text-primary">Graph Architecture & Forensic Breakdown</h3>
+            </div>
+            <p className="text-sm text-secondary mt-1">
+              Plain-English explanation of how this email's transit chain, domains, and attack surfaces are connected.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="px-3 py-1 bg-secondary/40 border border-border rounded-lg text-xs font-medium text-secondary">
+              <strong className="text-primary">{nodes.length}</strong> Entities
+            </span>
+            <span className="px-3 py-1 bg-secondary/40 border border-border rounded-lg text-xs font-medium text-secondary">
+              <strong className="text-primary">{edges.length}</strong> Relationships
+            </span>
+            <span className="px-3 py-1 bg-secondary/40 border border-border rounded-lg text-xs font-medium text-secondary">
+              <strong className="text-primary">{ipNodes.length}</strong> Relay IPs
+            </span>
+            <span className="px-3 py-1 bg-secondary/40 border border-border rounded-lg text-xs font-medium text-secondary">
+              <strong className="text-primary">{domainNodes.length}</strong> Domains
+            </span>
+          </div>
+        </div>
+
+        {/* 3 Core Architecture Pillars */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
+          {/* Card 1: Delivery Chain & Transit */}
+          <div className="p-4 rounded-xl bg-secondary/20 border border-border flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-warning mb-2">
+                <Server size={18} />
+                <h4 className="font-semibold text-sm text-primary">Delivery Chain & Transit Relays</h4>
+              </div>
+              <p className="text-xs text-secondary leading-relaxed">
+                {ipNodes.length > 0 ? (
+                  <>
+                    The message traversed <strong>{ipNodes.length} Mail Transfer Agent (MTA)</strong> hop(s)
+                    {locationNodes.length > 0 && <> originating from or passing through <strong>{locationNodes.map(l => l.label).join(', ')}</strong></>}.
+                    Inspecting relay hops verifies whether the message was submitted from legitimate authorized infrastructure or an unauthorized intermediary.
+                  </>
+                ) : (
+                  'No intermediary MTA relay IPs were extracted from the headers. The message may have been submitted directly or headers were anonymized.'
+                )}
+              </p>
+            </div>
+            <div className="mt-3 pt-3 border-t border-border/60 text-xs text-muted flex items-center gap-1.5">
+              <Compass size={13} />
+              <span>Yellow dots in graph represent routing IPs & relays</span>
+            </div>
+          </div>
+
+          {/* Card 2: Domains & Web Targets */}
+          <div className="p-4 rounded-xl bg-secondary/20 border border-border flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-sky-400 mb-2">
+                <Globe size={18} />
+                <h4 className="font-semibold text-sm text-primary">Domain Ecosystem & Content Links</h4>
+              </div>
+              <p className="text-xs text-secondary leading-relaxed">
+                Found <strong>{domainNodes.length} domain(s)</strong> and <strong>{urlNodes.length} URL(s)</strong> embedded in the message.
+                {senderDomainNode ? (
+                  <> Originating domain is <strong>{senderDomainNode.label}</strong>, while external links point to destinations such as redirect gateways, CDNs, or marketing platforms.</>
+                ) : (
+                  ' Identifies tracking redirects (e.g., customer.io, sendgrid) vs. actual phishing destinations.'
+                )}
+              </p>
+            </div>
+            <div className="mt-3 pt-3 border-t border-border/60 text-xs text-muted flex items-center gap-1.5">
+              <Link2 size={13} />
+              <span>Sky-blue nodes represent URLs; orange nodes represent domains</span>
+            </div>
+          </div>
+
+          {/* Card 3: Threat Correlation */}
+          <div className="p-4 rounded-xl bg-secondary/20 border border-border flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-accent-violet mb-2">
+                <Shield size={18} />
+                <h4 className="font-semibold text-sm text-primary">Threat Correlation & Verdict</h4>
+              </div>
+              <p className="text-xs text-secondary leading-relaxed">
+                Overall investigation verdict is{' '}
+                <span className={`font-semibold capitalize ${
+                  inv.verdict === 'malicious' ? 'text-danger' :
+                  inv.verdict === 'suspicious' ? 'text-warning' : 'text-success'
+                }`}>
+                  {inv.verdict || 'clean'}
+                </span>
+                {' '}with a risk score of <strong>{inv.risk_score || 0}/100</strong>.
+                Each graph entity is cross-referenced with threat intelligence feeds (AbuseIPDB, VirusTotal, URLhaus) to isolate malicious indicators from benign infrastructure.
+              </p>
+            </div>
+            <div className="mt-3 pt-3 border-t border-border/60 text-xs text-muted flex items-center gap-1.5">
+              <Layers size={13} />
+              <span>Red highlights indicate flagged indicators or risky targets</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Structured Entities Directory */}
+      <div className="bg-card border border-border shadow-soft rounded-xl p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h4 className="font-semibold text-primary">Connected Entities Directory</h4>
+            <p className="text-xs text-secondary mt-0.5">
+              Every node depicted in the graph, its technical classification, and its specific forensic role in this email.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
+              <input 
+                type="text" 
+                value={searchTerm} 
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="Search entities..." 
+                className="pl-8 pr-3 py-1.5 text-xs bg-secondary/30 border border-border rounded-lg text-primary placeholder-muted focus:outline-none focus:border-accent-violet"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Pills */}
+        <div className="flex flex-wrap items-center gap-1.5 mb-4 pb-3 border-b border-border">
+          {[
+            { id: 'all', label: `All (${nodes.length})` },
+            { id: 'domains', label: `Domains (${domainNodes.length})` },
+            { id: 'ips', label: `IPs (${ipNodes.length})` },
+            { id: 'urls', label: `URLs (${urlNodes.length})` },
+            { id: 'identities', label: `Identities (${emailNodes.length})` },
+            { id: 'locations', label: `Jurisdictions (${locationNodes.length})` },
+            { id: 'attachments', label: `Files (${attachmentNodes.length})` },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setSelectedFilter(tab.id)}
+              className={`px-3 py-1 text-xs rounded-lg transition-colors font-medium ${
+                selectedFilter === tab.id 
+                  ? 'bg-accent-violet text-white shadow-sm' 
+                  : 'bg-secondary/40 text-secondary hover:text-primary hover:bg-secondary/60'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Entities Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-border text-muted font-medium">
+                <th className="pb-2.5 pl-2">Entity</th>
+                <th className="pb-2.5">Type</th>
+                <th className="pb-2.5">Connections</th>
+                <th className="pb-2.5">Forensic Role in Investigation</th>
+                <th className="pb-2.5 pr-2 text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {filteredNodes.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="py-8 text-center text-muted">
+                    No entities found matching your search.
+                  </td>
+                </tr>
+              ) : (
+                filteredNodes.map(node => {
+                  const connectedEdges = edges.filter(e => {
+                    const s = e.source?.id || e.source;
+                    const t = e.target?.id || e.target;
+                    return s === node.id || t === node.id;
+                  });
+
+                  const isFlagged = node.metadata?.threat_status === 'malicious' || 
+                                    node.metadata?.threat_status === 'suspicious' ||
+                                    node.metadata?.is_malicious === true;
+
+                  return (
+                    <tr key={node.id} className="hover:bg-secondary/20 transition-colors">
+                      <td className="py-3 pl-2 max-w-[220px]">
+                        <div className="font-mono text-primary truncate font-medium" title={node.label || node.id}>
+                          {node.label || node.id}
+                        </div>
+                      </td>
+                      <td className="py-3 whitespace-nowrap">
+                        <span className="capitalize px-2 py-0.5 rounded-md font-medium text-[11px] bg-secondary/50 text-secondary border border-border">
+                          {node.type}
+                        </span>
+                      </td>
+                      <td className="py-3 whitespace-nowrap text-secondary">
+                        <span className="font-medium text-primary">{connectedEdges.length}</span> link{connectedEdges.length !== 1 ? 's' : ''}
+                      </td>
+                      <td className="py-3 text-secondary pr-4 leading-relaxed max-w-[420px]">
+                        {getNodeRoleDescription(node)}
+                      </td>
+                      <td className="py-3 pr-2 text-right whitespace-nowrap">
+                        {isFlagged ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-danger px-2 py-0.5 rounded bg-danger/10 border border-danger/20">
+                            <AlertTriangle size={11} /> Flagged
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-success px-2 py-0.5 rounded bg-success/10 border border-success/20">
+                            <CheckCircle2 size={11} /> Clean / Info
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const GraphTab = ({ inv }) => {
   if (!inv.graph || !inv.graph.nodes || inv.graph.nodes.length === 0) {
     return (
@@ -398,8 +693,11 @@ const GraphTab = ({ inv }) => {
     );
   }
   return (
-    <div className="h-[calc(100vh-280px)] min-h-[600px] border border-border rounded-xl overflow-hidden bg-[#0f172a] relative">
-      <InvestigationGraph data={{ nodes: inv.graph.nodes, links: inv.graph.edges || [] }} />
+    <div className="space-y-6">
+      <div className="h-[calc(100vh-280px)] min-h-[600px] border border-border rounded-xl overflow-hidden bg-[#0f172a] relative">
+        <InvestigationGraph data={{ nodes: inv.graph.nodes, links: inv.graph.edges || [] }} investigation={inv} />
+      </div>
+      <GraphForensicBreakdown inv={inv} />
     </div>
   );
 };
