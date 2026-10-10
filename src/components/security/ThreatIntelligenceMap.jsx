@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
-
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 import { Shield, Info, Map as MapIcon, RotateCcw, AlertTriangle, Maximize2, Minimize2, ZoomIn, ZoomOut, Expand } from "lucide-react";
 import { createRoot } from "react-dom/client";
@@ -67,7 +68,12 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
     let resizeObserver = null;
 
     try {
-      const map = new window.maplibregl.Map({
+      const ml = maplibregl || window.maplibregl;
+      if (!ml || !ml.Map) {
+        throw new Error("MapLibre GL library not available");
+      }
+
+      const map = new ml.Map({
         container: mapContainer.current,
         style: `https://tiles.openfreemap.org/styles/positron`,
         center: [0, 20],
@@ -88,7 +94,7 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
         resizeObserver.observe(mapContainer.current);
       }
 
-      map.addControl(new window.maplibregl.AttributionControl({ customAttribution: 'OpenStreetMap contributors' }), 'bottom-left');
+      map.addControl(new ml.AttributionControl({ customAttribution: 'OpenStreetMap contributors' }), 'bottom-left');
 
       map.on('error', (e) => {
         // Prevent generic errors from crashing the UI, only log
@@ -265,7 +271,8 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
     const existingPopups = document.querySelectorAll('.maplibregl-popup');
     existingPopups.forEach(p => p.remove());
 
-    const popup = new window.maplibregl.Popup({ 
+    const ml = maplibregl || window.maplibregl;
+    const popup = new ml.Popup({ 
       className: 'custom-popup-react',
       maxWidth: '360px',
       anchor: 'bottom',
@@ -311,7 +318,8 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
       return;
     }
 
-    const bounds = new window.maplibregl.LngLatBounds();
+    const ml = maplibregl || window.maplibregl;
+    const bounds = new ml.LngLatBounds();
     currentGeoJson.features.forEach(f => {
       if (Array.isArray(f.geometry.coordinates) && f.geometry.coordinates.length === 2) {
         bounds.extend(f.geometry.coordinates);
@@ -349,6 +357,13 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
           <p className="text-sm text-secondary font-medium">
             Threat intelligence data is still available below.
           </p>
+          <button
+            onClick={() => setMapError(false)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30 text-xs font-semibold transition-colors mt-1"
+          >
+            <RotateCcw size={13} />
+            <span>Retry Map</span>
+          </button>
           <div className="flex items-center justify-center gap-1.5 text-xs text-muted pt-2 border-t border-border mt-3">
             <AlertTriangle size={12} />
             <span>IP geolocation is approximate.</span>
