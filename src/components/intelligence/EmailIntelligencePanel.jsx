@@ -5,15 +5,40 @@ import {
 } from 'lucide-react';
 import ThreatIntelSummary from './ThreatIntelSummary';
 
+const PROTOCOL_NAMES = {
+  SPF: 'Sender Policy Framework',
+  DKIM: 'DomainKeys Identified Mail',
+  DMARC: 'Domain-based Message Authentication',
+};
+
 const StatusBadge = ({ label, status }) => {
-  let color = 'bg-secondary/10 text-secondary border-border';
-  if (status === 'pass') color = 'bg-success/10 text-success border-success/30';
-  if (status === 'fail' || status === 'softfail') color = 'bg-danger/10 text-danger border-danger/30';
-  if (status === 'neutral') color = 'bg-warning/10 text-warning border-warning/30';
+  const rawStatus = (status || 'unknown').toLowerCase();
+  let color = 'bg-secondary/40 text-secondary border-border';
+  let badgeColor = 'bg-secondary text-muted border-border';
+  if (rawStatus === 'pass') {
+    color = 'bg-emerald-500/5 text-primary border-emerald-500/25';
+    badgeColor = 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30';
+  } else if (rawStatus === 'fail' || rawStatus === 'softfail') {
+    color = 'bg-red-500/5 text-primary border-red-500/25';
+    badgeColor = 'bg-red-500/15 text-red-500 border-red-500/30';
+  } else if (rawStatus === 'neutral') {
+    color = 'bg-amber-500/5 text-primary border-amber-500/25';
+    badgeColor = 'bg-amber-500/15 text-amber-500 border-amber-500/30';
+  }
+
+  const fullName = PROTOCOL_NAMES[label];
 
   return (
-    <div className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider border ${color}`}>
-      {label}: {status || 'unknown'}
+    <div className={`p-3 rounded-xl border flex items-center justify-between gap-2 ${color}`}>
+      <div>
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono font-bold text-sm text-primary">{label}</span>
+          {fullName && <span className="text-[11px] text-muted font-medium">({fullName})</span>}
+        </div>
+      </div>
+      <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider border ${badgeColor}`}>
+        {rawStatus}
+      </span>
     </div>
   );
 };

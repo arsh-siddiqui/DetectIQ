@@ -4,7 +4,8 @@ import { format } from 'date-fns';
 import { 
   ArrowLeft, ShieldAlert, Activity, Clock, 
   FileText, ChevronDown, ChevronRight, Hash, Network,
-  Globe, Brain, LayoutDashboard, Search, FileBox
+  Globe, Brain, LayoutDashboard, Search, FileBox,
+  CheckCircle2, XCircle, ShieldCheck, AlertTriangle, HelpCircle
 } from 'lucide-react';
 import * as securityService from '../../services/securityService';
 import InvestigationGraph from '../../components/security/InvestigationGraph';
@@ -35,6 +36,90 @@ const Section = ({ title, icon: Icon, children, defaultOpen = true }) => {
   );
 };
 
+const AUTH_PROTOCOLS = {
+  spf: {
+    code: 'SPF',
+    fullName: 'Sender Policy Framework',
+    description: 'Validates that the sending mail server IP is authorized by the domain owner in DNS records.',
+  },
+  dkim: {
+    code: 'DKIM',
+    fullName: 'DomainKeys Identified Mail',
+    description: 'Cryptographically verifies digital signature to ensure the email content was not altered in transit.',
+  },
+  dmarc: {
+    code: 'DMARC',
+    fullName: 'Domain-based Message Authentication, Reporting & Conformance',
+    description: 'Specifies sender alignment policy and instructs receivers how to handle failed emails (quarantine/reject).',
+  },
+};
+
+const AuthProtocolCard = ({ protocolKey, status }) => {
+  const protocol = AUTH_PROTOCOLS[protocolKey] || {
+    code: protocolKey?.toUpperCase(),
+    fullName: 'Email Authentication Protocol',
+    description: '',
+  };
+
+  const rawStatus = (status || 'n/a').toLowerCase();
+  const isPass = rawStatus === 'pass';
+  const isFail = rawStatus === 'fail' || rawStatus === 'softfail';
+  const isNeutral = rawStatus === 'neutral';
+
+  const badgeConfig = isPass
+    ? {
+        border: 'border-emerald-500/30 bg-emerald-500/5',
+        badge: 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30',
+        icon: <CheckCircle2 size={16} className="text-emerald-500 flex-shrink-0" />,
+        text: 'PASS',
+      }
+    : isFail
+    ? {
+        border: 'border-red-500/30 bg-red-500/5',
+        badge: 'bg-red-500/15 text-red-500 border border-red-500/30',
+        icon: <XCircle size={16} className="text-red-500 flex-shrink-0" />,
+        text: rawStatus === 'softfail' ? 'SOFTFAIL' : 'FAIL',
+      }
+    : isNeutral
+    ? {
+        border: 'border-amber-500/30 bg-amber-500/5',
+        badge: 'bg-amber-500/15 text-amber-500 border border-amber-500/30',
+        icon: <AlertTriangle size={16} className="text-amber-500 flex-shrink-0" />,
+        text: 'NEUTRAL',
+      }
+    : {
+        border: 'border-border bg-secondary/30',
+        badge: 'bg-secondary text-muted border border-border',
+        icon: <HelpCircle size={16} className="text-muted flex-shrink-0" />,
+        text: rawStatus === 'n/a' ? 'N/A' : rawStatus.toUpperCase(),
+      };
+
+  return (
+    <div className={`p-4 rounded-xl border ${badgeConfig.border} transition-all duration-200 hover:shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3`}>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-baseline gap-2">
+          <span className="text-xl font-bold font-mono tracking-tight text-primary">
+            {protocol.code}
+          </span>
+          <span className="text-xs font-semibold text-secondary">
+            ({protocol.fullName})
+          </span>
+        </div>
+        <p className="text-[11px] text-muted mt-1 leading-relaxed">
+          {protocol.description}
+        </p>
+      </div>
+
+      <div className="flex-shrink-0 self-start sm:self-center">
+        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider ${badgeConfig.badge}`}>
+          {badgeConfig.icon}
+          <span>{badgeConfig.text}</span>
+        </span>
+      </div>
+    </div>
+  );
+};
+
 const OverviewTab = ({ inv }) => {
   return (
     <div className="w-full space-y-6">
@@ -42,74 +127,80 @@ const OverviewTab = ({ inv }) => {
         <div id="evidence-E_VERDICT">
           <Section title="Detection Verdict" icon={ShieldAlert}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-secondary/50 p-4 rounded-lg">
-              <div className="text-xs text-muted uppercase tracking-wider mb-1">Verdict</div>
-              <div className="text-xl font-semibold text-primary capitalize">{inv.scan.classification}</div>
+              <div className="bg-secondary/40 border border-border/60 p-4 rounded-xl">
+                <div className="text-[11px] text-muted uppercase tracking-wider font-bold mb-1">Verdict</div>
+                <div className="text-xl font-bold text-primary capitalize">{inv.scan.classification}</div>
+              </div>
+              <div className="bg-secondary/40 border border-border/60 p-4 rounded-xl">
+                <div className="text-[11px] text-muted uppercase tracking-wider font-bold mb-1">Risk Level</div>
+                <div className={`text-xl font-bold capitalize ${
+                  inv.scan.riskLevel === 'critical' ? 'text-danger' :
+                  inv.scan.riskLevel === 'high' ? 'text-warning' :
+                  inv.scan.riskLevel === 'medium' ? 'text-warning' : 'text-accent-blue'
+                }`}>{inv.scan.riskLevel}</div>
+              </div>
+              <div className="bg-secondary/40 border border-border/60 p-4 rounded-xl">
+                <div className="text-[11px] text-muted uppercase tracking-wider font-bold mb-1">Risk Score</div>
+                <div className="text-xl font-bold text-primary font-mono">{inv.scan.riskScore} <span className="text-xs text-muted font-normal">/ 100</span></div>
+              </div>
+              <div className="bg-secondary/40 border border-border/60 p-4 rounded-xl">
+                <div className="text-[11px] text-muted uppercase tracking-wider font-bold mb-1">Confidence</div>
+                <div className="text-xl font-bold text-emerald-500">High</div>
+              </div>
             </div>
-            <div className="bg-secondary/50 p-4 rounded-lg">
-              <div className="text-xs text-muted uppercase tracking-wider mb-1">Risk Level</div>
-              <div className={`text-xl font-semibold capitalize ${
-                inv.scan.riskLevel === 'critical' ? 'text-danger' :
-                inv.scan.riskLevel === 'high' ? 'text-warning' :
-                inv.scan.riskLevel === 'medium' ? 'text-warning' : 'text-accent-blue'
-              }`}>{inv.scan.riskLevel}</div>
-            </div>
-            <div className="bg-secondary/50 p-4 rounded-lg">
-              <div className="text-xs text-muted uppercase tracking-wider mb-1">Risk Score</div>
-              <div className="text-xl font-semibold text-primary">{inv.scan.riskScore} / 100</div>
-            </div>
-            <div className="bg-secondary/50 p-4 rounded-lg">
-              <div className="text-xs text-muted uppercase tracking-wider mb-1">Confidence</div>
-              <div className="text-xl font-semibold text-primary">High</div>
-            </div>
-          </div>
-        </Section>
+          </Section>
         </div>
       )}
 
       <Section title="Analyst Summary" icon={Activity}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="space-y-4">
-            <div className="flex justify-between pb-3 border-b border-border/50 items-center">
-              <span className="text-xs text-muted uppercase tracking-wider">Enrichment</span>
-              <span className="text-lg font-semibold text-primary capitalize">{inv.analystSummary?.enrichmentStatus}</span>
+            <div className="flex justify-between pb-3.5 border-b border-border/50 items-center">
+              <span className="text-xs text-muted uppercase tracking-wider font-semibold">Enrichment Status</span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold capitalize bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                <CheckCircle2 size={13} />
+                {inv.analystSummary?.enrichmentStatus || 'Completed'}
+              </span>
             </div>
-            <div className="flex justify-between pb-3 border-b border-border/50 items-center">
-              <span className="text-xs text-muted uppercase tracking-wider">Public IPs</span>
-              <span className="text-lg font-semibold text-primary">{inv.analystSummary?.publicIpCount}</span>
+            <div className="flex justify-between pb-3.5 border-b border-border/50 items-center">
+              <span className="text-xs text-muted uppercase tracking-wider font-semibold">Public IPs</span>
+              <span className="text-lg font-bold text-primary font-mono">{inv.analystSummary?.publicIpCount ?? 0}</span>
             </div>
-            <div className="flex justify-between pb-3 border-b border-border/50 items-center">
-              <span className="text-xs text-muted uppercase tracking-wider">Domains / URLs</span>
-              <span className="text-lg font-semibold text-primary">{inv.analystSummary?.domainCount} domains • {inv.analystSummary?.urlCount} URLs</span>
+            <div className="flex justify-between pb-3.5 border-b border-border/50 items-center">
+              <span className="text-xs text-muted uppercase tracking-wider font-semibold">Domains / URLs</span>
+              <span className="text-sm font-semibold text-primary">
+                {inv.analystSummary?.domainCount ?? 0} {inv.analystSummary?.domainCount === 1 ? 'domain' : 'domains'} &middot; {inv.analystSummary?.urlCount ?? 0} {inv.analystSummary?.urlCount === 1 ? 'URL' : 'URLs'}
+              </span>
             </div>
-            <div className="flex justify-between pb-3 border-b border-border/50 items-center">
-              <span className="text-xs text-muted uppercase tracking-wider">Flagged Indicators</span>
-              <span className="text-lg font-semibold text-danger">{inv.analystSummary?.flaggedIndicatorCount}</span>
+            <div className="flex justify-between pb-3.5 border-b border-border/50 items-center">
+              <span className="text-xs text-muted uppercase tracking-wider font-semibold">Flagged Indicators</span>
+              <span className={`text-lg font-bold font-mono ${(inv.analystSummary?.flaggedIndicatorCount || 0) > 0 ? 'text-danger' : 'text-emerald-500'}`}>
+                {inv.analystSummary?.flaggedIndicatorCount ?? 0}
+              </span>
             </div>
           </div>
+
           <div id="evidence-E_AUTH">
-            <h4 className="text-xs uppercase tracking-wider text-muted mb-4">Authentication</h4>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-secondary/50 p-3 rounded-lg text-center">
-                <div className="text-[10px] text-muted uppercase mb-1">SPF</div>
-                <div className={`text-sm font-bold ${inv.analystSummary?.spfStatus === 'pass' ? 'text-success' : inv.analystSummary?.spfStatus === 'fail' ? 'text-danger' : 'text-secondary'}`}>{inv.analystSummary?.spfStatus}</div>
-              </div>
-              <div className="bg-secondary/50 p-3 rounded-lg text-center">
-                <div className="text-[10px] text-muted uppercase mb-1">DKIM</div>
-                <div className={`text-sm font-bold ${inv.analystSummary?.dkimStatus === 'pass' ? 'text-success' : inv.analystSummary?.dkimStatus === 'fail' ? 'text-danger' : 'text-secondary'}`}>{inv.analystSummary?.dkimStatus}</div>
-              </div>
-              <div className="bg-secondary/50 p-3 rounded-lg text-center">
-                <div className="text-[10px] text-muted uppercase mb-1">DMARC</div>
-                <div className={`text-sm font-bold ${inv.analystSummary?.dmarcStatus === 'pass' ? 'text-success' : inv.analystSummary?.dmarcStatus === 'fail' ? 'text-danger' : 'text-secondary'}`}>{inv.analystSummary?.dmarcStatus || 'N/A'}</div>
-              </div>
+            <div className="flex items-center gap-2 mb-3.5 pb-2 border-b border-border/50">
+              <ShieldCheck size={16} className="text-accent-violet" />
+              <h4 className="text-xs uppercase tracking-wider text-muted font-bold">Email Authentication Protocols</h4>
+            </div>
+
+            <div className="space-y-3">
+              <AuthProtocolCard protocolKey="spf" status={inv.analystSummary?.spfStatus} />
+              <AuthProtocolCard protocolKey="dkim" status={inv.analystSummary?.dkimStatus} />
+              <AuthProtocolCard protocolKey="dmarc" status={inv.analystSummary?.dmarcStatus} />
             </div>
             
             {/* Authentication Context */}
             {['phishing', 'suspicious'].includes(inv.scan?.classification?.toLowerCase()) && 
              ['pass'].some(status => [inv.analystSummary?.spfStatus, inv.analystSummary?.dkimStatus, inv.analystSummary?.dmarcStatus].includes(status)) && (
-              <div className="mt-4 p-3 rounded bg-warning/10 border border-warning/20 text-xs text-warning leading-relaxed">
-                <span className="font-semibold block mb-1">Context:</span>
-                Authentication passed. This confirms message authentication but does not by itself establish that the content is trustworthy. Other evidence contributed to the final assessment.
+              <div className="mt-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-500 leading-relaxed flex items-start gap-2.5">
+                <AlertTriangle size={16} className="flex-shrink-0 mt-0.5 text-amber-500" />
+                <div>
+                  <span className="font-bold block mb-0.5">Authentication Anomaly:</span>
+                  Authentication passed, but other heuristic and threat indicators classified this email as malicious (e.g. compromised domain or legitimate infrastructure abused for phishing).
+                </div>
               </div>
             )}
           </div>
@@ -118,51 +209,57 @@ const OverviewTab = ({ inv }) => {
 
       <div id="evidence-E_EMAIL_ID">
         <Section title="Identity & Context" icon={FileText}>
-          <div className="space-y-4 text-sm bg-secondary/30 p-4 rounded-lg">
-          {inv.headers?.from && (
-            <div>
-              <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Sender (From)</div>
-              <div className="text-primary font-mono text-sm break-words overflow-wrap-anywhere">{inv.headers.from}</div>
-            </div>
-          )}
-          {inv.headers?.to && (
-            <div>
-              <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Recipient (To)</div>
-              <div className="text-secondary font-mono text-sm break-words overflow-wrap-anywhere">{inv.headers.to}</div>
-            </div>
-          )}
-          {inv.headers?.subject && (
-            <div>
-              <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Subject</div>
-              <div className="text-primary font-medium">{inv.headers.subject}</div>
-            </div>
-          )}
-          {inv.headers?.replyTo && (
-            <div>
-              <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Reply-To</div>
-              <div className="text-secondary font-mono text-sm break-words overflow-wrap-anywhere">{inv.headers.replyTo}</div>
-            </div>
-          )}
-          {inv.headers?.messageId && (
-            <div>
-              <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Message-ID</div>
-              <div className="text-secondary font-mono text-sm break-words overflow-wrap-anywhere">{inv.headers.messageId}</div>
-            </div>
-          )}
-          {inv.sourceType && (
-            <div>
-              <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Source Type</div>
-              <div className="text-secondary text-sm uppercase">{inv.sourceType.replace('_', ' ')}</div>
-            </div>
-          )}
-          {inv.analysisDepth && (
-            <div>
-              <div className="text-xs text-muted mb-1 uppercase tracking-wider font-semibold">Analysis Depth</div>
-              <div className="text-secondary text-sm capitalize">{inv.analysisDepth}</div>
-            </div>
-          )}
-        </div>
-      </Section>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {inv.headers?.from && (
+              <div className="bg-secondary/40 p-4 rounded-xl border border-border/60">
+                <div className="text-[11px] text-muted mb-1.5 uppercase tracking-wider font-bold">Sender (From)</div>
+                <div className="text-primary font-mono text-sm break-words overflow-wrap-anywhere select-all font-semibold">
+                  {inv.headers.from}
+                </div>
+              </div>
+            )}
+            {inv.headers?.to && (
+              <div className="bg-secondary/40 p-4 rounded-xl border border-border/60">
+                <div className="text-[11px] text-muted mb-1.5 uppercase tracking-wider font-bold">Recipient (To)</div>
+                <div className="text-secondary font-mono text-sm break-words overflow-wrap-anywhere select-all">
+                  {inv.headers.to}
+                </div>
+              </div>
+            )}
+            {inv.headers?.subject && (
+              <div className="bg-secondary/40 p-4 rounded-xl border border-border/60 md:col-span-2">
+                <div className="text-[11px] text-muted mb-1.5 uppercase tracking-wider font-bold">Subject</div>
+                <div className="text-primary font-semibold text-base leading-snug">
+                  {inv.headers.subject}
+                </div>
+              </div>
+            )}
+            {inv.headers?.replyTo && (
+              <div className="bg-secondary/40 p-4 rounded-xl border border-border/60">
+                <div className="text-[11px] text-muted mb-1.5 uppercase tracking-wider font-bold">Reply-To</div>
+                <div className="text-secondary font-mono text-sm break-words overflow-wrap-anywhere">
+                  {inv.headers.replyTo}
+                </div>
+              </div>
+            )}
+            {inv.sourceType && (
+              <div className="bg-secondary/40 p-4 rounded-xl border border-border/60">
+                <div className="text-[11px] text-muted mb-1.5 uppercase tracking-wider font-bold">Source Type</div>
+                <div className="text-primary font-semibold text-sm uppercase">
+                  {inv.sourceType.replace('_', ' ')}
+                </div>
+              </div>
+            )}
+            {inv.analysisDepth && (
+              <div className="bg-secondary/40 p-4 rounded-xl border border-border/60">
+                <div className="text-[11px] text-muted mb-1.5 uppercase tracking-wider font-bold">Analysis Depth</div>
+                <div className="text-primary font-semibold text-sm capitalize">
+                  {inv.analysisDepth}
+                </div>
+              </div>
+            )}
+          </div>
+        </Section>
       </div>
     </div>
   );
