@@ -468,7 +468,7 @@ const GraphForensicBreakdown = ({ inv }) => {
               <h3 className="text-lg font-bold text-primary">Graph Architecture & Forensic Breakdown</h3>
             </div>
             <p className="text-sm text-secondary mt-1">
-              Plain-English explanation of how this email's transit chain, domains, and attack surfaces are connected.
+              Comprehensive forensic analysis tracing delivery relays, domain infrastructure, and connected threat indicators.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
