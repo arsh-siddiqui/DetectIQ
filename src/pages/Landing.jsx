@@ -11,7 +11,6 @@ import Footer from "../components/layout/Footer";
 import CyberBackground from "../components/landing/CyberBackground";
 import HeroSection from "../components/landing/HeroSection";
 import ThreatAnalysisDemo from "../components/landing/ThreatAnalysisDemo";
-import ExtensionShowcase from "../components/landing/ExtensionShowcase";
 import TargetCursor from "../components/landing/TargetCursor";
 
 // Capability badges configuration
@@ -298,11 +297,6 @@ export default function Landing() {
       {/* Threat Analysis Scanner */}
       <section id="investigate" ref={demoSectionRef} className="py-20 lg:py-28 relative z-10 scroll-mt-20 border-b border-border bg-transparent">
         <ThreatAnalysisDemo />
-      </section>
-
-      {/* Browser Extension Feature Showcase */}
-      <section id="extension" className="py-20 lg:py-28 bg-transparent border-b border-border relative z-10 scroll-mt-20">
-        <ExtensionShowcase />
       </section>
 
       {/* Knowledgebase & FAQs */}

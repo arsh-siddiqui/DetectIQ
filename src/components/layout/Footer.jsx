@@ -7,7 +7,6 @@ const columns = [
     links: [
       { label: "Live Threat Scanner", to: "/#investigate" },
       { label: "Detection Suite", to: "/#features" },
-      { label: "Chrome Extension", to: "/#extension" },
       { label: "Security Pipeline", to: "/#about" },
       { label: "Threat Intelligence", to: "/security/threat-intelligence" },
     ],

@@ -8,7 +8,6 @@ import useScrollPosition from "../../hooks/useScrollPosition";
 const links = [
   { label: "Home", targetId: "hero" },
   { label: "Features", targetId: "features" },
-  { label: "Extension", targetId: "extension" },
   { label: "About", targetId: "about" },
   { label: "Investigate", targetId: "investigate" },
   { label: "Resources", targetId: "resources" },
