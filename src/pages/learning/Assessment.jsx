@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Loader2, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, ArrowRight, Check, X, BookOpen, Lightbulb, Sparkles, ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
 import { getVulnerabilityBySlug } from "../../services/vulnerabilityService";
 import { submitAssessment } from "../../services/progressService";
+import { evaluateQuizAnswer } from "../../data/vulnerabilityQuizData";
 
 /**
  * Assessment Page Component
@@ -19,6 +20,7 @@ export default function Assessment() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(null);
+  const [showReview, setShowReview] = useState(true);
 
   // Load vulnerability quiz data
   useEffect(() => {
@@ -38,6 +40,12 @@ export default function Assessment() {
   const assessment = vuln?.assessment || [];
   const currentQuestion = assessment[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === assessment.length - 1;
+
+  const selectedOptionId = currentQuestion ? answers[currentQuestion._id] : null;
+  const isAnswered = !!selectedOptionId;
+  const currentEvaluation = isAnswered && currentQuestion 
+    ? evaluateQuizAnswer(currentQuestion, selectedOptionId, slug) 
+    : null;
 
   // Option selection handler
   const handleSelect = (optionId) => {
@@ -82,6 +90,7 @@ export default function Assessment() {
     setResult(null);
     setAnswers({});
     setCurrentQuestionIndex(0);
+    setShowReview(true);
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-12 h-12 text-accent-blue animate-spin" /></div>;
@@ -159,14 +168,12 @@ export default function Assessment() {
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
-                  {!result.passed && (
-                    <button 
-                      onClick={resetAssessment}
-                      className="bg-background border border-border text-primary px-8 py-3.5 rounded-xl font-bold hover:bg-secondary transition-colors"
-                    >
-                      Retry Assessment
-                    </button>
-                  )}
+                  <button 
+                    onClick={resetAssessment}
+                    className="bg-background border border-border text-primary px-8 py-3.5 rounded-xl font-bold hover:bg-secondary transition-colors flex items-center justify-center gap-2"
+                  >
+                    <RotateCcw className="w-4 h-4" /> Retry Assessment
+                  </button>
                   <button 
                     onClick={() => navigate("/learning/progress")}
                     className={`px-8 py-3.5 rounded-xl font-bold shadow-soft hover:-translate-y-0.5 transition-all text-white ${
@@ -176,46 +183,240 @@ export default function Assessment() {
                     View Progress Profile
                   </button>
                 </div>
+
+                {/* Full Assessment Breakdown & Learning Review */}
+                <div className="w-full mt-10 pt-8 border-t border-border/80 text-left">
+                  <div className="flex items-center justify-between mb-5">
+                    <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+                      <BookOpen className="w-5 h-5 text-accent-blue" />
+                      Question-by-Question Review
+                    </h3>
+                    <button
+                      onClick={() => setShowReview(!showReview)}
+                      className="text-xs font-bold text-accent-blue hover:text-accent-blue/80 flex items-center gap-1 transition-colors"
+                    >
+                      {showReview ? (
+                        <>Hide Details <ChevronUp className="w-4 h-4" /></>
+                      ) : (
+                        <>Show Details <ChevronDown className="w-4 h-4" /></>
+                      )}
+                    </button>
+                  </div>
+
+                  {showReview && (
+                    <div className="space-y-4">
+                      {assessment.map((q, idx) => {
+                        const userOptId = answers[q._id];
+                        const userOpt = q.options.find(o => o._id === userOptId);
+                        const qEval = evaluateQuizAnswer(q, userOptId, slug);
+
+                        return (
+                          <div 
+                            key={q._id || idx}
+                            className={`p-5 rounded-2xl border transition-all ${
+                              qEval.isCorrect
+                                ? 'bg-emerald-950/20 border-emerald-500/30'
+                                : 'bg-rose-950/20 border-rose-500/30'
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                                qEval.isCorrect ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
+                              }`}>
+                                {qEval.isCorrect ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                              </div>
+                              <div className="flex-1 space-y-2">
+                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                  <span className="text-xs font-bold text-secondary uppercase tracking-wider">
+                                    Question {idx + 1}
+                                  </span>
+                                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                                    qEval.isCorrect 
+                                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
+                                      : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                                  }`}>
+                                    {qEval.isCorrect ? 'Correct' : 'Incorrect'}
+                                  </span>
+                                </div>
+
+                                <p className="text-sm font-bold text-primary">
+                                  {q.question}
+                                </p>
+
+                                <div className="text-xs space-y-1 pt-1">
+                                  <div className="text-secondary font-medium">
+                                    <span className="text-muted mr-1.5">Your answer:</span>
+                                    <span className={qEval.isCorrect ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                                      {userOpt?.text || "None selected"}
+                                    </span>
+                                  </div>
+
+                                  {!qEval.isCorrect && qEval.correctOptionText && (
+                                    <div className="text-emerald-400 font-medium">
+                                      <span className="text-muted mr-1.5">Correct answer:</span>
+                                      <span className="font-bold">{qEval.correctOptionText}</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="text-xs text-slate-300 dark:text-slate-300 pt-2 border-t border-border/50 leading-relaxed font-medium">
+                                  <span className="font-bold text-primary mr-1">Explanation:</span>
+                                  {qEval.explanation}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ) : (
             /* Active Question Card */
             <div className="bg-card rounded-[2rem] border border-border p-8 md:p-12 shadow-elevated relative">
-              <h3 className="text-2xl md:text-3xl font-extrabold text-primary mb-10 leading-tight">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-bold text-accent-blue uppercase tracking-wider bg-accent-blue/10 px-3 py-1 rounded-lg border border-accent-blue/20">
+                  Question {currentQuestionIndex + 1} of {assessment.length}
+                </span>
+                {isAnswered && (
+                  <span className={`text-xs font-bold px-3 py-1 rounded-lg flex items-center gap-1.5 ${
+                    currentEvaluation?.isCorrect 
+                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
+                      : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                  }`}>
+                    {currentEvaluation?.isCorrect ? (
+                      <><Check className="w-3.5 h-3.5" /> Correct</>
+                    ) : (
+                      <><X className="w-3.5 h-3.5" /> Incorrect</>
+                    )}
+                  </span>
+                )}
+              </div>
+
+              <h3 className="text-2xl md:text-3xl font-extrabold text-primary mb-8 leading-tight">
                 {currentQuestion.question}
               </h3>
               
-              <div className="space-y-4 mb-12">
+              <div className="space-y-3.5 mb-8">
                 {currentQuestion.options.map(opt => {
-                  const isSelected = answers[currentQuestion._id] === opt._id;
+                  const isSelected = selectedOptionId === opt._id;
+                  const isCorrectOption = isAnswered && currentEvaluation?.correctOptionId === opt._id;
+
+                  let borderClass = "border-border bg-background hover:border-accent-blue/40";
+                  let circleClass = "border-muted bg-transparent";
+                  let badge = null;
+
+                  if (isAnswered) {
+                    if (isSelected && currentEvaluation?.isCorrect) {
+                      borderClass = "border-emerald-500 bg-emerald-500/10 shadow-[0_0_20px_rgba(16,185,129,0.15)]";
+                      circleClass = "border-emerald-500 bg-emerald-500 text-white";
+                      badge = (
+                        <span className="ml-auto inline-flex items-center gap-1 text-xs font-bold text-emerald-400 bg-emerald-950/70 border border-emerald-500/30 px-3 py-1 rounded-full flex-shrink-0">
+                          <Check className="w-3.5 h-3.5" /> Correct
+                        </span>
+                      );
+                    } else if (isSelected && !currentEvaluation?.isCorrect) {
+                      borderClass = "border-rose-500 bg-rose-500/10 shadow-[0_0_20px_rgba(244,63,94,0.15)]";
+                      circleClass = "border-rose-500 bg-rose-500 text-white";
+                      badge = (
+                        <span className="ml-auto inline-flex items-center gap-1 text-xs font-bold text-rose-400 bg-rose-950/70 border border-rose-500/30 px-3 py-1 rounded-full flex-shrink-0">
+                          <X className="w-3.5 h-3.5" /> Your Answer
+                        </span>
+                      );
+                    } else if (isCorrectOption) {
+                      borderClass = "border-emerald-500/80 bg-emerald-500/10 border-dashed shadow-[0_0_15px_rgba(16,185,129,0.1)]";
+                      circleClass = "border-emerald-500 bg-emerald-500/20 text-emerald-400";
+                      badge = (
+                        <span className="ml-auto inline-flex items-center gap-1 text-xs font-bold text-emerald-400 bg-emerald-950/70 border border-emerald-500/40 px-3 py-1 rounded-full flex-shrink-0">
+                          <Sparkles className="w-3 h-3 text-emerald-400" /> Correct Answer
+                        </span>
+                      );
+                    } else {
+                      borderClass = "border-border/60 bg-background/50 opacity-40";
+                    }
+                  }
+
                   return (
-                    <label 
+                    <div 
                       key={opt._id} 
-                      className={`flex items-center p-5 rounded-2xl border-2 cursor-pointer transition-all ${
-                        isSelected 
-                          ? 'border-accent-blue bg-accent-blue/5 shadow-[0_0_15px_rgba(59,130,246,0.15)]' 
-                          : 'border-border bg-background hover:border-accent-blue/40'
-                      }`}
+                      onClick={() => !isAnswered && handleSelect(opt._id)}
+                      className={`flex items-center p-5 rounded-2xl border-2 transition-all select-none ${
+                        !isAnswered ? 'cursor-pointer hover:border-accent-blue/50 hover:bg-secondary/20' : 'cursor-default'
+                      } ${borderClass}`}
                     >
-                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 flex-shrink-0 transition-colors ${
-                        isSelected ? 'border-accent-blue bg-accent-blue' : 'border-muted bg-transparent'
-                      }`}>
-                        {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 flex-shrink-0 transition-all ${circleClass}`}>
+                        {isAnswered && isSelected && currentEvaluation?.isCorrect && <Check className="w-3.5 h-3.5 text-white" />}
+                        {isAnswered && isSelected && !currentEvaluation?.isCorrect && <X className="w-3.5 h-3.5 text-white" />}
+                        {isAnswered && isCorrectOption && !isSelected && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                        {!isAnswered && isSelected && <div className="w-2 h-2 rounded-full bg-accent-blue" />}
                       </div>
-                      <input 
-                        type="radio" 
-                        name={currentQuestion._id} 
-                        className="hidden"
-                        checked={isSelected}
-                        onChange={() => handleSelect(opt._id)}
-                      />
-                      <span className={`text-base font-medium ${isSelected ? 'text-primary font-bold' : 'text-secondary'}`}>
+                      <span className={`text-base pr-3 leading-snug font-medium ${
+                        isSelected ? 'text-primary font-bold' : isCorrectOption ? 'text-emerald-300 font-bold' : 'text-secondary'
+                      }`}>
                         {opt.text}
                       </span>
-                    </label>
+                      {badge}
+                    </div>
                   );
                 })}
               </div>
+
+              {/* Instant Explanation Feedback Panel */}
+              {isAnswered && currentEvaluation && (
+                <div className={`mb-8 p-6 rounded-2xl border transition-all animate-in fade-in slide-in-from-top-3 duration-300 ${
+                  currentEvaluation.isCorrect 
+                    ? 'bg-emerald-950/30 border-emerald-500/30 shadow-[0_4px_25px_rgba(16,185,129,0.12)]' 
+                    : 'bg-rose-950/30 border-rose-500/30 shadow-[0_4px_25px_rgba(244,63,94,0.12)]'
+                }`}>
+                  <div className="flex items-start gap-4">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-inner ${
+                      currentEvaluation.isCorrect 
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' 
+                        : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                    }`}>
+                      {currentEvaluation.isCorrect ? <CheckCircle2 className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+                    </div>
+                    
+                    <div className="flex-1 space-y-2.5 min-w-0">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <h4 className={`text-base font-extrabold flex items-center gap-2 ${
+                          currentEvaluation.isCorrect ? 'text-emerald-400' : 'text-rose-400'
+                        }`}>
+                          {currentEvaluation.isCorrect ? 'Correct! Excellent understanding.' : 'Incorrect Selection'}
+                        </h4>
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-background/80 text-secondary border border-border">
+                          Vulnerability Concept
+                        </span>
+                      </div>
+
+                      {!currentEvaluation.isCorrect && currentEvaluation.correctOptionText && (
+                        <div className="p-3.5 rounded-xl bg-background/90 border border-emerald-500/40 shadow-sm">
+                          <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">
+                            Correct Answer:
+                          </span>
+                          <span className="text-primary font-bold text-sm block">
+                            {currentEvaluation.correctOptionText}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="text-sm text-slate-300 dark:text-slate-200 leading-relaxed font-medium pt-1">
+                        <span className="font-bold text-primary mr-1.5">Why:</span>
+                        {currentEvaluation.explanation}
+                      </div>
+
+                      {!currentEvaluation.isCorrect && currentEvaluation.incorrectFeedback && (
+                        <div className="text-xs text-rose-300/90 leading-relaxed pt-2 border-t border-rose-500/20">
+                          <span className="font-bold text-rose-200 mr-1.5">Key takeaway:</span>
+                          {currentEvaluation.incorrectFeedback}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div className="flex items-center justify-between pt-6 border-t border-border">
                 <button 
@@ -228,7 +429,7 @@ export default function Assessment() {
                 
                 <button 
                   onClick={handleNext} 
-                  disabled={!answers[currentQuestion._id] || submitting}
+                  disabled={!isAnswered || submitting}
                   className="bg-accent-blue text-white px-8 py-3.5 rounded-xl font-bold shadow-soft hover:bg-accent-blue/90 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:hover:translate-y-0 flex items-center gap-2"
                 >
                   {submitting ? (
