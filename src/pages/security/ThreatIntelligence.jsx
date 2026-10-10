@@ -14,7 +14,7 @@ export default function ThreatIntelligence() {
   
   // Filters State
   const [filters, setFilters] = useState({
-    timeRange: "30d",
+    timeRange: selectedIndicatorId ? "all" : "30d",
     threatStatus: "all",
     indicatorType: "all",
     country: "all",
@@ -93,25 +93,26 @@ export default function ThreatIntelligence() {
   // SINGLE FILTERED DATASET: Apply status, type, country, and investigation filters on the client
   const filteredIndicators = useMemo(() => {
     return enrichedIndicators.filter(ind => {
+      // If a specific indicator is selected (e.g. from Indicator Detail page), always preserve it in the dataset
+      const isDirectlySelected = selectedIndicatorId && (String(ind._id) === selectedIndicatorId || String(ind.id) === selectedIndicatorId);
+
       // Investigation Filter
-      if (filters.investigation !== 'all') {
+      if (filters.investigation !== 'all' && !isDirectlySelected) {
         if (ind.investigationId !== filters.investigation) return false;
       }
 
-      // Threat Status
-      if (filters.threatStatus !== 'all') {
+      // Threat Status: 'all' includes all indicators (including Not Observed / Not Configured)
+      if (filters.threatStatus !== 'all' && !isDirectlySelected) {
         if (ind.threatStatus !== filters.threatStatus) return false;
-      } else {
-        if (!ind.threatStatus || ind.threatStatus === 'unknown' || ind.threatStatus === 'unavailable') return false;
       }
 
       // Indicator Type
-      if (filters.indicatorType !== 'all' && ind.type !== filters.indicatorType) {
-        return false;
+      if (filters.indicatorType !== 'all' && !isDirectlySelected) {
+        if (ind.type !== filters.indicatorType) return false;
       }
 
       // Country
-      if (filters.country !== 'all') {
+      if (filters.country !== 'all' && !isDirectlySelected) {
         const c1 = ind.geolocation?.country;
         const c2 = ind.geolocations?.[0]?.country;
         if (c1 !== filters.country && c2 !== filters.country) return false;
@@ -119,7 +120,7 @@ export default function ThreatIntelligence() {
 
       return true;
     });
-  }, [enrichedIndicators, filters]);
+  }, [enrichedIndicators, filters, selectedIndicatorId]);
 
   // Derived Summary KPIs
   const summary = useMemo(() => {
@@ -369,7 +370,7 @@ export default function ThreatIntelligence() {
           <option value="malicious">Malicious</option>
           <option value="suspicious">Suspicious</option>
           <option value="clean">Clean</option>
-          <option value="unknown">Unknown</option>
+          <option value="unknown">Not Observed / Info</option>
         </select>
 
         <select 

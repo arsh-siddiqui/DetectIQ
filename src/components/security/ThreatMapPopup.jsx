@@ -43,7 +43,17 @@ const ThreatMapPopup = ({ feature, filteredIndicators = [], forceClose, onViewIn
   
   // Single Indicator Mode
   if (!isGroup) {
-    const threatColor = THREAT_COLORS[props.threat] || THREAT_COLORS.unknown;
+    const getThreatPresentation = (threat, vtStatus) => {
+      if (threat === 'clean') return { label: 'Clean', color: THREAT_COLORS.clean };
+      if (threat === 'malicious') return { label: 'Malicious', color: THREAT_COLORS.malicious };
+      if (threat === 'suspicious') return { label: 'Suspicious', color: THREAT_COLORS.suspicious };
+      if (threat === 'unavailable') return { label: 'Unavailable', color: THREAT_COLORS.unavailable };
+      if (vtStatus === 'skipped') return { label: 'Not Configured', color: THREAT_COLORS.unknown };
+      if (vtStatus === 'not_found') return { label: 'Not Observed', color: THREAT_COLORS.unknown };
+      return { label: 'Not Observed / Info', color: THREAT_COLORS.unknown };
+    };
+    const threatPres = getThreatPresentation(props.threat, props.vtStatus);
+    const threatColor = threatPres.color;
     const sourceLabel = SOURCE_LABELS[props.locationSource || props.sourceType] || props.locationSource || props.sourceType || 'Direct IP';
     const providerText = props.provider ? ` via ${props.provider}` : '';
     const orgOrIsp = props.organization || props.isp || '';
@@ -73,7 +83,7 @@ const ThreatMapPopup = ({ feature, filteredIndicators = [], forceClose, onViewIn
           </div>
           <div className="text-[10px] uppercase font-bold text-gray-500 tracking-wider flex items-center justify-between">
             <span className="truncate">{props.type}</span>
-            <span style={{ color: threatColor }} className="capitalize ml-2 flex-shrink-0">{props.threat}</span>
+            <span style={{ color: threatPres.color }} className="font-bold ml-2 flex-shrink-0">{threatPres.label}</span>
           </div>
         </div>
         

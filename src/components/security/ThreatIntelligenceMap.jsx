@@ -169,7 +169,34 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
         map.on('mouseenter', 'unclustered-point', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'unclustered-point', () => { map.getCanvas().style.cursor = ''; });
 
-        if (geoJsonRef.current.features.length > 0) {
+        const selId = selectedIndicatorIdRef.current;
+        if (selId) {
+          const feature = geoJsonRef.current.features.find(f => {
+            if (f.properties.id === selId) return true;
+            try {
+              const ids = JSON.parse(f.properties.indicatorIds || '[]');
+              return ids.includes(selId);
+            } catch {
+              return false;
+            }
+          });
+          if (feature) {
+            setTimeout(() => {
+              if (mapRef.current) {
+                mapRef.current.flyTo({
+                  center: feature.geometry.coordinates,
+                  zoom: 12,
+                  essential: true
+                });
+                openIndicatorPopup(feature);
+              }
+            }, 300);
+          } else if (geoJsonRef.current.features.length > 0) {
+            setTimeout(() => {
+              fitLocations(true);
+            }, 300);
+          }
+        } else if (geoJsonRef.current.features.length > 0) {
           setTimeout(() => {
             fitLocations(true); // pass true for initial fit
           }, 300);
@@ -229,7 +256,15 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
   // Handle selectedIndicatorId focusing
   useEffect(() => {
     if (selectedIndicatorId && mapRef.current && mapRef.current.isStyleLoaded()) {
-      const feature = geoJsonData.features.find(f => f.properties.id === selectedIndicatorId);
+      const feature = geoJsonData.features.find(f => {
+        if (f.properties.id === selectedIndicatorId) return true;
+        try {
+          const ids = JSON.parse(f.properties.indicatorIds || '[]');
+          return ids.includes(selectedIndicatorId);
+        } catch {
+          return false;
+        }
+      });
       if (feature) {
         mapRef.current.flyTo({
           center: feature.geometry.coordinates,
@@ -455,10 +490,15 @@ export default function ThreatIntelligenceMap({ markers = [], isLoading = false,
         <div className="bg-[#0f172a]/90 backdrop-blur-md border border-slate-800 rounded-lg px-3 py-2 shadow-xl flex items-center gap-3">
           <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Threat Status:</div>
           <div className="flex flex-row items-center gap-3 flex-wrap">
-            {Object.entries(THREAT_COLORS).map(([threat, color]) => (
-              <div key={threat} className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                <span className="text-xs text-slate-300 capitalize font-medium">{threat}</span>
+            {[
+              { threat: 'malicious', label: 'Malicious', color: THREAT_COLORS.malicious },
+              { threat: 'suspicious', label: 'Suspicious', color: THREAT_COLORS.suspicious },
+              { threat: 'clean', label: 'Clean', color: THREAT_COLORS.clean },
+              { threat: 'unknown', label: 'Not Observed / Info', color: THREAT_COLORS.unknown },
+            ].map(item => (
+              <div key={item.threat} className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                <span className="text-xs text-slate-300 font-medium">{item.label}</span>
               </div>
             ))}
           </div>

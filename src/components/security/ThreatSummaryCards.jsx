@@ -1,18 +1,18 @@
-import { ShieldAlert, ShieldCheck, AlertTriangle, MapPin, Globe } from "lucide-react";
+import { ShieldAlert, ShieldCheck, AlertTriangle, MapPin, Globe, Info } from "lucide-react";
 
 export default function ThreatSummaryCards({ summary, countries, isLoading }) {
   if (isLoading) {
     return (
       <div className="flex flex-col gap-4 animate-pulse">
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} className="h-24 bg-secondary rounded-xl border border-border"></div>
+        {[1, 2, 3, 4, 5].map(i => (
+          <div key={i} className="h-20 bg-secondary rounded-xl border border-border"></div>
         ))}
         <div className="mt-4 h-48 bg-secondary rounded-xl border border-border"></div>
       </div>
     );
   }
 
-  const { total = 0, malicious = 0, suspicious = 0, clean = 0 } = summary || {};
+  const { total = 0, malicious = 0, suspicious = 0, clean = 0, unknown = 0 } = summary || {};
 
   const cards = [
     {
@@ -42,6 +42,13 @@ export default function ThreatSummaryCards({ summary, countries, isLoading }) {
       icon: ShieldCheck,
       color: "text-green-500",
       bg: "bg-green-500/10"
+    },
+    {
+      title: "Not Observed / Info",
+      value: unknown,
+      icon: Info,
+      color: "text-slate-400",
+      bg: "bg-slate-500/10"
     }
   ];
 
