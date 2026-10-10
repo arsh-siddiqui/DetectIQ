@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Search, MapPin, AlertTriangle, ShieldCheck, HelpCircle, ChevronLeft, ChevronRight, Activity, XCircle } from 'lucide-react';
+import { 
+  Search, MapPin, AlertTriangle, ShieldCheck, HelpCircle, 
+  ChevronLeft, ChevronRight, Activity, XCircle, Mail, 
+  ExternalLink, Copy, Check, FileText 
+} from 'lucide-react';
 import * as securityService from '../../services/securityService';
 import { normalizeVTState } from '../../utils/intelligenceMapping';
 
@@ -9,12 +13,14 @@ const IndicatorList = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const idsParam = searchParams.get('ids');
+  const invParam = searchParams.get('investigation');
   
   const [indicators, setIndicators] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [copiedVal, setCopiedVal] = useState(null);
   const [filters, setFilters] = useState({
     type: '',
     threat: '',
@@ -66,6 +72,30 @@ const IndicatorList = () => {
     setPage(1);
   };
 
+  const handleCopy = (e, val) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(val).catch(() => {});
+    setCopiedVal(val);
+    setTimeout(() => setCopiedVal(null), 2000);
+  };
+
+  const getTypeBadgeClass = (type) => {
+    switch (type) {
+      case 'ip':
+        return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+      case 'domain':
+        return 'bg-blue-500/10 text-blue-400 border-blue-500/30';
+      case 'url':
+        return 'bg-sky-500/10 text-sky-400 border-sky-500/30';
+      case 'hash':
+        return 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30';
+      case 'email':
+        return 'bg-purple-500/10 text-purple-400 border-purple-500/30';
+      default:
+        return 'bg-secondary text-secondary border-border';
+    }
+  };
+
   const getThreatPresentation = (ind) => {
     // If VirusTotal object exists, prioritize it directly
     const vt = ind.intelligence?.virustotal || ind.intelligence?.virusTotal || ind.virusTotal;
@@ -76,6 +106,7 @@ const IndicatorList = () => {
       if (stateInfo.state === 'suspicious') return { icon: <AlertTriangle size={16} className="text-orange-400" />, label: 'Suspicious' };
       if (stateInfo.state === 'not_found') return { icon: <HelpCircle size={16} className="text-slate-400" />, label: 'Not observed' };
       if (stateInfo.state === 'unavailable') return { icon: <AlertTriangle size={16} className="text-slate-500" />, label: 'Unavailable' };
+      if (stateInfo.state === 'unconfigured' || stateInfo.state === 'skipped') return { icon: <HelpCircle size={16} className="text-slate-400" />, label: 'Not configured' };
       return { icon: <HelpCircle size={16} className="text-slate-400" />, label: stateInfo.label };
     }
     
@@ -135,7 +166,7 @@ const IndicatorList = () => {
                 Indicators of Compromise
               </h1>
               <p className="text-secondary text-sm mt-1">
-                Extracted artifacts and global threat intelligence.
+                Extracted artifacts, source email provenance, and global threat intelligence.
               </p>
             </div>
             
@@ -201,6 +232,27 @@ const IndicatorList = () => {
             </div>
           )}
 
+          {invParam && (
+            <div className="bg-accent-blue/10 border border-accent-blue/20 rounded-lg p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Mail className="text-accent-blue" size={16} />
+                <span className="text-sm font-medium text-primary">
+                  Showing indicators linked to specific email investigation
+                </span>
+              </div>
+              <button 
+                onClick={() => {
+                  searchParams.delete('investigation');
+                  setSearchParams(searchParams);
+                }}
+                className="flex items-center gap-1.5 text-xs font-bold text-accent-blue hover:text-white hover:bg-accent-blue px-2.5 py-1.5 rounded transition-colors"
+              >
+                <XCircle size={14} />
+                Clear Investigation Filter
+              </button>
+            </div>
+          )}
+
           <div className="bg-card rounded-xl border border-border shadow-soft overflow-hidden">
             {error ? (
               <div className="p-8 text-center text-red-400 flex flex-col items-center">
@@ -214,9 +266,9 @@ const IndicatorList = () => {
                     <tr>
                       <th className="px-6 py-4 font-medium">Indicator</th>
                       <th className="px-6 py-4 font-medium">Type</th>
+                      <th className="px-6 py-4 font-medium">Originating Email</th>
                       <th className="px-6 py-4 font-medium">Threat Intelligence</th>
                       <th className="px-6 py-4 font-medium">Geolocation</th>
-                      <th className="px-6 py-4 font-medium">First Seen</th>
                       <th className="px-6 py-4 font-medium">Last Seen</th>
                     </tr>
                   </thead>
@@ -244,16 +296,71 @@ const IndicatorList = () => {
                           onClick={() => navigate(`/security/indicators/${ind._id}`)}
                           className="hover:bg-interactive cursor-pointer transition-colors group"
                         >
+                          {/* Indicator Value */}
                           <td className="px-6 py-4">
-                            <div className="font-mono text-primary group-hover:text-accent-blue transition-colors truncate max-w-[250px]" title={ind.normalizedValue}>
-                              {ind.normalizedValue}
+                            <div className="flex items-center gap-2 max-w-[280px]">
+                              <div 
+                                className="font-mono text-xs text-primary group-hover:text-accent-blue transition-colors truncate tracking-tight font-medium" 
+                                title={ind.normalizedValue}
+                              >
+                                {ind.normalizedValue}
+                              </div>
+                              <button
+                                onClick={(e) => handleCopy(e, ind.normalizedValue)}
+                                title="Copy indicator"
+                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-secondary/70 rounded transition-all text-muted hover:text-primary shrink-0"
+                              >
+                                {copiedVal === ind.normalizedValue ? (
+                                  <Check size={12} className="text-emerald-400" />
+                                ) : (
+                                  <Copy size={12} />
+                                )}
+                              </button>
                             </div>
                           </td>
+
+                          {/* Type */}
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="px-2 py-0.5 rounded text-[10px] uppercase tracking-wide font-medium bg-secondary text-secondary border border-border">
+                            <span className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wide font-medium border ${getTypeBadgeClass(ind.type)}`}>
                               {ind.type}
                             </span>
                           </td>
+
+                          {/* Originating Email / Investigation */}
+                          <td className="px-6 py-4">
+                            {ind.investigation ? (
+                              <div 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/security/investigations/${ind.investigation._id || ind.investigation.id}`);
+                                }}
+                                className="flex items-start gap-2 max-w-[260px] group/email hover:text-accent-violet transition-colors cursor-pointer"
+                                title={`View investigation: ${ind.investigation.headers?.subject || 'Email Investigation'}`}
+                              >
+                                <Mail size={15} className="text-accent-violet flex-shrink-0 mt-0.5" />
+                                <div className="min-w-0">
+                                  <div className="text-xs font-semibold text-primary group-hover/email:text-accent-violet transition-colors truncate">
+                                    {ind.investigation.headers?.subject || 'Untitled Email'}
+                                  </div>
+                                  <div className="text-[11px] text-muted truncate flex items-center gap-1 mt-0.5">
+                                    {ind.investigation.headers?.from ? (
+                                      <span className="truncate">{ind.investigation.headers.from}</span>
+                                    ) : (
+                                      <span>{ind.investigation.sourceType === 'eml_upload' ? 'EML Upload' : 'Email Scan'}</span>
+                                    )}
+                                    <ExternalLink size={10} className="text-muted/60 group-hover/email:text-accent-violet shrink-0" />
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5 text-xs text-muted">
+                                <FileText size={13} className="opacity-40" />
+                                <span>Direct IOC</span>
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Threat Intelligence */}
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex flex-col text-sm">
                               <span className="text-[10px] text-muted mb-1 uppercase tracking-wider font-bold">Threat Intel</span>
@@ -263,14 +370,20 @@ const IndicatorList = () => {
                               </div>
                             </div>
                           </td>
+
+                          {/* Geolocation */}
                           <td className="px-6 py-4 whitespace-nowrap">
                             {getGeolocationPresentation(ind)}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-secondary">
-                            {format(new Date(ind.firstSeen), 'MMM d, yyyy HH:mm')}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-secondary">
-                            {format(new Date(ind.lastSeen), 'MMM d, yyyy HH:mm')}
+
+                          {/* Last Seen & First Seen */}
+                          <td className="px-6 py-4 whitespace-nowrap text-secondary text-xs">
+                            <div>{format(new Date(ind.lastSeen || ind.updatedAt || Date.now()), 'MMM d, yyyy HH:mm')}</div>
+                            {ind.firstSeen && ind.lastSeen && new Date(ind.firstSeen).toDateString() !== new Date(ind.lastSeen).toDateString() && (
+                              <div className="text-[10px] text-muted mt-0.5">
+                                First: {format(new Date(ind.firstSeen), 'MMM d, yyyy')}
+                              </div>
+                            )}
                           </td>
                         </tr>
                       ))

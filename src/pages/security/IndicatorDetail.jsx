@@ -204,6 +204,11 @@ const IndicatorDetail = () => {
                               <div className="text-sm font-medium text-primary group-hover:text-accent-violet">
                                 {inv.subject || '(No Subject)'}
                               </div>
+                              {inv.from && (
+                                <div className="text-xs text-muted truncate mt-0.5">
+                                  From: {inv.from}
+                                </div>
+                              )}
                               <div className="text-xs text-muted capitalize mt-1 flex items-center gap-2">
                                 <span className="bg-secondary/80 px-1.5 py-0.5 rounded text-[10px] font-semibold text-primary">{inv.sourceType?.replace('_', ' ')}</span>
                               </div>

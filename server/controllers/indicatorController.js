@@ -38,10 +38,47 @@ exports.getIndicators = asyncHandler(async (req, res) => {
 
   const indicators = await Indicator.find(filter)
     .select('-__v -user') // Exclude internal
-    .sort({ lastSeenAt: -1 })
+    .populate('investigation', 'headers.subject headers.from sourceType createdAt')
+    .sort({ lastSeenAt: -1, createdAt: -1 })
     .skip(skip)
     .limit(limit)
     .lean();
+
+  // For any indicators where `investigation` is null, look up reverse reference from EmailInvestigation.indicators
+  const unlinked = indicators.filter(i => !i.investigation);
+  if (unlinked.length > 0) {
+    const unlinkedIds = unlinked.map(i => i._id);
+    const relatedInvs = await EmailInvestigation.find({
+      user: req.user._id,
+      indicators: { $in: unlinkedIds }
+    }).select('_id headers.subject headers.from sourceType createdAt indicators').lean();
+
+    const invMap = new Map();
+    for (const inv of relatedInvs) {
+      if (Array.isArray(inv.indicators)) {
+        for (const indRef of inv.indicators) {
+          const key = indRef.toString();
+          if (!invMap.has(key)) {
+            invMap.set(key, {
+              _id: inv._id,
+              headers: inv.headers,
+              sourceType: inv.sourceType,
+              createdAt: inv.createdAt
+            });
+          }
+        }
+      }
+    }
+
+    for (const ind of indicators) {
+      if (!ind.investigation) {
+        const found = invMap.get(ind._id.toString());
+        if (found) {
+          ind.investigation = found;
+        }
+      }
+    }
+  }
 
   res.json({
     total,
@@ -61,6 +98,7 @@ exports.getIndicatorById = asyncHandler(async (req, res) => {
 
   const indicator = await Indicator.findOne({ _id: indId, user: req.user._id })
     .select('-__v -user')
+    .populate('investigation', 'headers.subject headers.from sourceType createdAt')
     .lean();
 
   if (!indicator) {
@@ -69,12 +107,19 @@ exports.getIndicatorById = asyncHandler(async (req, res) => {
   }
 
   // Find investigations containing this indicator.
-  // The EmailInvestigation model has an `indicators` array containing references.
+  // The EmailInvestigation model has an `indicators` array containing references or direct investigation ref.
+  const orConditions = [{ indicators: indId }];
+  if (indicator.investigation?._id) {
+    orConditions.push({ _id: indicator.investigation._id });
+  } else if (indicator.investigation) {
+    orConditions.push({ _id: indicator.investigation });
+  }
+
   const relatedInvestigationsRaw = await EmailInvestigation.find({ 
     user: req.user._id, 
-    indicators: indId 
+    $or: orConditions
   })
-    .select('_id createdAt headers.subject sourceType')
+    .select('_id createdAt headers.subject headers.from sourceType')
     .sort({ createdAt: -1 })
     .lean();
 
@@ -82,6 +127,7 @@ exports.getIndicatorById = asyncHandler(async (req, res) => {
     id: inv._id,
     createdAt: inv.createdAt,
     subject: inv.headers?.subject,
+    from: inv.headers?.from,
     sourceType: inv.sourceType
   }));
 
