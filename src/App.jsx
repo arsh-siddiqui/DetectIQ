@@ -40,6 +40,7 @@ const Features = lazy(() => import("./pages/public/Features"));
 const About = lazy(() => import("./pages/public/About"));
 const Solutions = lazy(() => import("./pages/public/Solutions"));
 const Resources = lazy(() => import("./pages/public/Resources"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 /**
  * Branded Page Loading Fallback
@@ -108,6 +109,8 @@ function AppRoutes() {
         
         {/* Detection Suite */}
         <Route path="/detection/scanner" element={<RequireAuth><AppLayoutWrapper><Scan /></AppLayoutWrapper></RequireAuth>} />
+        <Route path="/detection/email" element={<Navigate to="/detection/scanner?mode=email" replace />} />
+        <Route path="/detection/url" element={<Navigate to="/detection/scanner?mode=url" replace />} />
         <Route path="/detection/history" element={<RequireAuth><AppLayoutWrapper><ScanHistory /></AppLayoutWrapper></RequireAuth>} />
         <Route path="/detection/result/:id" element={<RequireAuth><AppLayoutWrapper><ScanResult /></AppLayoutWrapper></RequireAuth>} />
         <Route path="/detection/email-context" element={<RequireAuth><AppLayoutWrapper><MyEmailPatterns /></AppLayoutWrapper></RequireAuth>} />
@@ -132,8 +135,8 @@ function AppRoutes() {
         <Route path="/profile" element={<RequireAuth><AppLayoutWrapper><Profile /></AppLayoutWrapper></RequireAuth>} />
         <Route path="/admin" element={<RequireAdmin><AppLayoutWrapper><AdminDashboard /></AppLayoutWrapper></RequireAdmin>} />
         
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* 404 Dedicated Not Found Page */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
   );

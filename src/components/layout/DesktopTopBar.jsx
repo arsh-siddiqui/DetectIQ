@@ -4,14 +4,16 @@ import { Search, Sun, Moon, User, LogOut } from "lucide-react";
 import { useAppData } from "../../context/AppDataContext";
 
 const searchTargets = [
-  { label: "Dashboard", to: "/dashboard", keywords: ["home", "dash"] },
-  { label: "Scan Email", to: "/detection/email", keywords: ["scan", "email"] },
-  { label: "Scan URL", to: "/detection/url", keywords: ["scan", "url", "link"] },
-  { label: "Scan History", to: "/detection/history", keywords: ["history", "past"] },
-  { label: "My Email Patterns", to: "/detection/email-context", keywords: ["email", "patterns", "rag"] },
-  { label: "Vulnerabilities", to: "/vulnerabilities", keywords: ["vulnerability", "learn"] },
-  { label: "My Progress", to: "/learning/progress", keywords: ["progress", "stats"] },
-  { label: "Profile", to: "/profile", keywords: ["profile", "settings"] },
+  { label: "Dashboard", to: "/dashboard", keywords: ["home", "dash", "overview"] },
+  { label: "Threat Scanner", to: "/detection/scanner", keywords: ["scan", "scanner", "email", "url", "link", "message", "qr", "screenshot"] },
+  { label: "Scan History", to: "/detection/history", keywords: ["history", "past", "logs", "scans"] },
+  { label: "Email Pattern Baselines", to: "/detection/email-context", keywords: ["email", "patterns", "rag", "baseline"] },
+  { label: "Threat Intelligence Map", to: "/security/threat-intelligence", keywords: ["threat", "intel", "map", "geo", "world"] },
+  { label: "Security Investigations", to: "/security/investigations", keywords: ["investigation", "cases", "soc", "incidents"] },
+  { label: "Threat Indicators (IOCs)", to: "/security/indicators", keywords: ["indicator", "ioc", "ip", "domain", "hash"] },
+  { label: "Vulnerability Learning Center", to: "/vulnerabilities", keywords: ["vulnerability", "learn", "curriculum", "lessons"] },
+  { label: "My Learning Progress", to: "/learning/progress", keywords: ["progress", "stats", "score", "learning"] },
+  { label: "Account Profile & Settings", to: "/profile", keywords: ["profile", "settings", "password", "token", "jwt"] },
 ];
 
 export default function DesktopTopBar() {

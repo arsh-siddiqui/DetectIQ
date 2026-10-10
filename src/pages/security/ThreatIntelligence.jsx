@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useAppData } from "../../context/AppDataContext";
 import { useSearchParams } from "react-router-dom";
 import apiClient from "../../services/apiClient";
 import { Globe, RefreshCw, FilterX, ArrowLeft, AlertTriangle } from "lucide-react";
@@ -10,7 +9,6 @@ import RecentThreatActivity from "../../components/security/RecentThreatActivity
 import ThreatAnalytics from "../../components/security/ThreatAnalytics";
 
 export default function ThreatIntelligence() {
-  const { user } = useAppData();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedIndicatorId = searchParams.get('indicator');
   
